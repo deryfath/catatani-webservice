@@ -72,6 +72,7 @@ public class ESAccountCameraRepository extends BaseController {
 
     }
 
+    @Transactional
     public ResponseEntity getClientIDAndClientSecret() {
         ObjectNode deviceObject = Json.buildObjectNode();
 

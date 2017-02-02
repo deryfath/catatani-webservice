@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 @Repository
@@ -81,7 +83,9 @@ public class ESCameraHistoryRepository extends BaseController {
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
         queryBuilder.append("camera_history_tbl ");
-        queryBuilder.append("WHERE device_id = :device_id");
+        queryBuilder.append("WHERE device_id = :device_id ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("__deleted_flag__ = FALSE ");
 
         queryString = queryBuilder.toString();
         query = entityManager.createNativeQuery(queryString, ESCameraHistory.class);
@@ -115,6 +119,36 @@ public class ESCameraHistoryRepository extends BaseController {
         query.setParameter("device_id", deviceId);
 
         return query.executeUpdate();
+    }
+
+    @Transactional
+    public int updateDeleteStatus(String deviceId) {
+
+        int result = 0;
+        Date now = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String deletedTimeString = sdf.format(now);
+
+        // Appliance
+        // Build Query
+        StringBuilder applianceBuilder = new StringBuilder();
+        applianceBuilder.append("UPDATE ");
+        applianceBuilder.append("camera_history_tbl ");
+        applianceBuilder.append("SET ");
+        applianceBuilder.append("__deleted_flag__ = TRUE, ");
+        applianceBuilder.append("__deleted_time__ = :dtime ");
+        applianceBuilder.append("WHERE ");
+        applianceBuilder.append("device_id = :device_id");
+
+        // Execute Query
+        String applianceBuilderString = applianceBuilder.toString();
+        Query applianceQuery = entityManager.createNativeQuery(applianceBuilderString);
+        applianceQuery.setParameter("dtime", deletedTimeString);
+        applianceQuery.setParameter("device_id", deviceId);
+
+        result += applianceQuery.executeUpdate();
+
+        return result;
     }
 
 }

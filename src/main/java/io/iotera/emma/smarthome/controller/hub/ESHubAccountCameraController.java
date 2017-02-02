@@ -26,6 +26,9 @@ public class ESHubAccountCameraController extends ESBaseController {
     YoutubeService youtubeService;
 
     @Autowired
+    ESAccountCameraRepository accountYoutubeCameraRepository;
+
+    @Autowired
     ESApplicationInfoRepository.ESApplicationInfoJpaRepository applicationInfoJpaRepository;
 
     @RequestMapping(value = "/youtube/oauth", method = RequestMethod.POST)
@@ -45,17 +48,16 @@ public class ESHubAccountCameraController extends ESBaseController {
         String youtubeId = rget(body, "esyid");
         String youtubeEmail = rget(body, "esyemail");
 
-        ESApplicationInfo applicationInfo = applicationInfoJpaRepository.findOne(0L);
-        String clientId = applicationInfo.getYoutubeApiClientId();
-        String clientSecret = applicationInfo.getYoutubeApiClientSecret();
+        ObjectNode response = Json.buildObjectNode();
+
+        ResponseEntity<String> applicationInfo = accountYoutubeCameraRepository.getClientIDAndClientSecret();
+        ObjectNode responseBody = Json.parseToObjectNode(applicationInfo.getBody());
+        String clientSecret = responseBody.get("client_secret").toString().replaceAll("[^\\w\\s\\-_.]", "");
+        String clientId = responseBody.get("client_id").toString().replaceAll("[^\\w\\s\\-_.]", "");
 
         //get access token and refresh token initiate
-        ResponseEntity<String> responseAccountYoutube = youtubeService.getAccessTokenAndRefreshtokenByAuthCode(oauthCode
-                ,clientId,clientSecret);
+        ResponseEntity<String> responseAccountYoutube =  youtubeService.getAccessTokenAndRefreshtokenByAuthCode(oauthCode,clientId,clientSecret);
         System.out.println(responseAccountYoutube);
-
-        // Response
-        ObjectNode response = Json.buildObjectNode();
 
         try {
             ObjectNode responseYoutubeObject = Json.parseToObjectNode(responseAccountYoutube.getBody());
@@ -66,7 +68,7 @@ public class ESHubAccountCameraController extends ESBaseController {
                 String refreshToken = responseYoutubeObject.get("refresh_token").toString().replaceAll("[^\\w\\s\\-_./]", "");
 
                 //check table account youtube camera
-                String status = accountCameraRepository.checkAvailabilityGoogleAccount(youtubeId,youtubeEmail,accessToken,refreshToken,account);
+                String status = accountYoutubeCameraRepository.checkAvailabilityGoogleAccount(youtubeId,youtubeEmail,accessToken,refreshToken,account);
 
                 response.put("status",200);
                 response.put("message",status);
@@ -81,7 +83,11 @@ public class ESHubAccountCameraController extends ESBaseController {
             response.put("message","bad request");
         }
 
+
+
         // Response
+
+
         return okJson(response);
     }
 

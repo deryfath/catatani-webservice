@@ -157,7 +157,7 @@ public class ESDeviceController extends ESBaseController {
         String roomId = rget(body, "esroom");
         int category = rget(body, "escat", Integer.class);
         int type = rget(body, "estype", Integer.class);
-        String info = get(body, "esinfo");
+        String info = body.get("esinfo").toString();
 
         // Check room
         ESRoom room = roomRepository.findByRoomId(roomId, accountId);
@@ -198,7 +198,8 @@ public class ESDeviceController extends ESBaseController {
 
                 ResponseEntity responseYoutubeKey = accountYoutubeCameraRepository.YoutubeKey(accountId);
                 ObjectNode objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
-                int maxqueue = Integer.parseInt(objectKey.get("max_queue").toString().replaceAll("[^\\w\\s]", ""));
+                System.out.println("OBJECT KEY : "+objectKey);
+                int maxqueue = Integer.parseInt(objectKey.get("max_history").toString().replaceAll("[^\\w\\s]", ""));
                 routineManagerYoutube.updateSchedule(device,accountId,objectKey,label,maxqueue);
 
                 deviceJpaRepository.flush();

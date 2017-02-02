@@ -1,5 +1,6 @@
 package io.iotera.emma.smarthome.repository;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.controlstatus.ACControlStatus;
 import io.iotera.emma.smarthome.controlstatus.ControlStatus;
 import io.iotera.emma.smarthome.model.device.ESDevice;
@@ -9,7 +10,7 @@ import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
+import io.iotera.util.Json;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
@@ -299,25 +300,58 @@ public class ESDeviceRepository extends BaseController {
     }
 
     @Transactional
-    public int updateStatusInfoDevice(String deviceId, String youtubeId) {
+    public int updateStatusInfoDevice(String deviceId, String youtubeId,String ingestionAddress, String streamKey, String streamId, String youtubeUrl, String time) {
 
-        System.out.println("UPDATE INFO");
+        System.out.println("APPEND INFO");
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("SELECT ");
+        queryBuilder.append("* ");
+        queryBuilder.append("FROM ");
+        queryBuilder.append("device_tbl ");
+        queryBuilder.append("WHERE ");
+        queryBuilder.append("__deleted_flag__ = FALSE ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("id = :id ");
+
+        String queryString = queryBuilder.toString();
+        Query query = entityManager.createNativeQuery(queryString, ESDevice.class);
+        query.setParameter("id", deviceId);
+        List<ESDevice> listDevice = query.getResultList();
+
+        String infoTmp = "";
+
+        if(listDevice.size() != 0){
+            infoTmp = listDevice.get(0).getInfo();
+        }
+
+        ObjectNode infoObject = Json.parseToObjectNode(infoTmp);
+        if(infoObject == null){
+            infoObject = Json.buildObjectNode();
+        }
+
+        infoObject.put("ybid",youtubeId);
+        infoObject.put("ysid",streamId);
+        infoObject.put("ysk",ingestionAddress+"/"+streamKey);
+        infoObject.put("yurl",youtubeUrl);
+        infoObject.put("tm",time);
+
+        System.out.println("INFO TMP: "+infoObject);
+
+        queryBuilder = new StringBuilder();
         queryBuilder.append("UPDATE ");
         queryBuilder.append("device_tbl ");
         queryBuilder.append("SET ");
         queryBuilder.append("info = :info ");
         queryBuilder.append("WHERE ");
+        queryBuilder.append("__deleted_flag__ = FALSE ");
+        queryBuilder.append("AND ");
         queryBuilder.append("id = :id ");
 
-        String youtube_idQuot = "\""+youtubeId+"\"";
-        String youtube_idStr = "\"youtube_id \"";
-
         // Execute Query
-        String queryString = queryBuilder.toString();
-        Query query = entityManager.createNativeQuery(queryString);
-        query.setParameter("info", "{"+youtube_idStr+":"+youtube_idQuot+"}");
+        queryString = queryBuilder.toString();
+        query = entityManager.createNativeQuery(queryString);
+        query.setParameter("info", infoObject.toString());
         query.setParameter("id", deviceId);
 
         return query.executeUpdate();

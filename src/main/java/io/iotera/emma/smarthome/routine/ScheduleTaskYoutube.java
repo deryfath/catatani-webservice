@@ -25,6 +25,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 
 /**
  * Created by nana on 12/14/2016.
@@ -76,6 +77,10 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
     private int maxqueue;
     private String youtube_id;
     private String newTitle = "";
+    private String ingestionAddress = "";
+    private String mqttTime = "";
+    private String youtube_url = "";
+
 
     private volatile boolean running = true;
 
@@ -89,12 +94,27 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
         this.stateTask = stateTask;
         this.device = device;
         this.maxqueue = maxqueue;
+
     }
 
     @Override
     public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
         this.applicationEventPublisher = applicationEventPublisher;
     }
+
+    static Date toNearestWholeHour(Date d) {
+        Calendar c = new GregorianCalendar();
+        c.setTime(d);
+
+        if (c.get(Calendar.MINUTE) <= 59)
+            c.set(Calendar.HOUR, c.get(Calendar.HOUR));
+
+        c.set(Calendar.MINUTE, 0);
+        c.set(Calendar.SECOND, 0);
+
+        return c.getTime();
+    }
+
 
     @Override
     public void run() {
@@ -120,7 +140,7 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
         while (running) {
             System.out.println("CREATE EVENT " + stateTask);
 //            ESHubAccountCameraController responseEntity = youtubeService.createEvent(accessToken,title+" "+newTimePlusFive);
-//            ObjectNode responseBody = Json.parseToObjectNode(responseEntity.getBody().toString());
+//            ObjectNode responseBody = Json.parseToObject(responseEntity.getBody().toString());
 //
 //            statusCode = Integer.parseInt(responseBody.get("status_code").toString().replaceAll("[^\\w\\s]", ""));
 //            System.out.println(statusCode);
@@ -130,14 +150,20 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
 //                //get access token by Refresh token
 //                accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken,clientId,clientSecret);
 //                responseEntity = youtubeService.createEvent(accessToken,title+" "+newTimePlusFive);
-//                responseBody = Json.parseToObjectNode(responseEntity.getBody().toString());
+//                responseBody = Json.parseToObject(responseEntity.getBody().toString());
 //
 //            }
 
+            //round time for prolog
+            Date dateHoursRound = toNearestWholeHour(date);
+
             if (stateTask.equalsIgnoreCase("taskProlog")) {
-                newTitle = title + " Prolog " + dateFormat.format(date).toString();
+                System.out.println("DATE HOURS ROUND : "+dateHoursRound);
+                mqttTime = dateFormat.format(dateHoursRound).toString();
+                newTitle = title + " " + mqttTime;
             } else {
-                newTitle = title + " " + newTimePlusFive;
+                mqttTime = newTimePlusFive;
+                newTitle = title + " " + mqttTime;
             }
 
             ResponseEntity responseEntityStream = prologVideo.runVideoProlog(newTitle, accountId);
@@ -180,39 +206,57 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
                 //INSERT INTO TABlE camera_history_tbl
                 System.out.println("response success : " + objectEntityStream.get("stream_data"));
 
-                String youtube_url = objectEntityStream.get("stream_data").get("data").get("link").toString().replaceAll("[^\\w\\s\\-/:.?&]", "");
                 String youtube_title = objectEntityStream.get("stream_data").get("data").get("title").toString().replaceAll("[^\\w\\s\\-:]", "");
                 Date datePublish = null;
 
-                try {
-                    datePublish = dateFormat.parse(dateFormat.format(date).toString());
-                    System.out.println("datePublish : " + datePublish);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
+//                try {
+//                    datePublish = dateFormat.parse(dateFormat.format(date).toString());
+//                    System.out.println("datePublish : " + datePublish);
+//                } catch (ParseException e) {
+//                    e.printStackTrace();
+//                }
 
                 try{
                     broadcastID = objectEntityStream.get("stream_data").get("data").get("broadcast_id").toString().replaceAll("[^\\w\\s\\-_]", "");
                     streamID = objectEntityStream.get("stream_data").get("data").get("stream_id").toString().replaceAll("[^\\w\\s\\-_]", "");
                     streamKey = objectEntityStream.get("stream_data").get("data").get("stream_key").toString().replaceAll("[^\\w\\s\\-]", "");
+                    ingestionAddress = objectEntityStream.get("stream_data").get("data").get("ingestion_address").toString().replaceAll("[^\\w\\s\\-.:/]", "");
+                    youtube_url = "https://youtu.be/"+broadcastID;
                 }catch (NullPointerException e){
                     running = false;
                     System.out.println("error : "+e.getMessage());
                     break;
                 }
 
-                ESCameraHistory cameraHistory = new ESCameraHistory(youtube_title, youtube_url, broadcastID, streamID,
-                        streamKey, datePublish, device);
-                deviceCameraHistoryJpaRepository.saveAndFlush(cameraHistory);
+                try {
+                    ESCameraHistory cameraHistory = new ESCameraHistory(youtube_title, youtube_url, broadcastID, streamID,
+                            ingestionAddress+"/"+streamKey, dateFormat.parse(mqttTime), device);
+
+                    deviceCameraHistoryJpaRepository.saveAndFlush(cameraHistory);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+
             }
 
-            objectEntityStream.put("device_id", device.getId());
+//            objectEntityStream.put("device_id", device.getId());
+
+            //CREATE MQTT RESPONSE JSON
+            ObjectNode responseMqttJson = Json.buildObjectNode();
+//            responseMqttJson.put("cid",device.getId());
+            responseMqttJson.put("tm",mqttTime);
+            responseMqttJson.put("ysid",streamID);
+            responseMqttJson.put("ysk",ingestionAddress+"/"+streamKey);
+            responseMqttJson.put("ybid",broadcastID);
+            responseMqttJson.put("yurl",youtube_url);
 
             //MQTT MESSAGE
             this.message = MessageBuilder
-                    .withPayload(objectEntityStream.toString())
+                    .withPayload(responseMqttJson.toString())
                     .setHeader(MqttHeaders.TOPIC,
-                            "command/" + accountId + "/stream")
+                            "command/" + accountId + "/stream/" + device.getId())
+                    .setHeader(MqttHeaders.RETAINED,true)
+                    .setHeader(MqttHeaders.QOS,2)
                     .build();
 
             if (applicationEventPublisher != null && message != null) {
@@ -225,22 +269,12 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
             String streamStatus = objectEntityStream.get("stream_status").get("data").get("stream_status").toString().replaceAll("[^\\w\\s]", "");
             if (streamStatus.equalsIgnoreCase("liveStarting")) {
                 prologVideo.stopVideoProlog();
-                deviceRepository.updateStatusInfoDevice(device.getId(), youtube_id);
+                deviceRepository.updateStatusInfoDevice(device.getId(), broadcastID, ingestionAddress, streamKey, streamID, youtube_url, mqttTime);
             }
 
-            try {
-                broadcastID = objectEntityStream.get("stream_data").get("data").get("broadcast_id").toString().replaceAll("[^\\w\\s\\-_]", "");
-                streamID = objectEntityStream.get("stream_data").get("data").get("stream_id").toString().replaceAll("[^\\w\\s\\-_]", "");
-                streamKey = objectEntityStream.get("stream_data").get("data").get("stream_key").toString().replaceAll("[^\\w\\s\\-]", "");
-            } catch (NullPointerException e) {
-                running = false;
-                System.out.println("error : " + e.getMessage());
-                break;
-            }
-
-            System.out.println("broadcastID : " + broadcastID);
-            System.out.println("streamID : " + streamID);
-            System.out.println("streamKey : " + streamKey);
+            System.out.println("broadcastID : "+broadcastID);
+            System.out.println("streamID : "+streamID);
+            System.out.println("streamKey : "+streamKey);
 
 //            try {
 //                Thread.sleep(60000);
@@ -255,7 +289,7 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
 //            state = "testing";
 //            ESHubAccountCameraController responseEntityTransitionStart = youtubeService.transitionEvent(accessToken,broadcastID,streamID,state);
 //
-//            ObjectNode responseBodyTransitionStart = Json.parseToObjectNode(responseEntityTransitionStart.getBody().toString());
+//            ObjectNode responseBodyTransitionStart = Json.parseToObject(responseEntityTransitionStart.getBody().toString());
 //
 //            statusCode = Integer.parseInt(responseBodyTransitionStart.get("status_code").toString().replaceAll("[^\\w\\s]", ""));
 //            System.out.println(statusCode);
@@ -265,7 +299,7 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
 //                //get access token by Refresh token
 //                accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken,clientId,clientSecret);
 //                responseEntityTransitionStart = youtubeService.transitionEvent(accessToken,broadcastID,streamID,state);
-//                responseBodyTransitionStart = Json.parseToObjectNode(responseEntityTransitionStart.getBody().toString());
+//                responseBodyTransitionStart = Json.parseToObject(responseEntityTransitionStart.getBody().toString());
 //
 //            }
 //
@@ -277,7 +311,7 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
 //                while(statusNodata.equalsIgnoreCase("noData")){
 //
 //                    responseEntityTransitionStart = youtubeService.transitionEvent(accessToken,broadcastID,streamID,state);
-//                    responseBodyTransitionStart = Json.parseToObjectNode(responseEntityTransitionStart.getBody().toString());
+//                    responseBodyTransitionStart = Json.parseToObject(responseEntityTransitionStart.getBody().toString());
 //
 //                    this.message = MessageBuilder
 //                            .withPayload(responseBodyTransitionStart.toString())
@@ -392,13 +426,14 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
             break;
         }
 
-        routineManager.removeSchedule(accountId, routineId, stateTask, device);
-        routineManager.updateScheduleContinue(device, accountId, objectKey, title, stateTask);
+        routineManager.removeSchedule(accountId,stateTask,device);
+        routineManager.updateScheduleContinue(device,accountId,objectKey,title,stateTask);
 
 
         System.out.println("Scheduling over");
 
     }
 }
+
 
 

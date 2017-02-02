@@ -70,19 +70,18 @@ public class PrologVideo extends ESDeviceController {
         StreamKey = responseBody.get("data").get("stream_key").toString().replaceAll("[^\\w\\s\\-_]", "");
 
         try {
-            proc = Runtime.getRuntime().exec(env.getProperty("ffmpeg.prolog")+" -re -stream_loop -1 -i "+env.getProperty("ffmpeg.prolog.source")+" -c copy -f flv rtmp://a.rtmp.youtube.com/live2/"+StreamKey);
+//            proc = Runtime.getRuntime().exec(env.getProperty("ffmpeg.prolog")+" -re -stream_loop -1 -i "+env.getProperty("ffmpeg.prolog.source")+" -tune zerolatency -vcodec libx264 -t 12:00:00 -pix_fmt + -c:v copy -c:a aac -strict experimental -f flv rtmp://a.rtmp.youtube.com/live2/"+StreamKey);
+            proc = Runtime.getRuntime().exec(env.getProperty("ffmpeg.prolog")+" -re -stream_loop -1 -i "+env.getProperty("ffmpeg.prolog.source")+" -vcodec libx264 -preset veryfast -maxrate 3000k -bufsize 6000k -pix_fmt yuv420p -g 50 -c:a aac -b:a 160k -ac 2 -ar 44100 -f flv rtmp://a.rtmp.youtube.com/live2/"+StreamKey);
 
             // any error message?
-            StreamGobbler errorGobbler = new
-                    StreamGobbler(proc.getErrorStream(), "ERROR");
+            StreamGobbler errorGobbler = new StreamGobbler(proc.getErrorStream(), "ERROR");
 
             // any output?
-            StreamGobbler outputGobbler = new
-                    StreamGobbler(proc.getInputStream(), "OUTPUT");
+//            StreamGobbler outputGobbler = new StreamGobbler(proc.getInputStream(), "OUTPUT");
 
             // kick them off
             errorGobbler.start();
-            outputGobbler.start();
+//            outputGobbler.start();
 
             String broadcastID = "", streamID = "";
 
@@ -157,8 +156,10 @@ public class PrologVideo extends ESDeviceController {
 
 class StreamGobbler extends Thread
 {
-    InputStream is;
-    String type;
+    InputStream is = null;
+    String type = "";
+    BufferedReader br = null;
+    String line= "";
 
     StreamGobbler(InputStream is, String type)
     {
@@ -170,15 +171,18 @@ class StreamGobbler extends Thread
     {
         try
         {
-            InputStreamReader isr = new InputStreamReader(is);
-            BufferedReader br = new BufferedReader(isr);
-            String line=null;
+            br = new BufferedReader(new InputStreamReader(is));
             while ( (line = br.readLine()) != null)
                 System.out.println(type + ">" + line);
         } catch (IOException ioe)
         {
             ioe.printStackTrace();
         }
+
+        // make sure our stream is closed and resources will be freed
+        try {
+            br.close();
+        } catch (IOException e) {
+        }
     }
 }
-
