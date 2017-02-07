@@ -36,8 +36,6 @@ public class ESCameraHistoryRepository extends BaseController {
         queryBuilder.append("FROM ");
         queryBuilder.append("camera_history_tbl ");
         queryBuilder.append("WHERE ");
-        queryBuilder.append("__deleted_flag__ = FALSE ");
-        queryBuilder.append("AND ");
         queryBuilder.append("device_id = :device_id ");
         queryBuilder.append("ORDER BY ");
         queryBuilder.append("history_time DESC");

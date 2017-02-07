@@ -157,7 +157,7 @@ public class ESDeviceController extends ESBaseController {
         String roomId = rget(body, "esroom");
         int category = rget(body, "escat", Integer.class);
         int type = rget(body, "estype", Integer.class);
-        String info = body.get("esinfo").toString();
+        String info = get(body,"esinfo");
 
         // Check room
         ESRoom room = roomRepository.findByRoomId(roomId, accountId);
@@ -370,8 +370,14 @@ public class ESDeviceController extends ESBaseController {
         response.put("label", device.getLabel());
 
         Date now = new Date();
-        if (device.getCategory() == DevicePref.CAT_REMOTE) {
+        if (device.getCategory() == DevicePref.CAT_REMOTE || device.getCategory() == DevicePref.CAT_CAMERA) {
             deviceRepository.deleteChild(now, deviceId, accountId);
+
+            if(device.getCategory() == DevicePref.CAT_CAMERA){
+                //STOP CURRENT SCHEDULE STREAM
+                routineManagerYoutube.removeScheduleByDeviceId(accountId,deviceId);
+
+            }
         }
 
         device.setDeleted(true);

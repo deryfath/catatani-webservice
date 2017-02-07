@@ -288,7 +288,7 @@ public class YoutubeService extends BaseController {
         ObjectNode dataObject = Json.buildObjectNode();
         dataObject.put("broadcast_id", broadcastID);
         dataObject.put("stream_id", streamID);
-        dataObject.put("title", responseBodyBroadcast.get("snippet").get("title").toString().replaceAll("[^\\w\\s\\:-]", ""));
+        dataObject.put("title", responseBodyBroadcast.get("snippet").get("title").textValue());
         dataObject.put("thumbnail", responseBodyBroadcast.get("snippet").get("thumbnails").get("default").get("url").toString().replaceAll("[^\\w\\s\\-/:.?&]", ""));
         dataObject.put("publishedAt", responseBodyBroadcast.get("snippet").get("publishedAt").toString().replaceAll("[^\\w\\s\\-/:.?&]", ""));
         dataObject.put("lifeCycleStatus", responseBodyBroadcast.get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", ""));

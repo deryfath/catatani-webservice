@@ -228,14 +228,16 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
                 hours++;
             }
 
-            int hoursPlusTwo = hours + 2;
+            int hoursPlusTwo = 0;
+
+            hoursPlusTwo = hours + 2;
 
             String cronExpression = "";
 
             //task 1
             if(stateTask.equalsIgnoreCase("task1")) {
                 System.out.println("MASUK THREAD 1 CONTINUE");
-                cronExpression = "0 55 "+hours+"-"+hoursPlusTwo+" * * ?";
+                cronExpression = "0 55 "+hours+" * * ?";
                 System.out.println("CRON EXP : "+cronExpression);
                 task = applicationContext.getBean(ScheduleTaskYoutube.class);
                 task.setTask(getScheduleManager(), accountId, ObjectKey, title, "task1",device,maxqueue);
@@ -251,7 +253,7 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
             if(stateTask.equalsIgnoreCase("task2")) {
 
                 System.out.println("MASUK THREAD 2 CONTINUE");
-                cronExpression = "0 55 " + hours + "-" + hoursPlusTwo + " * * ?";
+                cronExpression = "0 55 " + hours + " * * ?";
                 System.out.println("CRON EXP2 : " + cronExpression);
 
                 task2 = applicationContext.getBean(ScheduleTaskYoutube.class);
