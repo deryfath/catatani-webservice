@@ -31,7 +31,7 @@ public class ESCameraController extends ESBaseController {
             cameraObject.put("youtube_broadcast_id", cameraHistory.getYoutubeBroadcastId());
             cameraObject.put("youtube_stream_id", cameraHistory.getYoutubeStreamId());
             cameraObject.put("youtube_stream_key", cameraHistory.getYoutubeStreamKey());
-            cameraObject.put("history_time", formatDate(cameraHistory.getHistoryTime(), "yyyy-MM-dd HH:mm:ss"));
+            cameraObject.put("history_time", formatDate(cameraHistory.getHistoryTime()));
             cameraObject.put("device_id", deviceId);
 
             cameraArray.add(cameraObject);

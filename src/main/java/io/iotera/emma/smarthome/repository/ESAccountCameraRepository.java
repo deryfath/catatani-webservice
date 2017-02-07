@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.account.ESAccount;
 import io.iotera.emma.smarthome.model.account.ESAccountCamera;
 import io.iotera.emma.smarthome.model.application.ESApplicationInfo;
+import io.iotera.util.Tuple;
 import io.iotera.web.spring.controller.BaseController;
 import io.iotera.util.Json;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
@@ -22,6 +24,7 @@ public class ESAccountCameraRepository extends BaseController {
 
     @Transactional
     public interface ESAccountCameraJpaRepository extends JpaRepository<ESAccountCamera, Long> {
+
     }
 
     @PersistenceContext
@@ -29,6 +32,98 @@ public class ESAccountCameraRepository extends BaseController {
 
     @Autowired
     ESAccountCameraJpaRepository accountCameraJpaRepository;
+
+    public Tuple.T2<String, String> getAccessTokenAndRefreshToken(long accountId) {
+
+        // Build Query
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("SELECT ");
+        queryBuilder.append("access_token, refresh_token ");
+        queryBuilder.append("FROM ");
+        queryBuilder.append("account_camera_tbl ");
+        queryBuilder.append("WHERE ");
+        queryBuilder.append("account_id = :account_id");
+
+        // Execute Query
+        String queryString = queryBuilder.toString();
+        Query query = entityManager.createNativeQuery(queryString, ESAccountCamera.class);
+        query.setParameter("account_id", accountId);
+
+        Object result = DataAccessUtils.singleResult(query.getResultList());
+        if (result == null) {
+            return null;
+        }
+
+        Object[] resultObjects = (Object[]) result;
+        return new Tuple.T2<String, String>((String) resultObjects[0], (String) resultObjects[1]);
+    }
+
+    public boolean isYoutubeIdAvailable(String youtubeId, String youtubeEmail) {
+
+        // Build Query
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("SELECT ");
+        queryBuilder.append("* ");
+        queryBuilder.append("FROM ");
+        queryBuilder.append("account_camera_tbl as camera JOIN ");
+        queryBuilder.append("account_table AS account ");
+        queryBuilder.append("ON camera.account_id = account._id ");
+        queryBuilder.append("WHERE ");
+        queryBuilder.append("camera.youtube_id = :youtube_id ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("camera.youtube_email = :youtube_email ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("account.__deleted_flag__ = FALSE");
+
+        // Execute Query
+        String queryString = queryBuilder.toString();
+        Query query = entityManager.createNativeQuery(queryString, ESAccountCamera.class);
+        query.setParameter("youtube_id", youtubeId);
+        query.setParameter("youtube_email", youtubeEmail);
+
+        return query.getResultList().isEmpty();
+    }
+
+    public ESAccountCamera findByAccountId(long accountId) {
+
+        // Build Query
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("SELECT ");
+        queryBuilder.append("* ");
+        queryBuilder.append("FROM ");
+        queryBuilder.append("account_camera_tbl ");
+        queryBuilder.append("WHERE ");
+        queryBuilder.append("account_id = :account_id");
+
+        // Execute Query
+        String queryString = queryBuilder.toString();
+        Query query = entityManager.createNativeQuery(queryString, ESAccountCamera.class);
+        query.setParameter("account_id", accountId);
+
+        return (ESAccountCamera) DataAccessUtils.singleResult(query.getResultList());
+    }
+
+    @Transactional
+    public int updateAccessTokenByAccountId(String accessToken, long accountId) {
+
+        // Build Query
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("UPDATE ");
+        queryBuilder.append("account_camera_tbl ");
+        queryBuilder.append("SET ");
+        queryBuilder.append("access_token = :access_token ");
+        queryBuilder.append("WHERE ");
+        queryBuilder.append("account_id = :account_id ");
+
+        // Execute Query
+        String queryString = queryBuilder.toString();
+        Query query = entityManager.createNativeQuery(queryString);
+        query.setParameter("access_token", accessToken);
+        query.setParameter("account_id", accountId);
+
+        return query.executeUpdate();
+    }
+
 
     @Transactional
     public ResponseEntity YoutubeKey(long accountId) {
@@ -48,7 +143,6 @@ public class ESAccountCameraRepository extends BaseController {
         List<ESAccountCamera> listAccountCamera = query.getResultList();
 
         ObjectNode deviceObject = Json.buildObjectNode();
-//        System.out.println("list camera : "+listAccountCamera.get(0).getAccess_token());
         deviceObject.put("access_token", listAccountCamera.get(0).getAccessToken());
         deviceObject.put("refresh_token", listAccountCamera.get(0).getRefreshToken());
         deviceObject.put("max_history", listAccountCamera.get(0).getMaxHistory());
@@ -68,10 +162,9 @@ public class ESAccountCameraRepository extends BaseController {
         deviceObject.put("client_secret", listApplicationInfo.get(0).getYoutubeApiClientSecret());
 
         return okJson(deviceObject);
-
-
     }
 
+    /*
     @Transactional
     public ResponseEntity getClientIDAndClientSecret() {
         ObjectNode deviceObject = Json.buildObjectNode();
@@ -92,6 +185,7 @@ public class ESAccountCameraRepository extends BaseController {
 
         return okJson(deviceObject);
     }
+    */
 
 
     @Transactional
@@ -172,6 +266,7 @@ public class ESAccountCameraRepository extends BaseController {
         return status;
     }
 
+    /*
     @Transactional
     public int updateAccessTokenByAccountId(String accessToken, long accountId) {
 
@@ -194,6 +289,7 @@ public class ESAccountCameraRepository extends BaseController {
         return query.executeUpdate();
 
     }
+    */
 
 
 }

@@ -21,7 +21,7 @@ public class RoutineConfig {
         return new RoutineManagerYoutube();
     }
 
-    @Bean
+    @Bean(name = "routineThreadPoolTaskScheduler")
     @Scope("prototype")
     public ThreadPoolTaskScheduler taskScheduler() {
         ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();

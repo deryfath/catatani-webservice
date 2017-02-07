@@ -109,12 +109,12 @@ public class ESHubAuthController extends ESBaseController {
         response.put("phone_number", account.getPhoneNumber());
         response.put("name", account.getName());
         response.put("picture", account.picturePath(getProperty("host.path")));
-        response.put("picture_last_updated", formatDate(account.getPictureLastUpdated(), "yyyy-MM-dd HH:mm:ss"));
-        response.put("registered_date", formatDate(account.getRegisteredDate(), "yyyy-MM-dd HH:mm:ss"));
+        response.put("picture_last_updated", formatDate(account.getPictureLastUpdated()));
+        response.put("registered_date", formatDate(account.getRegisteredDate()));
         response.put("first_name", accountProfile.getFirstName());
         response.put("last_name", accountProfile.getLastName());
         response.put("gender", accountProfile.getGender() == 1 ? "female" : "male");
-        response.put("dob", formatDate(accountProfile.getDob(), "yyyy-MM-dd HH:mm:ss"));
+        response.put("dob", formatDate(accountProfile.getDob()));
         response.put("address", accountLocation.getAddress());
         response.put("latitude", accountLocation.getLatitude());
         response.put("longitude", accountLocation.getLongitude());
@@ -156,6 +156,7 @@ public class ESHubAuthController extends ESBaseController {
 
         ESAccountProfile accountProfile = account.getAccountProfile();
         ESAccountLocation accountLocation = account.getAccountLocation();
+        ESAccountCamera accountCamera = account.getAccountCamera();
 
         // Response
         ObjectNode response = Json.buildObjectNode();
@@ -164,15 +165,20 @@ public class ESHubAuthController extends ESBaseController {
         response.put("phone_number", account.getPhoneNumber());
         response.put("name", account.getName());
         response.put("picture", account.picturePath(getProperty("host.path")));
-        response.put("picture_last_updated", formatDate(account.getPictureLastUpdated(), "yyyy-MM-dd HH:mm:ss"));
-        response.put("registered_date", formatDate(account.getRegisteredDate(), "yyyy-MM-dd HH:mm:ss"));
+        response.put("picture_last_updated", formatDate(account.getPictureLastUpdated()));
+        response.put("registered_date", formatDate(account.getRegisteredDate()));
         response.put("first_name", accountProfile.getFirstName());
         response.put("last_name", accountProfile.getLastName());
         response.put("gender", accountProfile.getGender() == 1 ? "female" : "male");
-        response.put("dob", formatDate(accountProfile.getDob(), "yyyy-MM-dd HH:mm:ss"));
+        response.put("dob", formatDate(accountProfile.getDob()));
         response.put("address", accountLocation.getAddress());
         response.put("latitude", accountLocation.getLatitude());
         response.put("longitude", accountLocation.getLongitude());
+        if (accountCamera != null) {
+            response.put("youtube_id", accountCamera.getYoutubeId());
+            response.put("youtube_email", accountCamera.getYoutubeEmail());
+            response.put("max_history", accountCamera.getMaxHistory());
+        }
         response.put("htoken", account.getHubToken());
         response.put("status_desc", "login_success");
         response.put("status_code", 0);

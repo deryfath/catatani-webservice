@@ -2,6 +2,7 @@ package io.iotera.emma.smarthome.controller;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.iotera.emma.smarthome.model.account.ESAccountCamera;
 import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.emma.smarthome.model.device.ESRoom;
 import io.iotera.emma.smarthome.preference.DevicePref;
@@ -12,6 +13,7 @@ import io.iotera.emma.smarthome.repository.ESRoomRepository;
 import io.iotera.emma.smarthome.routine.RoutineManagerYoutube;
 import io.iotera.emma.smarthome.youtube.YoutubeService;
 import io.iotera.util.Json;
+import io.iotera.util.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 
@@ -25,7 +27,7 @@ public class ESDeviceController extends ESBaseController {
     ESDeviceRepository deviceRepository;
 
     @Autowired
-    ESAccountCameraRepository accountYoutubeCameraRepository;
+    ESAccountCameraRepository accountCameraRepository;
 
     @Autowired
     ESDeviceJpaRepository deviceJpaRepository;
@@ -188,23 +190,30 @@ public class ESDeviceController extends ESBaseController {
 
                 deviceJpaRepository.saveAndFlush(device);
 
-            }else if (category == DevicePref.CAT_CAMERA) {
+            } else if (category == DevicePref.CAT_CAMERA) {
+                if (!deviceRepository.findByUid(uid, accountId).isEmpty()) {
+                    return okJsonFailed(-3, "device_uid_not_available");
+                }
+
+                ESAccountCamera accountCamera = accountCameraRepository.findByAccountId(accountId);
+                if (accountCamera == null) {
+                    return okJsonFailed(-10, "youtube_api_not_available");
+                }
 
                 //TODO camera
-
                 device = new ESDevice(label, category, type, uid, address, info, false, 0,
                         room, roomId, accountId);
                 deviceJpaRepository.save(device);
 
-                ResponseEntity responseYoutubeKey = accountYoutubeCameraRepository.YoutubeKey(accountId);
+                ResponseEntity responseYoutubeKey = accountCameraRepository.YoutubeKey(accountId);
                 ObjectNode objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
-                System.out.println("OBJECT KEY : "+objectKey);
+                System.out.println("OBJECT KEY : " + objectKey);
                 int maxqueue = Integer.parseInt(objectKey.get("max_history").toString().replaceAll("[^\\w\\s]", ""));
-                routineManagerYoutube.updateSchedule(device,accountId,objectKey,label,maxqueue);
+                routineManagerYoutube.updateSchedule(device, accountId, objectKey, label, maxqueue);
 
                 deviceJpaRepository.flush();
 
-            }else{
+            } else {
 
                 device = new ESDevice(label, category, type, uid, address, info, false, 0,
                         room, roomId, accountId);

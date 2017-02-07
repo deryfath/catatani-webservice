@@ -37,7 +37,7 @@ public class ESRoomController extends ESBaseController {
             roomObject.put("category", room.getCategory());
             roomObject.put("picture", room.picturePath(getProperty("host.path")));
             roomObject.put("picture_last_updated",
-                    formatDate(room.getPictureLastUpdated(), "yyyy-MM-dd HH:mm:ss"));
+                    formatDate(room.getPictureLastUpdated()));
             roomObject.put("info", room.getInfo());
             roomObject.put("parent", room.getParent());
 
@@ -107,7 +107,7 @@ public class ESRoomController extends ESBaseController {
         response.put("category", room.getCategory());
         response.put("picture", room.picturePath(getProperty("host.path")));
         response.put("picture_last_updated",
-                formatDate(room.getPictureLastUpdated(), "yyyy-MM-dd HH:mm:ss"));
+                formatDate(room.getPictureLastUpdated()));
         response.put("info", room.getInfo());
         response.put("parent", room.getParent());
         response.put("status_code", 0);
@@ -189,7 +189,7 @@ public class ESRoomController extends ESBaseController {
             edit = true;
 
             response.put("picture", room.picturePath(getProperty("host.path")));
-            response.put("picture_last_updated", formatDate(room.getPictureLastUpdated(), "yyyy-MM-dd HH:mm:ss"));
+            response.put("picture_last_updated", formatDate(room.getPictureLastUpdated()));
         }
 
         if (edit) {
