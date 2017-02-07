@@ -25,21 +25,27 @@ import java.util.concurrent.TimeUnit;
 public class ScheduleTask implements Runnable, ApplicationEventPublisherAware {
 
     @Autowired
+    RoutineManager routineManager;
+
+    @Autowired
     Environment env;
 
     @Autowired
     ESRoutineRepository routineRepository;
 
-    private volatile ApplicationEventPublisher applicationEventPublisher;
-
-    private RoutineManager routineManager;
     private long accountId;
     private String routineId;
     private Message<String> message;
 
-    public void setTask(RoutineManager routineManager, long accountId,
+    private volatile ApplicationEventPublisher applicationEventPublisher;
+
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+        this.applicationEventPublisher = applicationEventPublisher;
+    }
+
+    public void setTask(long accountId,
                         String routineId, int routineCategory, String commands, String clients) {
-        this.routineManager = routineManager;
         this.accountId = accountId;
         this.routineId = routineId;
 
@@ -60,11 +66,6 @@ public class ScheduleTask implements Runnable, ApplicationEventPublisherAware {
                                     CommandPref.ROUTINE))
                     .build();
         }
-    }
-
-    @Override
-    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Override

@@ -55,16 +55,16 @@ public class ESHubAccountController extends ESAccountController {
         ObjectNode response = Json.buildObjectNode();
         response.put("email", account.getEmail());
         response.put("phone_number", account.getPhoneNumber());
-        response.put("registered_date", formatDate(account.getRegisteredDate(), "yyyy-MM-dd HH:mm:ss"));
+        response.put("registered_date", formatDate(account.getRegisteredDate()));
         response.put("name", account.getName());
         response.put("picture", account.picturePath(getProperty("host.path")));
-        response.put("picture_last_updated", formatDate(account.getPictureLastUpdated(), "yyyy-MM-dd HH:mm:ss"));
+        response.put("picture_last_updated", formatDate(account.getPictureLastUpdated()));
         if (attrList.contains("pro")) {
             ESAccountProfile accountProfile = account.getAccountProfile();
             response.put("first_name", accountProfile.getFirstName());
             response.put("last_name", accountProfile.getLastName());
             response.put("gender", accountProfile.getGender() == 1 ? "female" : "male");
-            response.put("dob", formatDate(accountProfile.getDob(), "yyyy-MM-dd HH:mm:ss"));
+            response.put("dob", formatDate(accountProfile.getDob()));
         }
         if (attrList.contains("loc")) {
             ESAccountLocation accountLocation = account.getAccountLocation();
@@ -146,7 +146,7 @@ public class ESHubAccountController extends ESAccountController {
                     accountProfile.setDob(dob);
                     editProfile = true;
                 }
-                response.put("dob", dobString);
+                response.put("dob", formatDate(dob));
             }
 
             if (editProfile) {
@@ -215,7 +215,7 @@ public class ESHubAccountController extends ESAccountController {
             edit = true;
 
             response.put("picture", account.picturePath(getProperty("host.path")));
-            response.put("picture_last_updated", formatDate(account.getPictureLastUpdated(), "yyyy-MM-dd HH:mm:ss"));
+            response.put("picture_last_updated", formatDate(account.getPictureLastUpdated()));
         }
 
         if (edit) {

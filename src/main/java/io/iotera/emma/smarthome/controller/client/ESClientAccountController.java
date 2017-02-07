@@ -56,14 +56,14 @@ public class ESClientAccountController extends ESAccountController {
             response.put("phone_number", client.getPhoneNumber());
             response.put("first_name", client.getFirstName());
             response.put("last_name", client.getLastName());
-            response.put("registered_date", formatDate(client.getRegisteredDate(), "yyyy-MM-dd HH:mm:ss"));
+            response.put("registered_date", formatDate(client.getRegisteredDate()));
             ESClientProfile clientProfile = client.getClientProfile();
             response.put("gender", clientProfile.getGender() == 1 ? "female" : "male");
-            response.put("dob", formatDate(clientProfile.getDob(), "yyyy-MM-dd HH:mm:ss"));
+            response.put("dob", formatDate(clientProfile.getDob()));
         }
         if (attrList.contains("pic")) {
             response.put("picture", client.picturePath(getProperty("host.path")));
-            response.put("picture_last_updated", formatDate(client.getPictureLastUpdated(), "yyyy-MM-dd HH:mm:ss"));
+            response.put("picture_last_updated", formatDate(client.getPictureLastUpdated()));
         }
         response.put("status_desc", "get_client_success");
         response.put("status_code", 0);
@@ -156,7 +156,7 @@ public class ESClientAccountController extends ESAccountController {
                     clientProfile.setDob(dob);
                     editProfile = true;
                 }
-                response.put("dob", dobString);
+                response.put("dob", formatDate(dob));
             }
 
             if (editProfile) {
@@ -188,7 +188,7 @@ public class ESClientAccountController extends ESAccountController {
             edit = true;
 
             response.put("picture", client.picturePath(getProperty("host.path")));
-            response.put("picture_last_updated", formatDate(client.getPictureLastUpdated(), "yyyy-MM-dd HH:mm:ss"));
+            response.put("picture_last_updated", formatDate(client.getPictureLastUpdated()));
         }
 
         if (edit) {

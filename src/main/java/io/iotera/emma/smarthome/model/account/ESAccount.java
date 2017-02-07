@@ -82,6 +82,9 @@ public class ESAccount {
     @OneToOne(mappedBy = "account", fetch = FetchType.LAZY)
     protected ESAccountForgotPassword accountForgotPassword;
 
+    @OneToOne(mappedBy = "account", fetch = FetchType.LAZY)
+    protected ESAccountCamera accountCamera;
+
     /////////////////
     // Constructor //
     /////////////////
@@ -239,6 +242,10 @@ public class ESAccount {
 
     public ESAccountForgotPassword getAccountForgotPassword() {
         return accountForgotPassword;
+    }
+
+    public ESAccountCamera getAccountCamera() {
+        return accountCamera;
     }
 
 }

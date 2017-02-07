@@ -38,7 +38,7 @@ public class ESAccountCamera {
     // Constructor //
     /////////////////
 
-    public ESAccountCamera() {
+    protected ESAccountCamera() {
     }
 
     public ESAccountCamera(long id, String accessToken, String refreshToken, String youtubeId, String youtubeEmail,

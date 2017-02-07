@@ -2,6 +2,7 @@ package io.iotera.emma.smarthome.controller;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.application.ESApplicationInfo;
+import io.iotera.emma.smarthome.repository.ESApplicationInfoRepository;
 import io.iotera.emma.smarthome.repository.ESApplicationInfoRepository.ESApplicationInfoJpaRepository;
 import io.iotera.util.Json;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,9 @@ public class ESIndexController extends ESBaseController {
 
     @Autowired
     ESApplicationInfoJpaRepository applicationInfoJpaRepository;
+
+    @Autowired
+    ESApplicationInfoRepository applicationInfoRepository;
 
     @RequestMapping(value = "api/info", method = RequestMethod.GET)
     @ResponseBody
@@ -43,6 +47,15 @@ public class ESIndexController extends ESBaseController {
         response.put("status", "success");
 
         return okJson(response);
+    }
+
+    @RequestMapping(value = "test/lmao", method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity lmao() {
+
+        //System.out.println(applicationInfoRepository.getClientIdAndClientSecret());
+
+        return ResponseEntity.ok("");
     }
 
 }

@@ -4,6 +4,7 @@ import io.iotera.emma.smarthome.model.routine.ESRoutine;
 import io.iotera.emma.smarthome.repository.ESRoutineRepository;
 import io.iotera.emma.smarthome.routine.RoutineManager;
 import io.iotera.emma.smarthome.utility.RoutineUtility;
+import io.iotera.emma.smarthome.youtube.YoutubeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
@@ -19,6 +20,9 @@ public class ApplicationReadyListener implements ApplicationListener<Application
 
     @Autowired
     RoutineManager routineManager;
+
+    @Autowired
+    YoutubeService youtubeService;
 
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
@@ -36,5 +40,6 @@ public class ApplicationReadyListener implements ApplicationListener<Application
             }
         }
 
+        System.out.println(youtubeService.retrieveListEvent("ya29.GlzrAykD1zADDlbFY1sHRHG4jxkirn6TbOv3fDvo1pF8jccfobkvAuniwUIBMric5fGmiFtKUV36-yLgwIfRm2x433r5U4TtNOx6OK6NC-cz0uElgOJGBGJ46Q9wmg"));
     }
 }
