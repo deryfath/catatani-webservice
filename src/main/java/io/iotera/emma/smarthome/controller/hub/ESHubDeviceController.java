@@ -10,6 +10,7 @@ import io.iotera.emma.smarthome.repository.ESDeviceRepository;
 import io.iotera.emma.smarthome.youtube.PrologVideo;
 import io.iotera.emma.smarthome.youtube.YoutubeService;
 import io.iotera.util.Json;
+import io.iotera.util.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
@@ -234,23 +235,21 @@ public class ESHubDeviceController extends ESDeviceController {
 
         String title = responseBodyPost.get("broadcast_title").toString().replaceAll("[^\\w\\s]", "");
 
-        ResponseEntity responseEntity = youtubeService.createEvent(objectKey.get("access_token").toString().replaceAll("[^\\w\\s\\-_.]", ""),title);
-        ObjectNode responseBody = Json.parseToObjectNode(responseEntity.getBody().toString());
+        Tuple.T2<Integer, ObjectNode> responseEntity = youtubeService.createEvent(objectKey.get("access_token").toString().replaceAll("[^\\w\\s\\-_.]", ""),title);
 
-        int statusCode = Integer.parseInt(responseBody.get("status_code").toString().replaceAll("[^\\w\\s]", ""));
-        System.out.println(statusCode);
-
-        if(responseBody.get("status_code") != null && statusCode == 401){
+        if(responseEntity._1 == 401){
             System.out.println("UNAUTHORIZED");
             //get access token by Refresh token
             accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken,clientId,clientSecret,accountId);
             responseEntity = youtubeService.createEvent(accessToken,title);
 
+        }else if(responseEntity._1 == 400 || responseEntity._1 == 403){
+            return okJsonFailed(responseEntity._1,responseEntity._2.textValue());
         }
 
 //        scheduleController.create(responseBodyPost,123,accessToken);
 
-        return responseEntity;
+        return okJson(responseEntity._2);
 
     }
 

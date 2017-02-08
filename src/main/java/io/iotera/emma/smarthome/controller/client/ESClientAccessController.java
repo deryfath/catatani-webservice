@@ -59,11 +59,11 @@ public class ESClientAccessController extends ESBaseController {
             accountObject.put("name", account.getName());
             accountObject.put("picture", account.picturePath(getProperty("host.path")));
             accountObject.put("picture_last_updated", formatDate(
-                    account.getPictureLastUpdated()));
+                    account.getPictureLastUpdated(),"yyyy-MM-dd HH:mm:ss"));
             accountObject.put("latitude", location.getLatitude());
             accountObject.put("longitude", location.getLongitude());
             accountObject.put("registered_date", formatDate(
-                    account.getRegisteredDate()));
+                    account.getRegisteredDate(),"yyyy-MM-dd HH:mm:ss"));
             accountObject.put("atoken", access.getAccessToken());
             accountObject.put("client_id", clientId);
 

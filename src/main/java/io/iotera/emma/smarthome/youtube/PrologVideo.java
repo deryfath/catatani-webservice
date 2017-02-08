@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.controller.ESDeviceController;
 import io.iotera.emma.smarthome.repository.ESAccountCameraRepository;
 import io.iotera.util.Json;
+import io.iotera.util.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
@@ -40,34 +41,31 @@ public class PrologVideo extends ESDeviceController {
         String StreamKey;
         ObjectNode responseBodyJson = Json.buildObjectNode();
         ObjectNode responseBodyTransitionStart = null;
+        Tuple.T2<Integer, ObjectNode> responseEntityTransitionStart = null;
 
         ResponseEntity responseYoutubeKey = accountYoutubeCameraRepository.YoutubeKey(accountId);
         ObjectNode objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
-        accessToken = objectKey.get("access_token").toString().replaceAll("[^\\w\\s\\-_.]", "");
-        clientId = objectKey.get("client_id").toString().replaceAll("[^\\w\\s\\-_.]", "");
-        clientSecret = objectKey.get("client_secret").toString().replaceAll("[^\\w\\s\\-_.]", "");
-        refreshToken = objectKey.get("refresh_token").toString().replaceAll("[^\\w\\s\\-_./]", "");
+        accessToken = objectKey.get("access_token").textValue();
+        clientId = objectKey.get("client_id").textValue();
+        clientSecret = objectKey.get("client_secret").textValue();
+        refreshToken = objectKey.get("refresh_token").textValue();
 
         System.out.println(accessToken);
 
-        ResponseEntity responseEntityCreate = youtubeService.createEvent(accessToken,title);
+        Tuple.T2<Integer, ObjectNode> responseEntityCreate = youtubeService.createEvent(accessToken,title);
 
-        ObjectNode responseBody = Json.parseToObjectNode(responseEntityCreate.getBody().toString());
-
-        int statusCode = Integer.parseInt(responseBody.get("status_code").toString().replaceAll("[^\\w\\s]", ""));
-        System.out.println(statusCode);
-
-        if(responseBody.get("status_code") != null && statusCode == 401){
+        if(responseEntityCreate._1 == 401){
             System.out.println("UNAUTHORIZED");
             //get access token by Refresh token
             accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken,clientId,clientSecret,accountId);
             System.out.println("masuk CREATE");
             responseEntityCreate = youtubeService.createEvent(accessToken,title);
-            responseBody = Json.parseToObjectNode(responseEntityCreate.getBody().toString());
 
+        }else if(responseEntityCreate._1 == 400 || responseEntityCreate._1 == 403){
+            return okJsonFailed(responseEntityCreate._1,responseEntityCreate._2.textValue());
         }
 
-        StreamKey = responseBody.get("data").get("stream_key").toString().replaceAll("[^\\w\\s\\-_]", "");
+        StreamKey = responseEntityCreate._2.get("data").get("stream_key").textValue();
 
         try {
 //            proc = Runtime.getRuntime().exec(env.getProperty("ffmpeg.prolog")+" -re -stream_loop -1 -i "+env.getProperty("ffmpeg.prolog.source")+" -tune zerolatency -vcodec libx264 -t 12:00:00 -pix_fmt + -c:v copy -c:a aac -strict experimental -f flv rtmp://a.rtmp.youtube.com/live2/"+StreamKey);
@@ -86,41 +84,34 @@ public class PrologVideo extends ESDeviceController {
             String broadcastID = "", streamID = "";
 
             try{
-                broadcastID = responseBody.get("data").get("broadcast_id").toString().replaceAll("[^\\w\\s\\-_]", "");
-                streamID = responseBody.get("data").get("stream_id").toString().replaceAll("[^\\w\\s\\-_]", "");
+                broadcastID = responseEntityCreate._2.get("data").get("broadcast_id").textValue();
+                streamID = responseEntityCreate._2.get("data").get("stream_id").textValue();
             }catch (NullPointerException e){
                 System.out.println("error : "+e.getMessage());
             }
 
             //TRANSITION TESTING -> LIVE
             String state = "testing";
-            ResponseEntity responseEntityTransitionStart = youtubeService.transitionEvent(accessToken,broadcastID,streamID,state);
+            responseEntityTransitionStart = youtubeService.transitionEvent(accessToken,broadcastID,streamID,state);
 
-            responseBodyTransitionStart = Json.parseToObjectNode(responseEntityTransitionStart.getBody().toString());
-
-            statusCode = Integer.parseInt(responseBodyTransitionStart.get("status_code").toString().replaceAll("[^\\w\\s]", ""));
-            System.out.println(statusCode);
-
-            if(responseBodyTransitionStart.get("status_code") != null && statusCode == 401){
+            if(responseEntityTransitionStart._1 == 401){
                 System.out.println("UNAUTHORIZED");
                 //get access token by Refresh token
                 accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken,clientId,clientSecret,accountId);
                 responseEntityTransitionStart = youtubeService.transitionEvent(accessToken,broadcastID,streamID,state);
-                responseBodyTransitionStart = Json.parseToObjectNode(responseEntityTransitionStart.getBody().toString());
-
+            }else if(responseEntityTransitionStart._1 == 400 || responseEntityTransitionStart._1 == 403 || responseEntityTransitionStart._1 == 404){
+                return okJsonFailed(responseEntityTransitionStart._1,responseEntityTransitionStart._2.textValue());
             }
 
             //MQTT MESSAGE IF NO DATA
-            String statusNodata = responseBodyTransitionStart.get("data").get("stream_status").toString().replaceAll("[^\\w\\s]", "");
+            String statusNodata = responseEntityTransitionStart._2.get("data").get("stream_status").textValue();
 
             if(statusNodata.equalsIgnoreCase("noData")){
 
                 while(statusNodata.equalsIgnoreCase("noData")){
 
                     responseEntityTransitionStart = youtubeService.transitionEvent(accessToken,broadcastID,streamID,state);
-                    responseBodyTransitionStart = Json.parseToObjectNode(responseEntityTransitionStart.getBody().toString());
-
-                    statusNodata = responseBodyTransitionStart.get("data").get("stream_status").toString().replaceAll("[^\\w\\s]", "");
+                    statusNodata = responseEntityTransitionStart._2.get("data").get("stream_status").textValue();
                     if(!statusNodata.equalsIgnoreCase("noData")){
                         break;
                     }
@@ -136,8 +127,8 @@ public class PrologVideo extends ESDeviceController {
             e.printStackTrace();
         }
 
-        responseBodyJson.set("stream_status",responseBodyTransitionStart);
-        responseBodyJson.set("stream_data",responseBody);
+        responseBodyJson.set("stream_status",responseEntityTransitionStart._2);
+        responseBodyJson.set("stream_data",responseEntityCreate._2);
 
         return okJson(responseBodyJson);
     }

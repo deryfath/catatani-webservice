@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.repository.ESAccountCameraRepository;
 import io.iotera.util.Tuple;
 import io.iotera.web.spring.controller.BaseController;
+import org.apache.http.client.methods.HttpHead;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -33,124 +34,194 @@ public class YoutubeService extends BaseController {
     @Autowired
     ESAccountCameraRepository accountCameraRepository;
 
-    public ResponseEntity getListEvent(String accessToken) {
+    public Tuple.T2<Integer, ObjectNode> retrieveListEvent(String accessToken) {
 
-        RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
         headers.set("Authorization", "Bearer " + accessToken);
+        HttpEntity<String> httpEntity = new HttpEntity<String>(headers);
         String url = "https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet,status,contentDetails&mine=true&maxResults=50";
-        HttpEntity<String> httpEntity = new HttpEntity<String>(headers);
-
-        ResponseEntity<String> response = null;
-        try {
-            response = restTemplate.exchange(url, HttpMethod.GET, httpEntity, String.class);
-
-        } catch (HttpClientErrorException e) {
-            System.out.println(e.getStatusCode());
-            System.out.println(e.getMessage());
-            return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
-        } catch (HttpServerErrorException e) {
-            System.out.println(e.getStatusCode());
-            System.out.println(e.getMessage());
-            return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
-        }
-
-        ObjectNode responseBody = Json.parseToObjectNode(response.getBody());
-        ArrayNode data = Json.buildArrayNode();
-        ObjectNode responseBodyJson = Json.buildObjectNode();
-
-
-        ArrayNode result = (ArrayNode) responseBody.get("items");
-        for (int i = 0; i < result.size(); i++) {
-//            System.out.println(result.get(i).get("id"));
-            ObjectNode dataObject = Json.buildObjectNode();
-            dataObject.put("id", result.get(i).get("id").toString().replaceAll("[^\\w\\s\\-_]", ""));
-            dataObject.put("title", result.get(i).get("snippet").get("title").toString().replaceAll("[^\\w\\s]", ""));
-            dataObject.put("description", result.get(i).get("snippet").get("description").toString().replaceAll("[^\\w\\s]", ""));
-            dataObject.put("publishedAt", result.get(i).get("snippet").get("publishedAt").toString().replaceAll("[^\\w\\s\\-/:.]", ""));
-            dataObject.put("scheduledStartTime", result.get(i).get("snippet").get("scheduledStartTime").toString().replaceAll("[^\\w\\s\\-/:.]", ""));
-            dataObject.put("lifeCycleStatus", result.get(i).get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", ""));
-            dataObject.put("privacyStatus", result.get(i).get("status").get("privacyStatus").toString().replaceAll("[^\\w\\s]", ""));
-            dataObject.put("recordingStatus", result.get(i).get("status").get("recordingStatus").toString().replaceAll("[^\\w\\s]", ""));
-            String linkUrl = result.get(i).get("contentDetails").get("monitorStream").get("embedHtml").toString();
-            String trimUrl = linkUrl.substring(linkUrl.indexOf("src=") + 6, linkUrl.indexOf("frameborder") - 3);
-//            System.out.println(trimUrl);
-            dataObject.put("link", trimUrl);
-            String thumbnail = result.get(i).get("snippet").get("thumbnails").get("default").get("url").toString();
-            String trimThumbnail = thumbnail.replaceAll("[^\\w\\s\\-/:.?&]", "");
-            dataObject.put("thumbnail", trimThumbnail);
-
-
-            data.add(dataObject);
-        }
-
-        responseBodyJson.set("data", data);
-        responseBodyJson.put("status_code", 0);
-        responseBodyJson.put("status", "success");
-
-        return okJson(responseBodyJson);
-
-    }
-
-    public ResponseEntity getEventById(String accessToken, String broadcastId) {
 
         RestTemplate restTemplate = new RestTemplate();
+        int responseCode;
+        String responseBody = null;
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, httpEntity, String.class);
+            responseCode = response.getStatusCode().value();
+            responseBody = response.getBody();
+        } catch (HttpClientErrorException e) {
+            responseCode = e.getStatusCode().value();
+        } catch (HttpServerErrorException e) {
+            responseCode = e.getStatusCode().value();
+        }
+
+        if (responseCode == 200) {
+            ObjectNode objectBody = Json.parseToObjectNode(responseBody);
+            ArrayNode items = (ArrayNode) objectBody.get("items");
+            ObjectNode result = Json.buildObjectNode();
+            for (int i = 0; i < items.size(); i++) {
+                ObjectNode obj = Json.buildObjectNode();
+                ObjectNode item = (ObjectNode) items.get(i);
+
+                String id = item.get("id").textValue();
+                obj.put("id", id);
+                obj.put("title", item.get("snippet").get("title").textValue());
+                obj.put("description", item.get("snippet").get("description").textValue());
+                obj.put("publishedAt", item.get("snippet").get("publishedAt").textValue());
+                obj.put("scheduledStartTime", item.get("snippet").get("scheduledStartTime").textValue());
+                obj.put("lifeCycleStatus", item.get("status").get("lifeCycleStatus").textValue());
+                obj.put("privacyStatus", item.get("status").get("privacyStatus").textValue());
+                obj.put("recordingStatus", item.get("status").get("recordingStatus").textValue());
+                String linkUrl = item.get("contentDetails").get("monitorStream").get("embedHtml").textValue();
+                String trimUrl = linkUrl.substring(linkUrl.indexOf("src=") + 6, linkUrl.indexOf("frameborder") - 3);
+                obj.put("link", trimUrl);
+                String thumbnail = item.get("snippet").get("thumbnails").get("default").get("url").textValue();
+                obj.put("thumbnail", thumbnail);
+                result.set(id, obj);
+            }
+
+            return new Tuple.T2<Integer, ObjectNode>(responseCode, result);
+        }
+
+        return new Tuple.T2<Integer, ObjectNode>(responseCode, null);
+    }
+
+    public Tuple.T2<Integer, ObjectNode> retrieveEventById(String accessToken, String broadcastId) {
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + accessToken);
-        String url = "https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet,status,contentDetails&id=" + broadcastId;
-        System.out.println(url);
         HttpEntity<String> httpEntity = new HttpEntity<String>(headers);
+        String url = "https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet,status,contentDetails&id=" + broadcastId;
 
-        ResponseEntity<String> response = null;
+        RestTemplate restTemplate = new RestTemplate();
+        int responseCode;
+        String responseBody = null;
         try {
-            response = restTemplate.exchange(url, HttpMethod.GET, httpEntity, String.class);
-
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, httpEntity, String.class);
+            responseCode = response.getStatusCode().value();
+            responseBody = response.getBody();
         } catch (HttpClientErrorException e) {
-            System.out.println(e.getStatusCode());
-            System.out.println(e.getMessage());
-            return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
+            responseCode = e.getStatusCode().value();
         } catch (HttpServerErrorException e) {
-            System.out.println(e.getStatusCode());
-            System.out.println(e.getMessage());
-            return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
+            responseCode = e.getStatusCode().value();
         }
 
-        ObjectNode responseBody = Json.parseToObjectNode(response.getBody());
-        ObjectNode responseBodyJson = Json.buildObjectNode();
-        ObjectNode dataObject = Json.buildObjectNode();
+        if (responseCode == 200) {
+            ObjectNode objectBody = Json.parseToObjectNode(responseBody);
+            ObjectNode item = (ObjectNode) objectBody.get("items").get(0);
 
-        ArrayNode result = (ArrayNode) responseBody.get("items");
+            ObjectNode result = Json.buildObjectNode();
+            String id = item.get("id").textValue();
+            result.put("id", id);
+            result.put("title", item.get("snippet").get("title").textValue());
+            result.put("description", item.get("snippet").get("description").textValue());
+            result.put("publishedAt", item.get("snippet").get("publishedAt").textValue());
+            result.put("scheduledStartTime", item.get("snippet").get("scheduledStartTime").textValue());
+            result.put("lifeCycleStatus", item.get("status").get("lifeCycleStatus").textValue());
+            result.put("privacyStatus", item.get("status").get("privacyStatus").textValue());
+            result.put("recordingStatus", item.get("status").get("recordingStatus").textValue());
+            String linkUrl = item.get("contentDetails").get("monitorStream").get("embedHtml").textValue();
+            String trimUrl = linkUrl.substring(linkUrl.indexOf("src=") + 6, linkUrl.indexOf("frameborder") - 3);
+            result.put("link", trimUrl);
+            String thumbnail = item.get("snippet").get("thumbnails").get("default").get("url").textValue();
+            result.put("thumbnail", thumbnail);
 
-        dataObject.put("id", result.get(0).get("id").toString().replaceAll("[^\\w\\s\\-_]", ""));
-        dataObject.put("title", result.get(0).get("snippet").get("title").toString().replaceAll("[^\\w\\s]", ""));
-        dataObject.put("description", result.get(0).get("snippet").get("description").toString().replaceAll("[^\\w\\s]", ""));
-        dataObject.put("publishedAt", result.get(0).get("snippet").get("publishedAt").toString().replaceAll("[^\\w\\s\\-/:.]", ""));
-        dataObject.put("scheduledStartTime", result.get(0).get("snippet").get("scheduledStartTime").toString().replaceAll("[^\\w\\s\\-/:.]", ""));
-        dataObject.put("lifeCycleStatus", result.get(0).get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", ""));
-        dataObject.put("privacyStatus", result.get(0).get("status").get("privacyStatus").toString().replaceAll("[^\\w\\s]", ""));
-        dataObject.put("recordingStatus", result.get(0).get("status").get("recordingStatus").toString().replaceAll("[^\\w\\s]", ""));
-        String linkUrl = result.get(0).get("contentDetails").get("monitorStream").get("embedHtml").toString();
-        String trimUrl = linkUrl.substring(linkUrl.indexOf("src=") + 6, linkUrl.indexOf("frameborder") - 3);
+            return new Tuple.T2<Integer, ObjectNode>(responseCode, result);
+        }
 
-        dataObject.put("link", trimUrl);
-        String thumbnail = result.get(0).get("snippet").get("thumbnails").get("default").get("url").toString();
-        String trimThumbnail = thumbnail.replaceAll("[^\\w\\s\\-/:.?&]", "");
-        dataObject.put("thumbnail", trimThumbnail);
-
-        responseBodyJson.set("data", dataObject);
-        responseBodyJson.put("status_code", 0);
-        responseBodyJson.put("status", "success");
-
-        return okJson(responseBodyJson);
-
+        return new Tuple.T2<Integer, ObjectNode>(responseCode, null);
     }
 
-    public ResponseEntity createEvent(String accessToken, String title) {
+    public Tuple.T2<Integer, ObjectNode> createEvent(String accessToken, String title) {
 
         System.out.println("MASUK CREATE EVENT");
+
+        ObjectNode responseFail = Json.buildObjectNode();
+        ObjectNode responseBodyJson = Json.buildObjectNode();
+        ObjectNode dataObject = Json.buildObjectNode();
+        Tuple.T2<Integer, HttpEntity<String>> resultBind = null;
+
+        //CREATE BROADCAST
+        Tuple.T2<Integer, HttpEntity<String>> resultBroadcast = createBroadcast(accessToken,title);
+
+        if(resultBroadcast._1==200){
+
+            Tuple.T2<Integer, HttpEntity<String>> resultStream = createStream(accessToken);
+
+            if(resultStream._1==200){
+
+                //GET BROADCAST ID FOR BIND
+                ObjectNode responseBodyBroadcast = Json.parseToObjectNode(resultBroadcast._2.getBody());
+                String broadcastID = responseBodyBroadcast.get("id").toString().replaceAll("[^\\w\\s\\-_]", "");
+
+                //GET STREAM ID FOR BIND
+                ObjectNode responseBodyStream = Json.parseToObjectNode(resultStream._2.getBody());
+                String streamID = responseBodyStream.get("id").toString().replaceAll("[^\\w\\s\\-_]", "");
+
+                //BINDING STREAM AND BROADCAST
+                resultBind = createBind(accessToken,broadcastID,streamID);
+
+                if(resultBind._1==200){
+                    dataObject.put("broadcast_id", broadcastID);
+                    dataObject.put("stream_id", streamID);
+                    dataObject.put("title", responseBodyBroadcast.get("snippet").get("title").textValue());
+                    dataObject.put("thumbnail", responseBodyBroadcast.get("snippet").get("thumbnails").get("default").get("url").textValue());
+                    dataObject.put("publishedAt", responseBodyBroadcast.get("snippet").get("publishedAt").textValue());
+                    dataObject.put("lifeCycleStatus", responseBodyBroadcast.get("status").get("lifeCycleStatus").textValue());
+                    dataObject.put("privacyStatus", responseBodyBroadcast.get("status").get("privacyStatus").textValue());
+                    dataObject.put("recordingStatus", responseBodyBroadcast.get("status").get("recordingStatus").textValue());
+                    String linkUrl = responseBodyBroadcast.get("contentDetails").get("monitorStream").get("embedHtml").textValue();
+                    String trimUrl = linkUrl.substring(linkUrl.indexOf("src=") + 6, linkUrl.indexOf("frameborder") - 3);
+                    dataObject.put("link", trimUrl);
+                    dataObject.put("stream_key", responseBodyStream.get("cdn").get("ingestionInfo").get("streamName").textValue());
+                    dataObject.put("ingestion_address", responseBodyStream.get("cdn").get("ingestionInfo").get("ingestionAddress").textValue());
+                    dataObject.put("stream_status", responseBodyStream.get("status").get("streamStatus").textValue());
+                    dataObject.put("health_stream_status", responseBodyStream.get("status").get("healthStatus").get("status").textValue());
+
+                    responseBodyJson.set("data", dataObject);
+                    responseBodyJson.put("status_code", 200);
+                    responseBodyJson.put("status", "success");
+
+                }else if (resultBind._1 == 403){
+                    responseFail.put("Message", "forbidden problem in bind");
+                    return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
+                }else if(resultBind._1 == 400){
+                    responseFail.put("Message", "bad request bind");
+                    return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
+                }else if(resultBind._1 == 401){
+                    responseFail.put("Message", "unauthorized problem bind");
+                    return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
+                }
+
+
+            }else if (resultStream._1 == 403){
+                responseFail.put("Message", "forbidden problem in stream");
+                return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
+            }else if(resultStream._1 == 400){
+                responseFail.put("Message", "bad request stream");
+                return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
+            }else if(resultStream._1 == 401){
+                responseFail.put("Message", "unauthorized problem stream");
+                return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
+            }
+
+        }else if (resultBroadcast._1 == 403){
+            responseFail.put("Message", "forbidden problem in broadcast");
+            return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
+        }else if(resultBroadcast._1 == 400){
+            responseFail.put("Message", "bad request broadcast");
+            return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
+        }else if(resultBroadcast._1 == 401){
+            responseFail.put("Message", "unauthorized problem broadcast");
+            return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
+        }
+
+        return new Tuple.T2<Integer, ObjectNode>(resultBind._1, responseBodyJson);
+
+    }
+
+    public Tuple.T2<Integer, HttpEntity<String>> createBroadcast(String accessToken, String title){
 
         //get current date time with Date()
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.ENGLISH);
@@ -186,7 +257,7 @@ public class YoutubeService extends BaseController {
 
         parent.putAll(data);
 
-//        System.out.println(parent);
+        int responseCode;
 
         //CREATE BROADCAST
         RestTemplate restTemplate = new RestTemplate();
@@ -201,19 +272,22 @@ public class YoutubeService extends BaseController {
 
         try {
             responseBroadcast = restTemplate.exchange(urlBroadcast, HttpMethod.POST, httpEntityBroadcast, String.class);
-
+            responseCode = responseBroadcast.getStatusCode().value();
         } catch (HttpClientErrorException e) {
-            System.out.println(e.getStatusCode());
-            System.out.println(e.getMessage());
-            return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
+            responseCode = e.getStatusCode().value();
         } catch (HttpServerErrorException e) {
-            System.out.println(e.getStatusCode());
-            System.out.println(e.getMessage());
-            return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
+            responseCode = e.getStatusCode().value();
         }
 
+        if (responseCode == 200) {
 
-//        System.out.println(responseBroadcast);
+            return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, responseBroadcast);
+        }
+
+        return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
+    }
+
+    public Tuple.T2<Integer, HttpEntity<String>> createStream(String accessToken){
 
         //STREAM
         //Construct json Stream
@@ -237,92 +311,84 @@ public class YoutubeService extends BaseController {
 
 //        System.out.println(parentStream);
 
+        int responseCode;
+
         //CREATE STREAM
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + accessToken);
         String urlStream = "https://www.googleapis.com/youtube/v3/liveStreams?part=snippet,cdn,status";
         HttpEntity<String> httpEntityStream = new HttpEntity<String>(parentStream.toJSONString(), headers);
 
-        ResponseEntity<String> responseStream;
+        ResponseEntity<String> responseStream = null;
 
         try {
             responseStream = restTemplate.exchange(urlStream, HttpMethod.POST, httpEntityStream, String.class);
-
+            responseCode = responseStream.getStatusCode().value();
         } catch (HttpClientErrorException e) {
-            System.out.println(e.getStatusCode());
-            System.out.println(e.getMessage());
-            return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
+            responseCode = e.getStatusCode().value();
+
         } catch (HttpServerErrorException e) {
-            System.out.println(e.getStatusCode());
-            System.out.println(e.getMessage());
-            return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
+            responseCode = e.getStatusCode().value();
+
         }
-        //GET BROADCAST ID FOR BIND
-        ObjectNode responseBodyBroadcast = Json.parseToObjectNode(responseBroadcast.getBody());
-        String broadcastID = responseBodyBroadcast.get("id").toString().replaceAll("[^\\w\\s\\-_]", "");
 
-        //GET STREAM ID FOR BIND
-        ObjectNode responseBodyStream = Json.parseToObjectNode(responseStream.getBody());
-        String streamID = responseBodyStream.get("id").toString().replaceAll("[^\\w\\s\\-_]", "");
+        if (responseCode == 200) {
 
+            return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, responseStream);
+        }
+
+        return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
+    }
+
+    public Tuple.T2<Integer, HttpEntity<String>> createBind(String accessToken, String broadcastID, String streamID){
         //BIND STREAM TO BROADCAST
         //Bind broadcast & stream
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + accessToken);
         String urlBind = "https://www.googleapis.com/youtube/v3/liveBroadcasts/bind?id=" + broadcastID + "&part=id,contentDetails&streamId=" + streamID;
 
 //        System.out.println(urlBind);
         HttpEntity<String> httpEntityBind = new HttpEntity<String>(headers);
 
-        ResponseEntity<String> responseBind;
+        int responseCode;
+
+        ResponseEntity<String> responseBind = null;
 
         try {
             responseBind = restTemplate.exchange(urlBind, HttpMethod.POST, httpEntityBind, String.class);
-
+            responseCode = responseBind.getStatusCode().value();
         } catch (HttpClientErrorException e) {
-            System.out.println(e.getStatusCode());
-            System.out.println(e.getMessage());
-            return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
+            responseCode = e.getStatusCode().value();
         } catch (HttpServerErrorException e) {
-            System.out.println(e.getStatusCode());
-            System.out.println(e.getMessage());
-            return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
+            responseCode = e.getStatusCode().value();
         }
 
+        if (responseCode == 200) {
 
-        ObjectNode responseBodyJson = Json.buildObjectNode();
+            return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, responseBind);
+        }
 
-        ObjectNode dataObject = Json.buildObjectNode();
-        dataObject.put("broadcast_id", broadcastID);
-        dataObject.put("stream_id", streamID);
-        dataObject.put("title", responseBodyBroadcast.get("snippet").get("title").textValue());
-        dataObject.put("thumbnail", responseBodyBroadcast.get("snippet").get("thumbnails").get("default").get("url").toString().replaceAll("[^\\w\\s\\-/:.?&]", ""));
-        dataObject.put("publishedAt", responseBodyBroadcast.get("snippet").get("publishedAt").toString().replaceAll("[^\\w\\s\\-/:.?&]", ""));
-        dataObject.put("lifeCycleStatus", responseBodyBroadcast.get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", ""));
-        dataObject.put("privacyStatus", responseBodyBroadcast.get("status").get("privacyStatus").toString().replaceAll("[^\\w\\s]", ""));
-        dataObject.put("recordingStatus", responseBodyBroadcast.get("status").get("recordingStatus").toString().replaceAll("[^\\w\\s]", ""));
-        String linkUrl = responseBodyBroadcast.get("contentDetails").get("monitorStream").get("embedHtml").toString();
-        String trimUrl = linkUrl.substring(linkUrl.indexOf("src=") + 6, linkUrl.indexOf("frameborder") - 3);
-        dataObject.put("link", trimUrl);
-        dataObject.put("stream_key", responseBodyStream.get("cdn").get("ingestionInfo").get("streamName").toString().replaceAll("[^\\w\\s\\-]", ""));
-        dataObject.put("ingestion_address", responseBodyStream.get("cdn").get("ingestionInfo").get("ingestionAddress").toString().replaceAll("[^\\w\\s\\-/:.?&]", ""));
-        dataObject.put("stream_status", responseBodyStream.get("status").get("streamStatus").toString().replaceAll("[^\\w\\s]", ""));
-        dataObject.put("health_stream_status", responseBodyStream.get("status").get("healthStatus").get("status").toString().replaceAll("[^\\w\\s]", ""));
-
-        responseBodyJson.set("data", dataObject);
-        responseBodyJson.put("status_code", 0);
-        responseBodyJson.put("status", "success");
-
-        return okJson(responseBodyJson);
+        return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
     }
 
-    public ResponseEntity transitionEvent(String accessToken, String broadcastingID, String streamID, String urlStatus) {
+    public Tuple.T2<Integer, ObjectNode> transitionEvent(String accessToken, String broadcastingID, String streamID, String urlStatus) {
 
         System.out.println("MASUK TRANSITION EVENT");
 
         String lifeCycleStatus = "";
+        int responseCode;
+        ObjectNode responseBodyJson = Json.buildObjectNode();
+        ObjectNode responseFail = Json.buildObjectNode();
+        ObjectNode dataObject = Json.buildObjectNode();
 
         RestTemplate restTemplate = new RestTemplate();
         headersTransition = new HttpHeaders();
         headersTransition.setContentType(MediaType.APPLICATION_JSON);
         headersTransition.set("Authorization", "Bearer " + accessToken);
-
 
         if (urlStatus.equalsIgnoreCase("testing")) {
 
@@ -331,136 +397,114 @@ public class YoutubeService extends BaseController {
             String urlStream = "https://www.googleapis.com/youtube/v3/liveStreams?part=status&id=" + streamID;
 //            System.out.println(urlStream);
             HttpEntity<String> httpEntityStream = new HttpEntity<String>(headersTransition);
-
-            ResponseEntity<String> responseStream;
+            ResponseEntity<String> responseStream = null;
 
             try {
                 responseStream = restTemplate.exchange(urlStream, HttpMethod.GET, httpEntityStream, String.class);
-
+                responseCode = responseStream.getStatusCode().value();
             } catch (HttpClientErrorException e) {
-                System.out.println(e.getStatusCode());
-                System.out.println(e.getMessage());
-                return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
+                responseCode = e.getStatusCode().value();
+                return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking status stream"));
             } catch (HttpServerErrorException e) {
-                System.out.println(e.getStatusCode());
-                System.out.println(e.getMessage());
-                return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
+                responseCode = e.getStatusCode().value();
+                return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking status stream"));
             }
 
-            ObjectNode responseBodyStream = Json.parseToObjectNode(responseStream.getBody());
-//            System.out.println(responseBodyStream);
+            if(responseCode == 200){
+                ObjectNode responseBodyStream = Json.parseToObjectNode(responseStream.getBody());
+                String statusStreaming = responseBodyStream.get("items").get(0).get("status").get("streamStatus").toString().replaceAll("[^\\w\\s]", "");
+                String statusHealth = responseBodyStream.get("items").get(0).get("status").get("healthStatus").get("status").toString().replaceAll("[^\\w\\s]", "");
+                System.out.println(statusStreaming);
+                System.out.println(statusHealth);
 
-            String statusStreaming = responseBodyStream.get("items").get(0).get("status").get("streamStatus").toString().replaceAll("[^\\w\\s]", "");
-            String statusHealth = responseBodyStream.get("items").get(0).get("status").get("healthStatus").get("status").toString().replaceAll("[^\\w\\s]", "");
-            System.out.println(statusStreaming);
-            System.out.println(statusHealth);
+                if (!statusHealth.equalsIgnoreCase("noData")) {
+                    System.out.println("masuk testing");
 
-            if (!statusHealth.equalsIgnoreCase("noData")) {
-                System.out.println("masuk testing");
+                    Tuple.T2<Integer, HttpEntity<String>> responseTesting = transitionChange(accessToken,urlStatus,broadcastingID);
 
-                //TESTING TRANSITION
-//                urlStatus = "testing";
-                String urlTransitionTesting = "https://www.googleapis.com/youtube/v3/liveBroadcasts/transition?broadcastStatus=" + urlStatus + "&id=" + broadcastingID + "&part=snippet,contentDetails,status";
-//            System.out.println(urlTransitionTesting);
-                HttpEntity<String> httpEntityTransitionTesting = new HttpEntity<String>(headersTransition);
+                    if(responseTesting._1==200){
 
-                ResponseEntity<String> responseTransistionTesting;
+                        ObjectNode responseBodyTransitionTesting = Json.parseToObjectNode(responseTesting._2.getBody());
 
-                try {
-                    responseTransistionTesting = restTemplate.exchange(urlTransitionTesting, HttpMethod.POST, httpEntityTransitionTesting, String.class);
-
-                } catch (HttpClientErrorException e) {
-                    System.out.println(e.getStatusCode());
-                    System.out.println(e.getMessage());
-                    return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
-                } catch (HttpServerErrorException e) {
-                    System.out.println(e.getStatusCode());
-                    System.out.println(e.getMessage());
-                    return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
-                }
-
-                ObjectNode responseBodyTransitionTesting = Json.parseToObjectNode(responseTransistionTesting.getBody());
-
-                lifeCycleStatus = responseBodyTransitionTesting.get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
-                System.out.println(lifeCycleStatus);
+                        lifeCycleStatus = responseBodyTransitionTesting.get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
+                        System.out.println(lifeCycleStatus);
 
 //            new java.util.Timer().schedule(
 //                    new java.util.TimerTask() {
 //                        @Override
 //                        public void run() {
-                try {
-                    Thread.sleep(60000);
-                } catch (InterruptedException ex) {
-                    System.out.println(ex.getMessage());
-                }
+                        try {
+                            Thread.sleep(60000);
+                        } catch (InterruptedException ex) {
+                            System.out.println(ex.getMessage());
+                        }
 
-                //GET LIFECYCLE STATUS
-                String urlGetStatusBroadcast = "https://www.googleapis.com/youtube/v3/liveBroadcasts?part=status&id=" + broadcastingID;
-                System.out.println(urlGetStatusBroadcast);
-                HttpEntity<String> httpEntityGetStatusBroadcast = new HttpEntity<String>(headersTransition);
-                RestTemplate restTemplate1 = new RestTemplate();
-                ResponseEntity<String> responseGetStatusBroadcast;
+                        //GET LIFECYCLE STATUS
+                        String urlGetStatusBroadcast = "https://www.googleapis.com/youtube/v3/liveBroadcasts?part=status&id=" + broadcastingID;
+                        System.out.println(urlGetStatusBroadcast);
+                        HttpEntity<String> httpEntityGetStatusBroadcast = new HttpEntity<String>(headersTransition);
+                        RestTemplate restTemplate1 = new RestTemplate();
+                        ResponseEntity<String> responseGetStatusBroadcast = null;
 
-                try {
-                    responseGetStatusBroadcast = restTemplate1.exchange(urlGetStatusBroadcast, HttpMethod.GET, httpEntityGetStatusBroadcast, String.class);
+                        try {
+                            responseGetStatusBroadcast = restTemplate1.exchange(urlGetStatusBroadcast, HttpMethod.GET, httpEntityGetStatusBroadcast, String.class);
+                            responseCode = responseGetStatusBroadcast.getStatusCode().value();
+                        } catch (HttpClientErrorException e) {
+                            responseCode = e.getStatusCode().value();
+                            return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking lifecycle status"));
+                        } catch (HttpServerErrorException e) {
+                            responseCode = e.getStatusCode().value();
+                            return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking lifecycle status"));
+                        }
 
-                } catch (HttpClientErrorException e) {
-                    System.out.println(e.getStatusCode());
-                    System.out.println(e.getMessage());
-                    return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
-                } catch (HttpServerErrorException e) {
-                    System.out.println(e.getStatusCode());
-                    System.out.println(e.getMessage());
-                    return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
-                }
+                        if(responseCode == 200){
+                            ObjectNode responseBodyGetStatusBroadcast = Json.parseToObjectNode(responseGetStatusBroadcast.getBody());
 
+                            lifeCycleStatus = responseBodyGetStatusBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
 
-                ObjectNode responseBodyGetStatusBroadcast = Json.parseToObjectNode(responseGetStatusBroadcast.getBody());
+                            System.out.println("LIFE CYCLE AFTER DELAY : " + lifeCycleStatus);
+                            // your code here
+                            if (lifeCycleStatus.equalsIgnoreCase("testing")) {
+                                System.out.println("masuk live");
+                                urlStatus = "live";
 
-                lifeCycleStatus = responseBodyGetStatusBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
+                                Tuple.T2<Integer, HttpEntity<String>> responseLive = transitionChange(accessToken,urlStatus,broadcastingID);
 
-                System.out.println("LIFE CYCLE AFTER DELAY : " + lifeCycleStatus);
-                // your code here
-                if (lifeCycleStatus.equalsIgnoreCase("testing")) {
-                    System.out.println("masuk live");
-                    urlStatus = "live";
-                    String urlTransitionLive = "https://www.googleapis.com/youtube/v3/liveBroadcasts/transition?broadcastStatus=" + urlStatus + "&id=" + broadcastingID + "&part=snippet,contentDetails,status";
-                    System.out.println(urlTransitionLive);
-                    HttpEntity<String> httpEntityTransitionLive = new HttpEntity<String>(headersTransition);
-                    RestTemplate restTemplateLive = new RestTemplate();
+                                if(responseLive._1==200){
 
-                    ResponseEntity<String> responseTransistionLive = null;
+                                    dataObject.put("id", broadcastingID);
+                                    dataObject.put("stream_status", urlStatus);
 
-                    try {
-                        responseTransistionLive = restTemplateLive.exchange(urlTransitionLive, HttpMethod.POST, httpEntityTransitionLive, String.class);
-                        ObjectNode responseBodyTransitionLive = Json.parseToObjectNode(responseTransistionLive.getBody());
+                                    responseBodyJson.set("data", dataObject);
+                                    responseBodyJson.put("status_code", 200);
+                                    responseBodyJson.put("status", "success");
 
-                        lifeCycleStatus = responseBodyTransitionLive.get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
+                                }else{
+                                    return new Tuple.T2<Integer, ObjectNode>(responseLive._1, responseFail.put("message","trouble when live transition"));
+                                }
 
-                        System.out.println(lifeCycleStatus);
+                            } else {
+                                return new Tuple.T2<Integer, ObjectNode>(-11, responseFail.put("message","transition still testStarting"));
+                            }
+                        }
 
-                    } catch (HttpClientErrorException e) {
-                        System.out.println(e.getStatusCode());
-                        System.out.println(e.getMessage());
-                        return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
-                    } catch (HttpServerErrorException e) {
-                        System.out.println(e.getStatusCode());
-                        System.out.println(e.getMessage());
-                        return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
-                    }
-
-
-                } else {
-                    lifeCycleStatus = "testStarting live";
-                }
 //                        }
 //                    },
 //                    20000
 //            );
 
-            } else {
-                lifeCycleStatus = statusHealth;
+                    }else{
+                        return new Tuple.T2<Integer, ObjectNode>(responseTesting._1, responseFail.put("message","trouble when testing transition"));
+                    }
+
+                } else {
+                    responseFail.put("stream_status", statusHealth);
+                    responseBodyJson.set("data", responseFail);
+                    return new Tuple.T2<Integer, ObjectNode>(-10, responseBodyJson);
+                }
+
             }
+
 
         } else if (urlStatus.equalsIgnoreCase("live")) {
             //CHECK STATUS STREAM
@@ -469,55 +513,50 @@ public class YoutubeService extends BaseController {
 //        System.out.println(urlStream);
             HttpEntity<String> httpEntityBroadcast = new HttpEntity<String>(headersTransition);
 
-            ResponseEntity<String> responseBroadcast;
+            ResponseEntity<String> responseBroadcast = null;
 
             try {
                 responseBroadcast = restTemplate.exchange(urlBroadcast, HttpMethod.GET, httpEntityBroadcast, String.class);
-
+                responseCode = responseBroadcast.getStatusCode().value();
             } catch (HttpClientErrorException e) {
-                System.out.println(e.getStatusCode());
-                System.out.println(e.getMessage());
-                return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
+                responseCode = e.getStatusCode().value();
+                return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking status stream"));
             } catch (HttpServerErrorException e) {
-                System.out.println(e.getStatusCode());
-                System.out.println(e.getMessage());
-                return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
+                responseCode = e.getStatusCode().value();
+                return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking status stream"));
             }
 
-            ObjectNode responseBodyBroadcast = Json.parseToObjectNode(responseBroadcast.getBody());
+            if(responseCode == 200){
+                ObjectNode responseBodyBroadcast = Json.parseToObjectNode(responseBroadcast.getBody());
 
 //        System.out.println(responseBodyStream.get("items").get(0).get("status").get("healthStatus").get("status"));
 
-            lifeCycleStatus = responseBodyBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
-            System.out.println(lifeCycleStatus);
-
-            if (lifeCycleStatus.equalsIgnoreCase("testing")) {
-                String urlTransitionStart = "https://www.googleapis.com/youtube/v3/liveBroadcasts/transition?broadcastStatus=" + urlStatus + "&id=" + broadcastingID + "&part=snippet,contentDetails,status";
-                HttpEntity<String> httpEntityTransitionStart = new HttpEntity<String>(headersTransition);
-                ResponseEntity<String> responseTransistionTesting;
-
-                try {
-                    responseTransistionTesting = restTemplate.exchange(urlTransitionStart, HttpMethod.POST, httpEntityTransitionStart, String.class);
-
-                } catch (HttpClientErrorException e) {
-                    System.out.println(e.getStatusCode());
-                    System.out.println(e.getMessage());
-                    return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
-                } catch (HttpServerErrorException e) {
-                    System.out.println(e.getStatusCode());
-                    System.out.println(e.getMessage());
-                    return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
-                }
-
-
-                ObjectNode responseBodyTransitionTesting = Json.parseToObjectNode(responseTransistionTesting.getBody());
-
-                lifeCycleStatus = responseBodyTransitionTesting.get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
+                lifeCycleStatus = responseBodyBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
                 System.out.println(lifeCycleStatus);
 
-            } else {
-                lifeCycleStatus = "invalid transition, stream status still testStarting";
+                if (lifeCycleStatus.equalsIgnoreCase("testing")) {
+
+                    Tuple.T2<Integer, HttpEntity<String>> responseLive = transitionChange(accessToken,urlStatus,broadcastingID);
+
+                    if(responseLive._1==200){
+
+                        dataObject.put("id", broadcastingID);
+                        dataObject.put("stream_status", urlStatus);
+
+                        responseBodyJson.set("data", dataObject);
+                        responseBodyJson.put("status_code", 200);
+                        responseBodyJson.put("status", "success");
+
+                    }else{
+                        return new Tuple.T2<Integer, ObjectNode>(responseLive._1, responseFail.put("message","trouble when live transition"));
+                    }
+
+                } else {
+                    return new Tuple.T2<Integer, ObjectNode>(-11, responseFail.put("message","transition still testStarting"));
+                }
             }
+
+
         } else if (urlStatus.equalsIgnoreCase("complete")) {
             //CHECK STATUS STREAM
             //GET LIST BROADCAST BY ID
@@ -529,67 +568,80 @@ public class YoutubeService extends BaseController {
 
             try {
                 responseBroadcast = restTemplate.exchange(urlBroadcast, HttpMethod.GET, httpEntityBroadcast, String.class);
-
+                responseCode = responseBroadcast.getStatusCode().value();
             } catch (HttpClientErrorException e) {
-                System.out.println(e.getStatusCode());
-                System.out.println(e.getMessage());
-                return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
+                responseCode = e.getStatusCode().value();
+                return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking status stream"));
             } catch (HttpServerErrorException e) {
-                System.out.println(e.getStatusCode());
-                System.out.println(e.getMessage());
-                return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
+                responseCode = e.getStatusCode().value();
+                return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking status stream"));
+
             }
 
-
-            ObjectNode responseBodyBroadcast = Json.parseToObjectNode(responseBroadcast.getBody());
+            if(responseCode == 200){
+                ObjectNode responseBodyBroadcast = Json.parseToObjectNode(responseBroadcast.getBody());
 
 //        System.out.println(responseBodyStream.get("items").get(0).get("status").get("healthStatus").get("status"));
 
-            lifeCycleStatus = responseBodyBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
-            System.out.println(lifeCycleStatus);
-
-            if (lifeCycleStatus.equalsIgnoreCase("live")) {
-                String urlTransitionStart = "https://www.googleapis.com/youtube/v3/liveBroadcasts/transition?broadcastStatus=" + urlStatus + "&id=" + broadcastingID + "&part=snippet,contentDetails,status";
-                HttpEntity<String> httpEntityTransitionStart = new HttpEntity<String>(headersTransition);
-
-                ResponseEntity<String> responseTransistionTesting;
-
-                try {
-                    responseTransistionTesting = restTemplate.exchange(urlTransitionStart, HttpMethod.POST, httpEntityTransitionStart, String.class);
-
-                } catch (HttpClientErrorException e) {
-                    System.out.println(e.getStatusCode());
-                    System.out.println(e.getMessage());
-                    return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
-                } catch (HttpServerErrorException e) {
-                    System.out.println(e.getStatusCode());
-                    System.out.println(e.getMessage());
-                    return okJsonFailed(Integer.valueOf(e.getStatusCode().toString()), e.getMessage());
-                }
-
-
-                ObjectNode responseBodyTransitionTesting = Json.parseToObjectNode(responseTransistionTesting.getBody());
-
-                lifeCycleStatus = responseBodyTransitionTesting.get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
+                lifeCycleStatus = responseBodyBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
                 System.out.println(lifeCycleStatus);
 
-            } else {
-                lifeCycleStatus = "invalid transition, stream status still liveStarting";
+                if (lifeCycleStatus.equalsIgnoreCase("live")) {
+                    Tuple.T2<Integer, HttpEntity<String>> responseComplete = transitionChange(accessToken,urlStatus,broadcastingID);
+
+                    if(responseComplete._1==200){
+
+                        dataObject.put("id", broadcastingID);
+                        dataObject.put("stream_status", urlStatus);
+
+                        responseBodyJson.set("data", dataObject);
+                        responseBodyJson.put("status_code", 200);
+                        responseBodyJson.put("status", "success");
+
+                    }else{
+                        return new Tuple.T2<Integer, ObjectNode>(responseComplete._1, responseFail.put("message","trouble when complete transition"));
+                    }
+
+                } else {
+                    return new Tuple.T2<Integer, ObjectNode>(-12, responseFail.put("message","transition still liveStarting"));
+                }
             }
+
         }
 
-        ObjectNode responseBodyJson = Json.buildObjectNode();
+        return new Tuple.T2<Integer, ObjectNode>(200, responseBodyJson);
 
-        ObjectNode dataObject = Json.buildObjectNode();
-        dataObject.put("id", broadcastingID);
-        dataObject.put("stream_status", lifeCycleStatus);
+    }
 
-        responseBodyJson.set("data", dataObject);
-        responseBodyJson.put("status_code", 0);
-        responseBodyJson.put("status", "success");
+    public Tuple.T2<Integer, HttpEntity<String>> transitionChange(String accessToken, String urlStatus, String broadcastingID) {
 
-        return okJson(responseBodyJson);
+        RestTemplate restTemplate = new RestTemplate();
+        headersTransition = new HttpHeaders();
+        headersTransition.setContentType(MediaType.APPLICATION_JSON);
+        headersTransition.set("Authorization", "Bearer " + accessToken);
+        String urlTransitionTesting = "https://www.googleapis.com/youtube/v3/liveBroadcasts/transition?broadcastStatus=" + urlStatus + "&id=" + broadcastingID + "&part=snippet,contentDetails,status";
+//            System.out.println(urlTransitionTesting);
+        HttpEntity<String> httpEntityTransitionTesting = new HttpEntity<String>(headersTransition);
 
+        int responseCode;
+
+        ResponseEntity<String> responseTransistionTesting = null;
+
+        try {
+            responseTransistionTesting = restTemplate.exchange(urlTransitionTesting, HttpMethod.POST, httpEntityTransitionTesting, String.class);
+            responseCode = responseTransistionTesting.getStatusCode().value();
+        } catch (HttpClientErrorException e) {
+            responseCode = e.getStatusCode().value();
+        } catch (HttpServerErrorException e) {
+            responseCode = e.getStatusCode().value();
+        }
+
+        if (responseCode == 200) {
+
+            return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, responseTransistionTesting);
+        }
+
+        return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
     }
 
 
@@ -826,104 +878,6 @@ public class YoutubeService extends BaseController {
         return responseCode;
     }
 
-    public Tuple.T2<Integer, ObjectNode> retrieveListEvent(String accessToken) {
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + accessToken);
-        HttpEntity<String> httpEntity = new HttpEntity<String>(headers);
-        String url = "https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet,status,contentDetails&mine=true&maxResults=50";
-
-        RestTemplate restTemplate = new RestTemplate();
-        int responseCode;
-        String responseBody = null;
-        try {
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, httpEntity, String.class);
-            responseCode = response.getStatusCode().value();
-            responseBody = response.getBody();
-        } catch (HttpClientErrorException e) {
-            responseCode = e.getStatusCode().value();
-        } catch (HttpServerErrorException e) {
-            responseCode = e.getStatusCode().value();
-        }
-
-        if (responseCode == 200) {
-            ObjectNode objectBody = Json.parseToObjectNode(responseBody);
-            ArrayNode items = (ArrayNode) objectBody.get("items");
-            ObjectNode result = Json.buildObjectNode();
-            for (int i = 0; i < items.size(); i++) {
-                ObjectNode obj = Json.buildObjectNode();
-                ObjectNode item = (ObjectNode) items.get(i);
-
-                String id = item.get("id").textValue();
-                obj.put("id", id);
-                obj.put("title", item.get("snippet").get("title").textValue());
-                obj.put("description", item.get("snippet").get("description").textValue());
-                obj.put("publishedAt", item.get("snippet").get("publishedAt").textValue());
-                obj.put("scheduledStartTime", item.get("snippet").get("scheduledStartTime").textValue());
-                obj.put("lifeCycleStatus", item.get("status").get("lifeCycleStatus").textValue());
-                obj.put("privacyStatus", item.get("status").get("privacyStatus").textValue());
-                obj.put("recordingStatus", item.get("status").get("recordingStatus").textValue());
-                String linkUrl = item.get("contentDetails").get("monitorStream").get("embedHtml").textValue();
-                String trimUrl = linkUrl.substring(linkUrl.indexOf("src=") + 6, linkUrl.indexOf("frameborder") - 3);
-                obj.put("link", trimUrl);
-                String thumbnail = item.get("snippet").get("thumbnails").get("default").get("url").textValue();
-                obj.put("thumbnail", thumbnail);
-                result.set(id, obj);
-            }
-
-            return new Tuple.T2<Integer, ObjectNode>(responseCode, result);
-        }
-
-        return new Tuple.T2<Integer, ObjectNode>(responseCode, null);
-    }
-
-    public Tuple.T2<Integer, ObjectNode> retrieveEvent(String accessToken, String broadcastId) {
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + accessToken);
-        HttpEntity<String> httpEntity = new HttpEntity<String>(headers);
-        String url = "https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet,status,contentDetails&id=" + broadcastId;
-
-        RestTemplate restTemplate = new RestTemplate();
-        int responseCode;
-        String responseBody = null;
-        try {
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, httpEntity, String.class);
-            responseCode = response.getStatusCode().value();
-            responseBody = response.getBody();
-        } catch (HttpClientErrorException e) {
-            responseCode = e.getStatusCode().value();
-        } catch (HttpServerErrorException e) {
-            responseCode = e.getStatusCode().value();
-        }
-
-        if (responseCode == 200) {
-            ObjectNode objectBody = Json.parseToObjectNode(responseBody);
-            ObjectNode item = (ObjectNode) objectBody.get("items").get(0);
-
-            ObjectNode result = Json.buildObjectNode();
-            String id = item.get("id").textValue();
-            result.put("id", id);
-            result.put("title", item.get("snippet").get("title").textValue());
-            result.put("description", item.get("snippet").get("description").textValue());
-            result.put("publishedAt", item.get("snippet").get("publishedAt").textValue());
-            result.put("scheduledStartTime", item.get("snippet").get("scheduledStartTime").textValue());
-            result.put("lifeCycleStatus", item.get("status").get("lifeCycleStatus").textValue());
-            result.put("privacyStatus", item.get("status").get("privacyStatus").textValue());
-            result.put("recordingStatus", item.get("status").get("recordingStatus").textValue());
-            String linkUrl = item.get("contentDetails").get("monitorStream").get("embedHtml").textValue();
-            String trimUrl = linkUrl.substring(linkUrl.indexOf("src=") + 6, linkUrl.indexOf("frameborder") - 3);
-            result.put("link", trimUrl);
-            String thumbnail = item.get("snippet").get("thumbnails").get("default").get("url").textValue();
-            result.put("thumbnail", thumbnail);
-
-            return new Tuple.T2<Integer, ObjectNode>(responseCode, result);
-        }
-
-        return new Tuple.T2<Integer, ObjectNode>(responseCode, null);
-    }
 
     /*
     public ResponseEntity createEvent(String accessToken, String title) {

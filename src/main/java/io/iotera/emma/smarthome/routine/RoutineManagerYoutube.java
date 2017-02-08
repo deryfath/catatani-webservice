@@ -126,15 +126,15 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
 
         private boolean putSchedule(ESDevice device, long accountId, ObjectNode objectKey, String title, int maxqueue) {
             if (this.scheduleFuturesProlog.isEmpty() && this.taskSchedulerProlog == null ) {
-                this.taskSchedulerProlog = applicationContext.getBean(ThreadPoolTaskScheduler.class);
+                this.taskSchedulerProlog = (ThreadPoolTaskScheduler) applicationContext.getBean("routineThreadPoolTaskScheduler");
             }
 
             if (this.scheduleFutures.isEmpty() && this.taskScheduler == null ) {
-                this.taskScheduler = applicationContext.getBean(ThreadPoolTaskScheduler.class);
+                this.taskScheduler = (ThreadPoolTaskScheduler)applicationContext.getBean("routineThreadPoolTaskScheduler");
             }
 
             if (this.scheduleFutures2.isEmpty() && this.taskScheduler2 == null) {
-                this.taskScheduler2 = applicationContext.getBean(ThreadPoolTaskScheduler.class);
+                this.taskScheduler2 = (ThreadPoolTaskScheduler)applicationContext.getBean("routineThreadPoolTaskScheduler");
             }
 
             Date date = new Date();
@@ -207,11 +207,11 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
 
         private boolean putScheduleContinue(ESDevice device, long accountId, ObjectNode ObjectKey, String title, String stateTask) {
             if (this.scheduleFutures.isEmpty() && this.taskScheduler == null ) {
-                this.taskScheduler = applicationContext.getBean(ThreadPoolTaskScheduler.class);
+                this.taskScheduler = (ThreadPoolTaskScheduler) applicationContext.getBean("routineThreadPoolTaskScheduler");
             }
 
             if (this.scheduleFutures2.isEmpty() && this.taskScheduler2 == null) {
-                this.taskScheduler2 = applicationContext.getBean(ThreadPoolTaskScheduler.class);
+                this.taskScheduler2 = (ThreadPoolTaskScheduler) applicationContext.getBean("routineThreadPoolTaskScheduler");
             }
 
             System.out.println("MAX QUEUE : "+maxqueue);
@@ -398,63 +398,63 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
             return this.taskScheduler.getScheduledThreadPoolExecutor().getQueue().size();
         }
 
-        private void completeYoutubeStream(String deviceId, long accountId){
-            //GET CURRENT LIVE BROADCAST ID FROM device_tbl
-            ESDevice device = deviceRepository.findByDeviceId(deviceId,accountId);
-            String info = device.getInfo();
-            ObjectNode objectNode = Json.parseToObjectNode(info);
-            System.out.println("broadcastId : "+objectNode);
-            String broadcastId = objectNode.get("youtube_id").toString().replaceAll("[^\\w\\s\\-_]", "");
-            System.out.println("broadcastId : "+broadcastId);
-            //GET ACCESS TOKEN
-            ResponseEntity responseYoutubeKey = accountCameraRepository.YoutubeKey(accountId);
-            ObjectNode objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
-            String accessToken = objectKey.get("access_token").toString().replaceAll("[^\\w\\s\\-_.]", "");
-            String clientId = objectKey.get("client_id").toString().replaceAll("[^\\w\\s\\-_.]", "");
-            String clientSecret = objectKey.get("client_secret").toString().replaceAll("[^\\w\\s\\-_.]", "");
-            String refreshToken = objectKey.get("refresh_token").toString().replaceAll("[^\\w\\s\\-_./]", "");
-
-            //STOP YOUTUBE STREAM
-            String state = "complete";
-            ResponseEntity responseTransitionStop = youtubeService.transitionEvent(accessToken,broadcastId,"streamId",state);
-
-            ObjectNode responseBodyTransitionStop = Json.parseToObjectNode(responseTransitionStop.getBody().toString());
-
-            int statusCode = Integer.parseInt(responseBodyTransitionStop.get("status_code").toString().replaceAll("[^\\w\\s]", ""));
-            System.out.println(statusCode);
-
-            if(responseBodyTransitionStop.get("status_code") != null && statusCode == 401){
-                System.out.println("UNAUTHORIZED");
-                //get access token by Refresh token
-                System.out.println("CLIENT ID : "+clientId);
-                accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken,clientId,clientSecret,accountId);
-                System.out.println("stop access token : "+accessToken);
-                responseTransitionStop = youtubeService.transitionEvent(accessToken,broadcastId,"streamId",state);
-                responseBodyTransitionStop = Json.parseToObjectNode(responseTransitionStop.getBody().toString());
-
-            }
-
-            //MQTT MESSAGE STOP YOUTUBE
-
-            this.message = MessageBuilder
-                    .withPayload(responseBodyTransitionStop.toString())
-                    .setHeader(MqttHeaders.TOPIC,
-                            "stream/transition/stop")
-                    .build();
-
-            if (applicationEventPublisher != null && message != null) {
-                applicationEventPublisher.publishEvent(new MqttPublishEvent(this, this.message));
-            } else {
-                System.out.println("MQTT NULL");
-            }
-
-            try{
-                String dataStop = responseBodyTransitionStop.get("data").toString();
-                System.out.println(dataStop);
-            }catch (NullPointerException e){
-                System.out.println(e.getMessage());
-            }
-        }
+//        private void completeYoutubeStream(String deviceId, long accountId){
+//            //GET CURRENT LIVE BROADCAST ID FROM device_tbl
+//            ESDevice device = deviceRepository.findByDeviceId(deviceId,accountId);
+//            String info = device.getInfo();
+//            ObjectNode objectNode = Json.parseToObjectNode(info);
+//            System.out.println("broadcastId : "+objectNode);
+//            String broadcastId = objectNode.get("youtube_id").toString().replaceAll("[^\\w\\s\\-_]", "");
+//            System.out.println("broadcastId : "+broadcastId);
+//            //GET ACCESS TOKEN
+//            ResponseEntity responseYoutubeKey = accountCameraRepository.YoutubeKey(accountId);
+//            ObjectNode objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
+//            String accessToken = objectKey.get("access_token").toString().replaceAll("[^\\w\\s\\-_.]", "");
+//            String clientId = objectKey.get("client_id").toString().replaceAll("[^\\w\\s\\-_.]", "");
+//            String clientSecret = objectKey.get("client_secret").toString().replaceAll("[^\\w\\s\\-_.]", "");
+//            String refreshToken = objectKey.get("refresh_token").toString().replaceAll("[^\\w\\s\\-_./]", "");
+//
+//            //STOP YOUTUBE STREAM
+//            String state = "complete";
+//            ResponseEntity responseTransitionStop = youtubeService.transitionEvent(accessToken,broadcastId,"streamId",state);
+//
+//            ObjectNode responseBodyTransitionStop = Json.parseToObjectNode(responseTransitionStop.getBody().toString());
+//
+//            int statusCode = Integer.parseInt(responseBodyTransitionStop.get("status_code").toString().replaceAll("[^\\w\\s]", ""));
+//            System.out.println(statusCode);
+//
+//            if(responseBodyTransitionStop.get("status_code") != null && statusCode == 401){
+//                System.out.println("UNAUTHORIZED");
+//                //get access token by Refresh token
+//                System.out.println("CLIENT ID : "+clientId);
+//                accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken,clientId,clientSecret,accountId);
+//                System.out.println("stop access token : "+accessToken);
+//                responseTransitionStop = youtubeService.transitionEvent(accessToken,broadcastId,"streamId",state);
+//                responseBodyTransitionStop = Json.parseToObjectNode(responseTransitionStop.getBody().toString());
+//
+//            }
+//
+//            //MQTT MESSAGE STOP YOUTUBE
+//
+//            this.message = MessageBuilder
+//                    .withPayload(responseBodyTransitionStop.toString())
+//                    .setHeader(MqttHeaders.TOPIC,
+//                            "stream/transition/stop")
+//                    .build();
+//
+//            if (applicationEventPublisher != null && message != null) {
+//                applicationEventPublisher.publishEvent(new MqttPublishEvent(this, this.message));
+//            } else {
+//                System.out.println("MQTT NULL");
+//            }
+//
+//            try{
+//                String dataStop = responseBodyTransitionStop.get("data").toString();
+//                System.out.println(dataStop);
+//            }catch (NullPointerException e){
+//                System.out.println(e.getMessage());
+//            }
+//        }
 
     }
 }

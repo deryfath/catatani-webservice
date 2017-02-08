@@ -41,9 +41,9 @@ public class ESRoutineController extends ESBaseController {
             routineObject.set("commands", Json.parseToObjectNode(routine.getCommands()));
             routineObject.set("clients", Json.parseToArrayNode(routine.getClients()));
             routineObject.put("active", routine.isActive());
-            routineObject.put("last_executed", formatDate(routine.getLastExecuted()));
+            routineObject.put("last_executed", formatDate(routine.getLastExecuted(),"yyyy-MM-dd HH:mm:ss"));
             routineObject.set("last_executed_commands", Json.parseToObjectNode(routine.getLastExecutedCommands()));
-            routineObject.put("last_succeeded", formatDate(routine.getLastSucceeded()));
+            routineObject.put("last_succeeded", formatDate(routine.getLastSucceeded(),"yyyy-MM-dd HH:mm:ss"));
             routineObject.put("parent", routine.getParent());
             routineArray.add(routineObject);
         }
@@ -112,9 +112,9 @@ public class ESRoutineController extends ESBaseController {
         response.set("commands", Json.parseToObjectNode(routine.getCommands()));
         response.set("clients", Json.parseToArrayNode(routine.getClients()));
         response.put("active", routine.isActive());
-        response.put("last_executed", formatDate(routine.getLastExecuted()));
+        response.put("last_executed", formatDate(routine.getLastExecuted(),"yyyy-MM-dd HH:mm:ss"));
         response.set("last_executed_commands", Json.parseToObjectNode(routine.getLastExecutedCommands()));
-        response.put("last_succeeded", formatDate(routine.getLastSucceeded()));
+        response.put("last_succeeded", formatDate(routine.getLastSucceeded(),"yyyy-MM-dd HH:mm:ss"));
         response.put("parent", routine.getParent());
         response.put("status_code", 0);
         response.put("status", "success");

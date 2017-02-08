@@ -1,6 +1,7 @@
 package io.iotera.emma.smarthome.routine;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.sun.org.apache.regexp.internal.RE;
 import io.iotera.emma.smarthome.model.camera.ESCameraHistory;
 import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
@@ -9,6 +10,7 @@ import io.iotera.emma.smarthome.repository.ESCameraHistoryRepository;
 import io.iotera.emma.smarthome.youtube.PrologVideo;
 import io.iotera.emma.smarthome.youtube.YoutubeService;
 import io.iotera.util.Json;
+import io.iotera.util.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -80,12 +82,10 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
     private String ingestionAddress = "";
     private String mqttTime = "";
     private String youtube_url = "";
-
-
     private volatile boolean running = true;
 
     public void setTask(RoutineManagerYoutube routineManager, long accountId,
-                        ObjectNode objectKey, String title, String stateTask, ESDevice device, int maxqueue) {
+                      ObjectNode objectKey, String title, String stateTask, ESDevice device, int maxqueue) {
         this.routineManager = routineManager;
         this.accountId = accountId;
         this.routineId = routineId;
@@ -186,7 +186,7 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
                         //DELETE ON YOUTUBE API
                         ResponseEntity responseEntityDelete = youtubeService.deleteEventById(accessToken, responseCamera.get("youtube_id").toString());
                         ObjectNode responseBodyDelete = Json.parseToObjectNode(responseEntityDelete.getBody().toString());
-                        statusCode = Integer.parseInt(responseBodyDelete.get("status_code").toString().replaceAll("[^\\w\\s]", ""));
+                        statusCode = Integer.parseInt(responseBodyDelete.get("status_code").textValue());
                         System.out.println(statusCode);
 
                         if (responseBodyDelete.get("status_code") != null && statusCode == 401) {
@@ -206,7 +206,7 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
                 //INSERT INTO TABlE camera_history_tbl
                 System.out.println("response success : " + objectEntityStream.get("stream_data"));
 
-                String youtube_title = objectEntityStream.get("stream_data").get("data").get("title").toString().replaceAll("[^\\w\\s\\-:]", "");
+                String youtube_title = objectEntityStream.get("stream_data").get("data").get("title").textValue();
                 Date datePublish = null;
 
 //                try {
@@ -217,10 +217,10 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
 //                }
 
                 try{
-                    broadcastID = objectEntityStream.get("stream_data").get("data").get("broadcast_id").toString().replaceAll("[^\\w\\s\\-_]", "");
-                    streamID = objectEntityStream.get("stream_data").get("data").get("stream_id").toString().replaceAll("[^\\w\\s\\-_]", "");
-                    streamKey = objectEntityStream.get("stream_data").get("data").get("stream_key").toString().replaceAll("[^\\w\\s\\-]", "");
-                    ingestionAddress = objectEntityStream.get("stream_data").get("data").get("ingestion_address").toString().replaceAll("[^\\w\\s\\-.:/]", "");
+                    broadcastID = objectEntityStream.get("stream_data").get("data").get("broadcast_id").textValue();
+                    streamID = objectEntityStream.get("stream_data").get("data").get("stream_id").textValue();
+                    streamKey = objectEntityStream.get("stream_data").get("data").get("stream_key").textValue();
+                    ingestionAddress = objectEntityStream.get("stream_data").get("data").get("ingestion_address").textValue();
                     youtube_url = "https://youtu.be/"+broadcastID;
                 }catch (NullPointerException e){
                     running = false;
@@ -266,8 +266,8 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
             }
 
             //STOP PROLOG VIDEO
-            String streamStatus = objectEntityStream.get("stream_status").get("data").get("stream_status").toString().replaceAll("[^\\w\\s]", "");
-            if (streamStatus.equalsIgnoreCase("liveStarting")) {
+            String streamStatus = objectEntityStream.get("stream_status").get("data").get("stream_status").textValue();
+            if (streamStatus.equalsIgnoreCase("live")) {
                 prologVideo.stopVideoProlog();
                 deviceRepository.updateStatusInfoDevice(device.getId(), broadcastID, ingestionAddress, streamKey, streamID, youtube_url, mqttTime);
             }
@@ -382,27 +382,21 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
 
             System.out.println("STOP EVENT " + stateTask);
             state = "complete";
-            ResponseEntity responseTransitionStop = youtubeService.transitionEvent(accessToken, broadcastID, streamID, state);
+            Tuple.T2<Integer, ObjectNode> responseTransitionStop = youtubeService.transitionEvent(accessToken, broadcastID, streamID, state);
 
-            ObjectNode responseBodyTransitionStop = Json.parseToObjectNode(responseTransitionStop.getBody().toString());
-
-            statusCode = Integer.parseInt(responseBodyTransitionStop.get("status_code").toString().replaceAll("[^\\w\\s]", ""));
-            System.out.println(statusCode);
-
-            if (responseBodyTransitionStop.get("status_code") != null && statusCode == 401) {
+            if (responseTransitionStop._1 == 401) {
                 System.out.println("UNAUTHORIZED");
                 //get access token by Refresh token
                 System.out.println("CLIENT ID STOP : " + clientId);
                 accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, accountId);
                 System.out.println("stop access token : " + accessToken);
                 responseTransitionStop = youtubeService.transitionEvent(accessToken, broadcastID, streamID, state);
-                responseBodyTransitionStop = Json.parseToObjectNode(responseTransitionStop.getBody().toString());
 
             }
 
             //MQTT MESSAGE
             this.message = MessageBuilder
-                    .withPayload(responseBodyTransitionStop.toString())
+                    .withPayload(responseTransitionStop._2.textValue())
                     .setHeader(MqttHeaders.TOPIC,
                             "stream/transition/stop")
                     .build();
@@ -414,7 +408,7 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
             }
 
             try {
-                String dataStop = responseBodyTransitionStop.get("data").toString();
+                String dataStop = responseTransitionStop._2.textValue();
                 System.out.println(dataStop);
             } catch (NullPointerException e) {
                 running = false;
