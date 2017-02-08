@@ -4,9 +4,9 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Scope;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
+import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
@@ -14,57 +14,51 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CameraSchedule implements ApplicationContextAware {
 
     private ApplicationContext applicationContext;
+    private long accountId;
+    private ConcurrentHashMap<String, CameraItemSchedule> cameraItemSchedules;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
     }
 
-    private long accountId;
-
-    private ThreadPoolTaskScheduler taskScheduler;
-    private ConcurrentHashMap<String, CameraItemSchedule> cameraItems;
-
-    void initSchedule (long accountId) {
+    void initSchedule(long accountId) {
         this.accountId = accountId;
-        this.cameraItems = new ConcurrentHashMap<String, CameraItemSchedule>();
+        this.cameraItemSchedules = new ConcurrentHashMap<String, CameraItemSchedule>();
     }
 
     boolean putSchedule(String cameraId) {
-        if (this.taskScheduler == null && this.cameraItems.isEmpty()) {
-            this.taskScheduler = (ThreadPoolTaskScheduler) applicationContext.getBean("cameraThreadPoolTaskScheduler");
+
+        if (!this.cameraItemSchedules.containsKey(cameraId)) {
+            CameraItemSchedule schedule = applicationContext.getBean(CameraItemSchedule.class);
+            schedule.initSchedule(cameraId, accountId);
+            this.cameraItemSchedules.put(cameraId, schedule);
+            return schedule.updateCameraStartSchedule();
         }
 
-        if (!this.cameraItems.containsKey(cameraId)) {
-            CameraItemSchedule cameraItemSchedule = applicationContext.getBean(CameraItemSchedule.class);
-            cameraItemSchedule.initSchedule(cameraId);
-            //cameraItemSchedule.putSchedule();
+        return false;
+    }
 
-            return true;
+    boolean updateStopSchedule(String cameraId, String broadcastId, Date time) {
+
+        if (this.cameraItemSchedules.containsKey(cameraId)) {
+            CameraItemSchedule cameraItemSchedule = this.cameraItemSchedules.get(cameraId);
+            return cameraItemSchedule.updateCameraStopSchedule(broadcastId, time);
         }
 
         return false;
     }
 
     boolean removeSchedule(String cameraId) {
-        if (this.cameraItems.containsKey(cameraId)) {
-            CameraItemSchedule cameraItemSchedule = this.cameraItems.get(cameraId);
+
+        if (this.cameraItemSchedules.containsKey(cameraId)) {
+            CameraItemSchedule cameraItemSchedule = this.cameraItemSchedules.get(cameraId);
             cameraItemSchedule.removeCamera();
-            this.cameraItems.remove(cameraId);
-
-            if (this.cameraItems.isEmpty()) {
-                this.taskScheduler.destroy();
-                this.taskScheduler = null;
-            }
-
+            this.cameraItemSchedules.remove(cameraId);
             return true;
         }
 
         return false;
-    }
-
-    int getActiveScheduleCount() {
-        return this.taskScheduler.getScheduledThreadPoolExecutor().getQueue().size();
     }
 
 }

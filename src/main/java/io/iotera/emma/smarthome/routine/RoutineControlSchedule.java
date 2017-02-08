@@ -10,43 +10,41 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Future;
 
 @Component
 @Scope("prototype")
 public class RoutineControlSchedule implements ApplicationContextAware {
 
     private ApplicationContext applicationContext;
+    private long accountId;
+    private ThreadPoolTaskScheduler taskScheduler;
+    private ConcurrentHashMap<String, Future> futures;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
     }
 
-    private long accountId;
-
-    private ThreadPoolTaskScheduler taskScheduler;
-    private ConcurrentHashMap<String, ScheduledFuture> scheduleFutures;
-
     void initSchedule(long accountId) {
         this.accountId = accountId;
-        this.scheduleFutures = new ConcurrentHashMap<String, ScheduledFuture>();
+        this.futures = new ConcurrentHashMap<String, Future>();
     }
 
     boolean putSchedule(ESRoutine routine, String cronExpression) {
-        if (this.taskScheduler == null && this.scheduleFutures.isEmpty()) {
+        if (this.taskScheduler == null && this.futures.isEmpty()) {
             this.taskScheduler = (ThreadPoolTaskScheduler) applicationContext.getBean("routineThreadPoolTaskScheduler");
         }
 
-        if (!this.scheduleFutures.containsKey(routine.getId())) {
+        if (!this.futures.containsKey(routine.getId())) {
             ScheduleTask task = applicationContext.getBean(ScheduleTask.class);
-            task.setTask(this.accountId, routine.getId(), routine.getCategory(),
+            task.initTask(this.accountId, routine.getId(), routine.getCategory(),
                     routine.getCommands(), routine.getClients());
 
-            ScheduledFuture scheduledFuture = this.taskScheduler.schedule(
+            Future future = this.taskScheduler.schedule(
                     task,
                     new CronTrigger(cronExpression));
-            this.scheduleFutures.put(routine.getId(), scheduledFuture);
+            this.futures.put(routine.getId(), future);
 
             return true;
         }
@@ -55,12 +53,12 @@ public class RoutineControlSchedule implements ApplicationContextAware {
     }
 
     boolean removeSchedule(String routineId) {
-        if (this.scheduleFutures.containsKey(routineId)) {
-            ScheduledFuture scheduledFuture = this.scheduleFutures.get(routineId);
-            scheduledFuture.cancel(true);
-            this.scheduleFutures.remove(routineId);
+        if (this.futures.containsKey(routineId)) {
+            Future future = this.futures.get(routineId);
+            future.cancel(true);
+            this.futures.remove(routineId);
 
-            if (this.scheduleFutures.isEmpty()) {
+            if (this.futures.isEmpty()) {
                 this.taskScheduler.destroy();
                 this.taskScheduler = null;
             }
@@ -73,10 +71,10 @@ public class RoutineControlSchedule implements ApplicationContextAware {
 
     boolean updateSchedule(ESRoutine routine, String cronExpression) {
         // Remove existing schedule
-        if (this.scheduleFutures.containsKey(routine.getId())) {
-            ScheduledFuture scheduledFuture = this.scheduleFutures.get(routine.getId());
-            scheduledFuture.cancel(true);
-            this.scheduleFutures.remove(routine.getId());
+        if (this.futures.containsKey(routine.getId())) {
+            Future future = this.futures.get(routine.getId());
+            future.cancel(true);
+            this.futures.remove(routine.getId());
         }
 
         // Put new schedule

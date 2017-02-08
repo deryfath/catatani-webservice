@@ -6,8 +6,8 @@ import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
 import io.iotera.emma.smarthome.repository.ESRoutineRepository;
 import io.iotera.emma.smarthome.utility.PublishUtility;
-import io.iotera.util.concurrent.LatchWithResult;
 import io.iotera.util.Json;
+import io.iotera.util.concurrent.LatchWithResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -44,8 +44,8 @@ public class ScheduleTask implements Runnable, ApplicationEventPublisherAware {
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
-    public void setTask(long accountId,
-                        String routineId, int routineCategory, String commands, String clients) {
+    public void initTask(long accountId,
+                         String routineId, int routineCategory, String commands, String clients) {
         this.accountId = accountId;
         this.routineId = routineId;
 

@@ -3,25 +3,23 @@ package io.iotera.emma.smarthome.camera;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
+import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
 
 public class CameraManager implements ApplicationContextAware {
 
     private ApplicationContext applicationContext;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
-    }
+    private ConcurrentHashMap<Long, CameraSchedule> schedulers = new ConcurrentHashMap<Long, CameraSchedule>();
 
     //////////////
     // Schedule //
     //////////////
 
-    private ConcurrentHashMap<Long, CameraSchedule> schedulers = new ConcurrentHashMap<Long, CameraSchedule>();
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
 
     private CameraSchedule getSchedule(long accountId) {
         if (schedulers.containsKey(accountId)) {
@@ -35,14 +33,14 @@ public class CameraManager implements ApplicationContextAware {
         return schedule;
     }
 
-    public int getActiveScheduleCount(long accountId) {
-        CameraSchedule schedule = getSchedule(accountId);
-        return schedule.getActiveScheduleCount();
-    }
-
     public boolean putSchedule(long accountId, String cameraId) {
         CameraSchedule schedule = getSchedule(accountId);
         return schedule.putSchedule(cameraId);
+    }
+
+    public boolean updateStopSchedule(long accountId, String cameraId, String broadcastId, Date time) {
+        CameraSchedule schedule = getSchedule(accountId);
+        return schedule.updateStopSchedule(cameraId, broadcastId, time);
     }
 
     public boolean removeSchedule(long accountId, String cameraId) {

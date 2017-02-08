@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.account.ESAccount;
 import io.iotera.emma.smarthome.model.account.ESAccountCamera;
 import io.iotera.emma.smarthome.model.application.ESApplicationInfo;
+import io.iotera.util.Json;
 import io.iotera.util.Tuple;
 import io.iotera.web.spring.controller.BaseController;
-import io.iotera.util.Json;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,14 +22,8 @@ import java.util.List;
 @Repository
 public class ESAccountCameraRepository extends BaseController {
 
-    @Transactional
-    public interface ESAccountCameraJpaRepository extends JpaRepository<ESAccountCamera, Long> {
-
-    }
-
     @PersistenceContext
     EntityManager entityManager;
-
     @Autowired
     ESAccountCameraJpaRepository accountCameraJpaRepository;
 
@@ -58,7 +52,7 @@ public class ESAccountCameraRepository extends BaseController {
         return new Tuple.T2<String, String>((String) resultObjects[0], (String) resultObjects[1]);
     }
 
-    public boolean isYoutubeIdAvailable(String youtubeId, String youtubeEmail) {
+    public boolean isYoutubeIdAvailable(String youtubeId, long accountId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -66,20 +60,20 @@ public class ESAccountCameraRepository extends BaseController {
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
         queryBuilder.append("account_camera_tbl as camera JOIN ");
-        queryBuilder.append("account_table AS account ");
-        queryBuilder.append("ON camera.account_id = account._id ");
+        queryBuilder.append("account_tbl AS account ");
+        queryBuilder.append("ON camera.account_id = account.id ");
         queryBuilder.append("WHERE ");
         queryBuilder.append("camera.youtube_id = :youtube_id ");
         queryBuilder.append("AND ");
-        queryBuilder.append("camera.youtube_email = :youtube_email ");
+        queryBuilder.append("account.__deactivate_flag__ = FALSE ");
         queryBuilder.append("AND ");
-        queryBuilder.append("account.__deleted_flag__ = FALSE");
+        queryBuilder.append("account.id != :account_id");
 
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESAccountCamera.class);
         query.setParameter("youtube_id", youtubeId);
-        query.setParameter("youtube_email", youtubeEmail);
+        query.setParameter("account_id", accountId);
 
         return query.getResultList().isEmpty();
     }
@@ -124,7 +118,6 @@ public class ESAccountCameraRepository extends BaseController {
         return query.executeUpdate();
     }
 
-
     @Transactional
     public ResponseEntity YoutubeKey(long accountId) {
         // Build Query
@@ -163,30 +156,6 @@ public class ESAccountCameraRepository extends BaseController {
 
         return okJson(deviceObject);
     }
-
-    /*
-    @Transactional
-    public ResponseEntity getClientIDAndClientSecret() {
-        ObjectNode deviceObject = Json.buildObjectNode();
-
-        StringBuilder queryBuilder = new StringBuilder();
-        queryBuilder.append("SELECT ");
-        queryBuilder.append("* ");
-        queryBuilder.append("FROM ");
-        queryBuilder.append("application_info_tbl ");
-
-        // Execute Query
-        String queryString = queryBuilder.toString();
-        Query query = entityManager.createNativeQuery(queryString, ESApplicationInfo.class);
-        List<ESApplicationInfo> listApplicationInfo = query.getResultList();
-
-        deviceObject.put("client_id", listApplicationInfo.get(0).getYoutubeApiClientId());
-        deviceObject.put("client_secret", listApplicationInfo.get(0).getYoutubeApiClientSecret());
-
-        return okJson(deviceObject);
-    }
-    */
-
 
     @Transactional
     public String checkAvailabilityGoogleAccount(String youtube_id, String youtube_email, String access_token,
@@ -264,6 +233,35 @@ public class ESAccountCameraRepository extends BaseController {
         }
 
         return status;
+    }
+
+    /*
+    @Transactional
+    public ResponseEntity getClientIDAndClientSecret() {
+        ObjectNode deviceObject = Json.buildObjectNode();
+
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("SELECT ");
+        queryBuilder.append("* ");
+        queryBuilder.append("FROM ");
+        queryBuilder.append("application_info_tbl ");
+
+        // Execute Query
+        String queryString = queryBuilder.toString();
+        Query query = entityManager.createNativeQuery(queryString, ESApplicationInfo.class);
+        List<ESApplicationInfo> listApplicationInfo = query.getResultList();
+
+        deviceObject.put("client_id", listApplicationInfo.get(0).getYoutubeApiClientId());
+        deviceObject.put("client_secret", listApplicationInfo.get(0).getYoutubeApiClientSecret());
+
+        return okJson(deviceObject);
+    }
+    */
+
+
+    @Transactional
+    public interface ESAccountCameraJpaRepository extends JpaRepository<ESAccountCamera, Long> {
+
     }
 
     /*

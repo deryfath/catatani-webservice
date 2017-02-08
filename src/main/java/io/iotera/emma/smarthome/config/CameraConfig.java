@@ -2,13 +2,15 @@ package io.iotera.emma.smarthome.config;
 
 import io.iotera.emma.smarthome.camera.CameraManager;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
+@Configuration
 public class CameraConfig {
 
     @Bean
-    public CameraManager cameraManagerManager() {
+    public CameraManager cameraManager() {
         return new CameraManager();
     }
 
