@@ -4,15 +4,18 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Scope;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
-import java.util.Calendar;
 import java.util.Date;
 import java.util.concurrent.ScheduledFuture;
 
 @Component
 @Scope("prototype")
 public class CameraItemSchedule implements ApplicationContextAware {
+
+    private final String CRON_SCHEDULE = "0 55 * * * ?";
 
     private ApplicationContext applicationContext;
 
@@ -21,68 +24,70 @@ public class CameraItemSchedule implements ApplicationContextAware {
         this.applicationContext = applicationContext;
     }
 
-    String cameraId;
+    private String cameraId;
+    private long accountId;
 
-    ScheduledFuture cameraStartSchedule1;
-    ScheduledFuture cameraStopSchedule1;
-    Date cameraTime1;
+    private ThreadPoolTaskScheduler taskScheduler;
+    private ScheduledFuture cameraInitSchedule;
+    private ScheduledFuture cameraStartSchedule;
+    private ScheduledFuture cameraStopSchedule1;
+    private ScheduledFuture cameraStopSchedule2;
 
-    ScheduledFuture cameraStartSchedule2;
-    ScheduledFuture cameraStopSchedule2;
-    Date cameraTime2;
-
-    void initSchedule(String cameraId) {
+    void initSchedule(String cameraId, long accountId) {
         this.cameraId = cameraId;
-        this.cameraTime1 = new Date();
-        this.cameraTime2 = new Date();
+        this.accountId = accountId;
+
+        this.taskScheduler = (ThreadPoolTaskScheduler) applicationContext.getBean("cameraThreadPoolTaskScheduler");
+
+        CameraStartTask taskInit = applicationContext.getBean(CameraStartTask.class);
+        taskInit.initTask(accountId, cameraId, false);
+
+        CameraStartTask taskSchedule = applicationContext.getBean(CameraStartTask.class);
+        taskSchedule.initTask(accountId, cameraId, true);
+
+        this.cameraInitSchedule = this.taskScheduler.scheduleWithFixedDelay(taskInit, 1000);
+        this.cameraStartSchedule = this.taskScheduler.schedule(taskSchedule,
+                new CronTrigger(CRON_SCHEDULE));
     }
 
-    boolean putSchedule(Date date, ScheduledFuture future) {
+    void updateCameraStopSchedule(String broadcastId, Date time) {
 
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND, 0);
-        date = calendar.getTime();
-
-        if (date.compareTo(cameraTime1) < 0 || date.compareTo(cameraTime2) < 0) {
-            return false;
+        if (this.cameraStopSchedule1 == null || this.cameraStopSchedule1.isCancelled() || this.cameraStopSchedule1.isDone()) {
+            CameraStopTask taskStop = applicationContext.getBean(CameraStopTask.class);
+            taskStop.initTask(accountId, cameraId, broadcastId, true);
+            this.cameraStopSchedule1 = this.taskScheduler.schedule(taskStop, time);
+            return;
         }
 
-        if (cameraTime1.compareTo(cameraTime2) < 0) {
-            if (cameraStartSchedule1 != null) {
-                cameraStartSchedule1.cancel(true);
-            }
-
-            if (cameraStopSchedule1 != null) {
-                cameraStopSchedule1.cancel(true);
-            }
-
-            cameraTime1 = date;
-
-        } else {
-
+        if (this.cameraStopSchedule2 == null || this.cameraStopSchedule2.isCancelled() || this.cameraStopSchedule2.isDone()) {
+            CameraStopTask taskStop = applicationContext.getBean(CameraStopTask.class);
+            taskStop.initTask(accountId, cameraId, broadcastId, true);
+            this.cameraStopSchedule2 = this.taskScheduler.schedule(taskStop, time);
+            return;
         }
 
-        return true;
     }
 
     boolean removeCamera() {
-        if (cameraStartSchedule1 != null) {
-            cameraStartSchedule1.cancel(true);
+        if (cameraInitSchedule != null) {
+            cameraInitSchedule.cancel(true);
+        }
+
+        if (cameraStartSchedule != null) {
+            cameraStartSchedule.cancel(true);
         }
 
         if (cameraStopSchedule1 != null) {
             cameraStopSchedule1.cancel(true);
         }
 
-        if (cameraStartSchedule2 != null) {
-            cameraStartSchedule2.cancel(true);
-        }
-
         if (cameraStopSchedule2 != null) {
             cameraStopSchedule2.cancel(true);
+        }
+
+        if (this.taskScheduler != null) {
+            this.taskScheduler.destroy();
+            this.taskScheduler = null;
         }
 
         return true;
