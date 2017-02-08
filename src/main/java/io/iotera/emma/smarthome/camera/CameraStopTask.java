@@ -31,6 +31,11 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
     @Override
     public void run() {
 
+        System.out.println("MASUK STOP");
+        System.out.println(accountId);
+        System.out.println(cameraId);
+        System.out.println(broadcastId);
+        System.out.println(fromSchedule);
         // YOUTUBE COMPLETE
         // MQTT
 

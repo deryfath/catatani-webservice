@@ -1,5 +1,6 @@
 package io.iotera.emma.smarthome.application;
 
+import io.iotera.emma.smarthome.camera.CameraManager;
 import io.iotera.emma.smarthome.model.routine.ESRoutine;
 import io.iotera.emma.smarthome.repository.ESRoutineRepository;
 import io.iotera.emma.smarthome.routine.RoutineManager;
@@ -24,6 +25,9 @@ public class ApplicationReadyListener implements ApplicationListener<Application
     @Autowired
     YoutubeService youtubeService;
 
+    @Autowired
+    CameraManager cameraManager;
+
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
 
@@ -40,6 +44,6 @@ public class ApplicationReadyListener implements ApplicationListener<Application
             }
         }
 
-        System.out.println(youtubeService.retrieveListEvent("ya29.GlzrAykD1zADDlbFY1sHRHG4jxkirn6TbOv3fDvo1pF8jccfobkvAuniwUIBMric5fGmiFtKUV36-yLgwIfRm2x433r5U4TtNOx6OK6NC-cz0uElgOJGBGJ46Q9wmg"));
+        //cameraManager.putSchedule(1, "id-1");
     }
 }

@@ -2,11 +2,12 @@ package io.iotera.emma.smarthome.controller;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.iotera.emma.smarthome.model.account.ESAccountCamera;
+import io.iotera.emma.smarthome.camera.CameraManager;
 import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.emma.smarthome.model.device.ESRoom;
 import io.iotera.emma.smarthome.preference.DevicePref;
 import io.iotera.emma.smarthome.repository.ESAccountCameraRepository;
+import io.iotera.emma.smarthome.repository.ESApplicationInfoRepository;
 import io.iotera.emma.smarthome.repository.ESDeviceRepository;
 import io.iotera.emma.smarthome.repository.ESDeviceRepository.ESDeviceJpaRepository;
 import io.iotera.emma.smarthome.repository.ESRoomRepository;
@@ -30,7 +31,13 @@ public class ESDeviceController extends ESBaseController {
     ESAccountCameraRepository accountCameraRepository;
 
     @Autowired
+    ESApplicationInfoRepository applicationInfoRepository;
+
+    @Autowired
     ESDeviceJpaRepository deviceJpaRepository;
+
+    @Autowired
+    CameraManager cameraManager;
 
     @Autowired
     RoutineManagerYoutube routineManagerYoutube;
@@ -172,18 +179,21 @@ public class ESDeviceController extends ESBaseController {
             return okJsonFailed(-2, "device_label_not_available");
         }
 
-
         ESDevice device;
         if (!DevicePref.isAppliance(category)) {
 
             String uid = rget(body, "esuid");
             String address = rget(body, "esaddress");
 
-            // TODO for all category
+            if (!deviceRepository.findByUid(uid, accountId).isEmpty()) {
+                return okJsonFailed(-3, "device_uid_not_available");
+            }
+
+            if (!deviceRepository.findByAddress(address, accountId).isEmpty()) {
+                return okJsonFailed(-4, "device_address_not_available");
+            }
+
             if (category == DevicePref.CAT_REMOTE) {
-                if (!deviceRepository.findByUid(uid, accountId).isEmpty()) {
-                    return okJsonFailed(-3, "device_uid_not_available");
-                }
 
                 device = new ESDevice(label, category, type, uid, address, info, false, 0,
                         room, roomId, accountId);
@@ -191,19 +201,27 @@ public class ESDeviceController extends ESBaseController {
                 deviceJpaRepository.saveAndFlush(device);
 
             } else if (category == DevicePref.CAT_CAMERA) {
-                if (!deviceRepository.findByUid(uid, accountId).isEmpty()) {
-                    return okJsonFailed(-3, "device_uid_not_available");
+
+                Tuple.T2<String, String> token = accountCameraRepository.getAccessTokenAndRefreshToken(accountId);
+                if (token == null) {
+                    return okJsonFailed(-20, "youtube_api_not_available");
                 }
 
-                ESAccountCamera accountCamera = accountCameraRepository.findByAccountId(accountId);
-                if (accountCamera == null) {
-                    return okJsonFailed(-10, "youtube_api_not_available");
+                Tuple.T2<String, String> youtubeClientApi = applicationInfoRepository.getClientIdAndClientSecret();
+                if (youtubeClientApi == null) {
+                    return internalServerError("internal_server_error");
                 }
 
-                //TODO camera
+                String clientId = youtubeClientApi._1;
+                String clientSecret = youtubeClientApi._2;
+
                 device = new ESDevice(label, category, type, uid, address, info, false, 0,
                         room, roomId, accountId);
                 deviceJpaRepository.save(device);
+                String cameraId = device.getId();
+
+                cameraManager.putSchedule(accountId, cameraId);
+
 
                 ResponseEntity responseYoutubeKey = accountCameraRepository.YoutubeKey(accountId);
                 ObjectNode objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));

@@ -32,7 +32,8 @@ public class CameraSchedule implements ApplicationContextAware {
         if (!this.cameraItemSchedules.containsKey(cameraId)) {
             CameraItemSchedule schedule = applicationContext.getBean(CameraItemSchedule.class);
             schedule.initSchedule(cameraId, accountId);
-            return true;
+            this.cameraItemSchedules.put(cameraId, schedule);
+            return schedule.updateCameraStartSchedule();
         }
 
         return false;
@@ -40,10 +41,9 @@ public class CameraSchedule implements ApplicationContextAware {
 
     boolean updateStopSchedule(String cameraId, String broadcastId, Date time) {
 
-        if (!this.cameraItemSchedules.containsKey(cameraId)) {
+        if (this.cameraItemSchedules.containsKey(cameraId)) {
             CameraItemSchedule cameraItemSchedule = this.cameraItemSchedules.get(cameraId);
-            cameraItemSchedule.updateCameraStopSchedule(broadcastId, time);
-            return true;
+            return cameraItemSchedule.updateCameraStopSchedule(broadcastId, time);
         }
 
         return false;

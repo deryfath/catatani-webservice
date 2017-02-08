@@ -2,7 +2,6 @@ package io.iotera.emma.smarthome.camera;
 
 import io.iotera.emma.smarthome.repository.ESAccountCameraRepository;
 import io.iotera.emma.smarthome.repository.ESApplicationInfoRepository;
-import io.iotera.util.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -48,11 +47,19 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
         Date time = new Date();
         Date stopTime = new Date();
 
+        String broadcastId = "test";
+
+        System.out.println("MASUK START");
+        System.out.println(accountId);
+        System.out.println(cameraId);
+        System.out.println(fromSchedule);
+
+
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(time);
+        calendar.add(Calendar.MINUTE, 1);
 
-        String broadcastId = "";
-
+        /*
         if (fromSchedule) {
 
             Tuple.T2<String, String> youtubeClientApi = applicationInfoRepository.getClientIdAndClientSecret();
@@ -80,15 +87,16 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
 
 
         }
+        */
+
 
 
         // CREATE YOUTUBE EVENT
 
         // PROLOG + TRANSITION EVENT
 
-
         // Add stop schedule
-        cameraManager.updateStopSchedule(accountId, cameraId, broadcastId, stopTime);
+        cameraManager.updateStopSchedule(accountId, cameraId, broadcastId, calendar.getTime());
     }
 
 }

@@ -10,6 +10,7 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 
 @Component
@@ -17,20 +18,18 @@ import java.util.concurrent.ScheduledFuture;
 public class RoutineControlSchedule implements ApplicationContextAware {
 
     private ApplicationContext applicationContext;
+    private long accountId;
+    private ThreadPoolTaskScheduler taskScheduler;
+    private ConcurrentHashMap<String, Future> scheduleFutures;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
     }
 
-    private long accountId;
-
-    private ThreadPoolTaskScheduler taskScheduler;
-    private ConcurrentHashMap<String, ScheduledFuture> scheduleFutures;
-
     void initSchedule(long accountId) {
         this.accountId = accountId;
-        this.scheduleFutures = new ConcurrentHashMap<String, ScheduledFuture>();
+        this.scheduleFutures = new ConcurrentHashMap<String, Future>();
     }
 
     boolean putSchedule(ESRoutine routine, String cronExpression) {
@@ -56,7 +55,7 @@ public class RoutineControlSchedule implements ApplicationContextAware {
 
     boolean removeSchedule(String routineId) {
         if (this.scheduleFutures.containsKey(routineId)) {
-            ScheduledFuture scheduledFuture = this.scheduleFutures.get(routineId);
+            Future scheduledFuture = this.scheduleFutures.get(routineId);
             scheduledFuture.cancel(true);
             this.scheduleFutures.remove(routineId);
 
@@ -74,7 +73,7 @@ public class RoutineControlSchedule implements ApplicationContextAware {
     boolean updateSchedule(ESRoutine routine, String cronExpression) {
         // Remove existing schedule
         if (this.scheduleFutures.containsKey(routine.getId())) {
-            ScheduledFuture scheduledFuture = this.scheduleFutures.get(routine.getId());
+            Future scheduledFuture = this.scheduleFutures.get(routine.getId());
             scheduledFuture.cancel(true);
             this.scheduleFutures.remove(routine.getId());
         }
