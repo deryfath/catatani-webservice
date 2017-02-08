@@ -2,6 +2,7 @@ package io.iotera.emma.smarthome.camera;
 
 import io.iotera.emma.smarthome.repository.ESAccountCameraRepository;
 import io.iotera.emma.smarthome.repository.ESApplicationInfoRepository;
+import io.iotera.util.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -44,23 +45,22 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
     @Override
     public void run() {
 
-        Date time = new Date();
-        Date stopTime = new Date();
-
-        String broadcastId = "test";
-
-        System.out.println("MASUK START");
-        System.out.println(accountId);
-        System.out.println(cameraId);
-        System.out.println(fromSchedule);
-
-
         Calendar calendar = Calendar.getInstance();
-        calendar.setTime(time);
-        calendar.add(Calendar.MINUTE, 1);
+        Date time;
+        Date stopTime;
 
-        /*
+        String broadcastId = "";
+
         if (fromSchedule) {
+            calendar.add(Calendar.HOUR, 1);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+            time = calendar.getTime();
+
+            calendar.add(Calendar.HOUR, 1);
+            calendar.set(Calendar.MINUTE, 5);
+            stopTime = calendar.getTime();
 
             Tuple.T2<String, String> youtubeClientApi = applicationInfoRepository.getClientIdAndClientSecret();
             if (youtubeClientApi == null) {
@@ -76,27 +76,22 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
                 return;
             }
 
-            // CREATE YOUTUBE EVENT
-
-
         } else {
             calendar.set(Calendar.MINUTE, 0);
             calendar.set(Calendar.SECOND, 0);
             calendar.set(Calendar.MILLISECOND, 0);
             time = calendar.getTime();
 
-
+            calendar.add(Calendar.HOUR, 1);
+            calendar.set(Calendar.MINUTE, 5);
+            stopTime = calendar.getTime();
         }
-        */
-
-
-
-        // CREATE YOUTUBE EVENT
 
         // PROLOG + TRANSITION EVENT
 
         // Add stop schedule
-        cameraManager.updateStopSchedule(accountId, cameraId, broadcastId, calendar.getTime());
+        cameraManager.updateStopSchedule(accountId, cameraId, broadcastId, stopTime);
     }
+
 
 }

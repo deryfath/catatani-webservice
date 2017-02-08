@@ -36,6 +36,14 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
         System.out.println(cameraId);
         System.out.println(broadcastId);
         System.out.println(fromSchedule);
+
+        if (!fromSchedule) {
+
+        } else {
+
+        }
+
+
         // YOUTUBE COMPLETE
         // MQTT
 

@@ -20,8 +20,9 @@ public class CameraItemSchedule implements ApplicationContextAware {
     private ApplicationContext applicationContext;
     private String cameraId;
     private long accountId;
+
     private ThreadPoolTaskScheduler taskScheduler;
-    private Future cameraInitSchedule;
+    private Future cameraInit;
     private Future cameraStartSchedule;
     private Future cameraStopSchedule1;
     private Future cameraStopSchedule2;
@@ -39,14 +40,15 @@ public class CameraItemSchedule implements ApplicationContextAware {
     }
 
     boolean updateCameraStartSchedule() {
+        removeSchedule();
+
         CameraStartTask taskInit = applicationContext.getBean(CameraStartTask.class);
         taskInit.initTask(accountId, cameraId, false);
 
         CameraStartTask taskSchedule = applicationContext.getBean(CameraStartTask.class);
         taskSchedule.initTask(accountId, cameraId, true);
 
-        // this.cameraInitSchedule = this.taskScheduler.scheduleAtFixedRate(taskInit, 1000);
-        this.cameraInitSchedule = this.taskScheduler.submit(taskInit);
+        this.cameraInit = this.taskScheduler.submit(taskInit);
         this.cameraStartSchedule = this.taskScheduler.schedule(taskSchedule,
                 new CronTrigger(CRON_SCHEDULE));
 
@@ -73,8 +75,19 @@ public class CameraItemSchedule implements ApplicationContextAware {
     }
 
     boolean removeCamera() {
-        if (cameraInitSchedule != null && !cameraInitSchedule.isCancelled() && !cameraInitSchedule.isDone()) {
-            cameraInitSchedule.cancel(true);
+        removeSchedule();
+
+        if (this.taskScheduler != null) {
+            this.taskScheduler.destroy();
+            this.taskScheduler = null;
+        }
+
+        return true;
+    }
+
+    boolean removeSchedule() {
+        if (cameraInit != null && !cameraInit.isCancelled() && !cameraInit.isDone()) {
+            cameraInit.cancel(true);
         }
 
         if (cameraStartSchedule != null && !cameraStartSchedule.isCancelled() && !cameraStartSchedule.isDone()) {
@@ -87,11 +100,6 @@ public class CameraItemSchedule implements ApplicationContextAware {
 
         if (cameraStopSchedule2 != null && !cameraStopSchedule2.isCancelled() && !cameraStopSchedule2.isDone()) {
             cameraStopSchedule2.cancel(true);
-        }
-
-        if (this.taskScheduler != null) {
-            this.taskScheduler.destroy();
-            this.taskScheduler = null;
         }
 
         return true;

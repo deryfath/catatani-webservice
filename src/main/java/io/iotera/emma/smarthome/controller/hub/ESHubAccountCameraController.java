@@ -49,9 +49,17 @@ public class ESHubAccountCameraController extends ESBaseController {
         String youtubeId = rget(body, "esyid");
         String youtubeEmail = rget(body, "esyemail");
 
-        Tuple.T2<String, String> youtubeApis = applicationInfoRepository.getClientIdAndClientSecret();
-        String clientId = youtubeApis._1;
-        String clientSecret = youtubeApis._2;
+        if (!accountCameraRepository.isYoutubeIdAvailable(youtubeId, accountId)) {
+            return okJsonFailed(-1, "youtube_id_not_available");
+        }
+
+        Tuple.T2<String, String> youtubeClientApi = applicationInfoRepository.getClientIdAndClientSecret();
+        if (youtubeClientApi == null) {
+            return internalServerError("internal_server_error");
+        }
+
+        String clientId = youtubeClientApi._1;
+        String clientSecret = youtubeClientApi._2;
 
         String accessToken = null;
         String refreshToken = null;
@@ -68,11 +76,7 @@ public class ESHubAccountCameraController extends ESBaseController {
         }
 
         if (accessToken == null || refreshToken == null) {
-            return okJsonFailed(-1, "failed_to_generate_youtube_api_token");
-        }
-
-        if (!accountCameraRepository.isYoutubeIdAvailable(youtubeId, youtubeEmail)) {
-            return okJsonFailed(-2, "youtube_id_not_available");
+            return okJsonFailed(-2, "failed_to_generate_youtube_api_token");
         }
 
         int yStatusCode = 403;

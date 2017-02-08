@@ -11,62 +11,60 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RoutineManager implements ApplicationContextAware {
 
     private ApplicationContext applicationContext;
+    private ConcurrentHashMap<String, LatchWithResult<Boolean>> scheduleLatches =
+            new ConcurrentHashMap<String, LatchWithResult<Boolean>>();
+
+    ///////////
+    // Latch //
+    ///////////
+    private ConcurrentHashMap<Long, RoutineControlSchedule> schedules = new ConcurrentHashMap<Long,
+            RoutineControlSchedule>();
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
     }
 
-    ///////////
-    // Latch //
-    ///////////
-
-    private ConcurrentHashMap<String, LatchWithResult<Boolean>> scheduleLatchs =
-            new ConcurrentHashMap<String, LatchWithResult<Boolean>>();
-
-    public LatchWithResult<Boolean> buildLatch(String routineId) {
-        if (scheduleLatchs.containsKey(routineId)) {
-            return scheduleLatchs.get(routineId);
+    LatchWithResult<Boolean> buildLatch(String routineId) {
+        if (scheduleLatches.containsKey(routineId)) {
+            return scheduleLatches.get(routineId);
         }
 
         LatchWithResult<Boolean> latch = LatchWithResult.create(Boolean.FALSE);
-        scheduleLatchs.put(routineId, latch);
+        scheduleLatches.put(routineId, latch);
 
         return latch;
     }
 
-    public LatchWithResult<Boolean> getLatch(String routineId) {
-        if (!scheduleLatchs.containsKey(routineId)) {
+    LatchWithResult<Boolean> getLatch(String routineId) {
+        if (!scheduleLatches.containsKey(routineId)) {
             return null;
         }
 
-        return scheduleLatchs.get(routineId);
-    }
-
-    public boolean removeLatch(String routineId) {
-        if (!scheduleLatchs.containsKey(routineId)) {
-            return false;
-        }
-
-        scheduleLatchs.remove(routineId);
-        return true;
+        return scheduleLatches.get(routineId);
     }
 
     //////////////
     // Schedule //
     //////////////
 
-    private ConcurrentHashMap<Long, RoutineControlSchedule> schedulers = new ConcurrentHashMap<Long,
-            RoutineControlSchedule>();
+    boolean removeLatch(String routineId) {
+        if (!scheduleLatches.containsKey(routineId)) {
+            return false;
+        }
+
+        scheduleLatches.remove(routineId);
+        return true;
+    }
 
     private RoutineControlSchedule getSchedule(long accountId) {
-        if (schedulers.containsKey(accountId)) {
-            return schedulers.get(accountId);
+        if (schedules.containsKey(accountId)) {
+            return schedules.get(accountId);
         }
 
         RoutineControlSchedule schedule = applicationContext.getBean(RoutineControlSchedule.class);
         schedule.initSchedule(accountId);
-        schedulers.put(accountId, schedule);
+        schedules.put(accountId, schedule);
 
         return schedule;
     }

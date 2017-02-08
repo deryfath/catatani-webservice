@@ -399,6 +399,13 @@ public class ESDeviceController extends ESBaseController {
         Date now = new Date();
         if (device.getCategory() == DevicePref.CAT_REMOTE) {
             deviceRepository.deleteChild(now, deviceId, accountId);
+        } else if (device.getCategory() == DevicePref.CAT_CAMERA) {
+            // TODO Stop Camera
+            // Get old and current broadcastID and make it complete
+            ObjectNode info = Json.parseToObjectNode(device.getInfo());
+
+
+            cameraManager.removeSchedule(accountId, deviceId);
         }
 
         device.setDeleted(true);
