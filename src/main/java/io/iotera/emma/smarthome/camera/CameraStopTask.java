@@ -9,6 +9,11 @@ import org.springframework.stereotype.Component;
 @Scope("prototype")
 public class CameraStopTask implements Runnable, ApplicationEventPublisherAware {
 
+    private long accountId;
+    private String cameraId;
+    private String broadcastId;
+    private boolean fromSchedule;
+
     private volatile ApplicationEventPublisher applicationEventPublisher;
 
     @Override
@@ -16,8 +21,18 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
+    public void initTask(long accountId, String cameraId, String broadcastId, boolean fromSchedule) {
+        this.accountId = accountId;
+        this.cameraId = cameraId;
+        this.broadcastId = broadcastId;
+        this.fromSchedule = fromSchedule;
+    }
+
     @Override
     public void run() {
+
+        // YOUTUBE COMPLETE
+        // MQTT
 
     }
 

@@ -9,6 +9,9 @@ import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.util.Calendar;
+import java.util.Date;
+
 @Component
 @Scope("prototype")
 public class CameraStartTask implements Runnable, ApplicationEventPublisherAware {
@@ -24,6 +27,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
 
     private long accountId;
     private String cameraId;
+    private boolean fromSchedule;
 
     private volatile ApplicationEventPublisher applicationEventPublisher;
 
@@ -32,36 +36,59 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
-    public void setTask(String cameraId, long accountId) {
-        this.cameraId = cameraId;
+    public void initTask(long accountId, String cameraId, boolean fromSchedule) {
         this.accountId = accountId;
-
+        this.cameraId = cameraId;
+        this.fromSchedule = fromSchedule;
     }
 
     @Override
     public void run() {
 
-        Tuple.T2<String, String> clientApi = applicationInfoRepository.getClientIdAndClientSecret();
-        if (clientApi == null) {
-            return;
+        Date time = new Date();
+        Date stopTime = new Date();
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(time);
+
+        String broadcastId = "";
+
+        if (fromSchedule) {
+
+            Tuple.T2<String, String> youtubeClientApi = applicationInfoRepository.getClientIdAndClientSecret();
+            if (youtubeClientApi == null) {
+                return;
+            }
+
+            String clientId = youtubeClientApi._1;
+            String clientSecret = youtubeClientApi._2;
+
+            Tuple.T2<String, String> token = accountCameraRepository.getAccessTokenAndRefreshToken(accountId);
+            if (token == null) {
+                //TODO Token not found
+                return;
+            }
+
+            // CREATE YOUTUBE EVENT
+
+
+        } else {
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+            time = calendar.getTime();
+
+
         }
 
-        String clientId = clientApi._1;
-        String clientSecret = clientApi._2;
 
-        Tuple.T2<String, String> token = accountCameraRepository.getAccessTokenAndRefreshToken(accountId);
-        if (token == null) {
-            //TODO Token not found
-            return;
-        }
+        // CREATE YOUTUBE EVENT
 
-        String accessToken = token._1;
-        String refreshToken = token._2;
+        // PROLOG + TRANSITION EVENT
 
 
-
-
-
+        // Add stop schedule
+        cameraManager.updateStopSchedule(accountId, cameraId, broadcastId, stopTime);
     }
 
 }
