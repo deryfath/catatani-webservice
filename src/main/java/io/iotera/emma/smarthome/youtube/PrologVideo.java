@@ -5,6 +5,7 @@ import io.iotera.emma.smarthome.controller.ESDeviceController;
 import io.iotera.emma.smarthome.repository.ESAccountCameraRepository;
 import io.iotera.util.Json;
 import io.iotera.util.Tuple;
+import io.iotera.web.spring.controller.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,7 @@ import java.io.InputStreamReader;
  * Created by nana on 12/22/2016.
  */
 @Service
-public class PrologVideo extends ESDeviceController {
+public class PrologVideo extends BaseController {
 
     Process proc;
     String accessToken = "";
@@ -62,9 +63,10 @@ public class PrologVideo extends ESDeviceController {
             responseEntityCreate = youtubeService.createEvent(accessToken,title);
 
         }else if(responseEntityCreate._1 == 400 || responseEntityCreate._1 == 403){
-            return okJsonFailed(responseEntityCreate._1,responseEntityCreate._2.textValue());
+            return okJsonFailed(responseEntityCreate._1,responseEntityCreate._2.toString());
         }
 
+        System.out.println(responseEntityCreate);
         StreamKey = responseEntityCreate._2.get("data").get("stream_key").textValue();
 
         try {
@@ -92,15 +94,15 @@ public class PrologVideo extends ESDeviceController {
 
             //TRANSITION TESTING -> LIVE
             String state = "testing";
-            responseEntityTransitionStart = youtubeService.transitionEvent(accessToken,broadcastID,streamID,state);
+            responseEntityTransitionStart = youtubeService.transitionEventStart(accessToken,broadcastID,streamID,state);
 
             if(responseEntityTransitionStart._1 == 401){
                 System.out.println("UNAUTHORIZED");
                 //get access token by Refresh token
                 accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken,clientId,clientSecret,accountId);
-                responseEntityTransitionStart = youtubeService.transitionEvent(accessToken,broadcastID,streamID,state);
+                responseEntityTransitionStart = youtubeService.transitionEventStart(accessToken,broadcastID,streamID,state);
             }else if(responseEntityTransitionStart._1 == 400 || responseEntityTransitionStart._1 == 403 || responseEntityTransitionStart._1 == 404){
-                return okJsonFailed(responseEntityTransitionStart._1,responseEntityTransitionStart._2.textValue());
+                return okJsonFailed(responseEntityTransitionStart._1,responseEntityTransitionStart._2.toString());
             }
 
             //MQTT MESSAGE IF NO DATA
@@ -110,8 +112,13 @@ public class PrologVideo extends ESDeviceController {
 
                 while(statusNodata.equalsIgnoreCase("noData")){
 
-                    responseEntityTransitionStart = youtubeService.transitionEvent(accessToken,broadcastID,streamID,state);
-                    statusNodata = responseEntityTransitionStart._2.get("data").get("stream_status").textValue();
+                    responseEntityTransitionStart = youtubeService.transitionEventStart(accessToken,broadcastID,streamID,state);
+                    try{
+                        statusNodata = responseEntityTransitionStart._2.get("data").get("stream_status").textValue();
+                    }catch (NullPointerException e){
+                        e.printStackTrace();
+                        return okJsonFailed(responseEntityTransitionStart._1,responseEntityTransitionStart._2.toString());
+                    }
                     if(!statusNodata.equalsIgnoreCase("noData")){
                         break;
                     }

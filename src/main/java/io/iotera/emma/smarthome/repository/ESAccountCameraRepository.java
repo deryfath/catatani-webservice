@@ -32,7 +32,7 @@ public class ESAccountCameraRepository extends BaseController {
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("SELECT ");
-        queryBuilder.append("access_token, refresh_token ");
+        queryBuilder.append("* ");
         queryBuilder.append("FROM ");
         queryBuilder.append("account_camera_tbl ");
         queryBuilder.append("WHERE ");
@@ -48,8 +48,9 @@ public class ESAccountCameraRepository extends BaseController {
             return null;
         }
 
-        Object[] resultObjects = (Object[]) result;
-        return new Tuple.T2<String, String>((String) resultObjects[0], (String) resultObjects[1]);
+        ESAccountCamera resultObjects = (ESAccountCamera) result;
+
+        return new Tuple.T2<String, String>(resultObjects.getAccessToken(), resultObjects.getRefreshToken());
     }
 
     public boolean isYoutubeIdAvailable(String youtubeId, long accountId) {

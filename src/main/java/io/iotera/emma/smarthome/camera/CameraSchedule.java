@@ -1,5 +1,7 @@
 package io.iotera.emma.smarthome.camera;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.iotera.emma.smarthome.model.device.ESDevice;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -27,23 +29,23 @@ public class CameraSchedule implements ApplicationContextAware {
         this.cameraItemSchedules = new ConcurrentHashMap<String, CameraItemSchedule>();
     }
 
-    boolean putSchedule(String cameraId) {
+    boolean putSchedule(ESDevice device, String label, ObjectNode createObject) {
 
-        if (!this.cameraItemSchedules.containsKey(cameraId)) {
+        if (!this.cameraItemSchedules.containsKey(device.getId())) {
             CameraItemSchedule schedule = applicationContext.getBean(CameraItemSchedule.class);
-            schedule.initSchedule(cameraId, accountId);
-            this.cameraItemSchedules.put(cameraId, schedule);
+            schedule.initSchedule(device, accountId, label,createObject);
+            this.cameraItemSchedules.put(device.getId(), schedule);
             return schedule.updateCameraStartSchedule();
         }
 
         return false;
     }
 
-    boolean updateStopSchedule(String cameraId, String broadcastId, Date time) {
+    boolean updateStopSchedule(String cameraId, String broadcastId, Date time, String streamId) {
 
         if (this.cameraItemSchedules.containsKey(cameraId)) {
             CameraItemSchedule cameraItemSchedule = this.cameraItemSchedules.get(cameraId);
-            return cameraItemSchedule.updateCameraStopSchedule(broadcastId, time);
+            return cameraItemSchedule.updateCameraStopSchedule(broadcastId, time, streamId);
         }
 
         return false;

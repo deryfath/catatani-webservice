@@ -12,6 +12,7 @@ import io.iotera.emma.smarthome.repository.ESDeviceRepository;
 import io.iotera.emma.smarthome.repository.ESDeviceRepository.ESDeviceJpaRepository;
 import io.iotera.emma.smarthome.repository.ESRoomRepository;
 import io.iotera.emma.smarthome.routine.RoutineManagerYoutube;
+import io.iotera.emma.smarthome.youtube.PrologVideo;
 import io.iotera.emma.smarthome.youtube.YoutubeService;
 import io.iotera.util.Json;
 import io.iotera.util.Tuple;
@@ -47,6 +48,9 @@ public class ESDeviceController extends ESBaseController {
 
     @Autowired
     YoutubeService youtubeService;
+
+    @Autowired
+    PrologVideo prologVideo;
 
     public ResponseEntity listAll(long accountId) {
 
@@ -207,6 +211,8 @@ public class ESDeviceController extends ESBaseController {
                     return okJsonFailed(-20, "youtube_api_not_available");
                 }
 
+                System.out.println("masuk client secret");
+
                 Tuple.T2<String, String> youtubeClientApi = applicationInfoRepository.getClientIdAndClientSecret();
                 if (youtubeClientApi == null) {
                     return internalServerError("internal_server_error");
@@ -218,16 +224,20 @@ public class ESDeviceController extends ESBaseController {
                 device = new ESDevice(label, category, type, uid, address, info, false, 0,
                         room, roomId, accountId);
                 deviceJpaRepository.save(device);
-                String cameraId = device.getId();
 
-                cameraManager.putSchedule(accountId, cameraId);
+                ResponseEntity responseEntityStream = prologVideo.runVideoProlog(label, accountId);
+                ObjectNode objectEntityStream = Json.parseToObjectNode(responseEntityStream.getBody().toString());
 
+                System.out.println(objectEntityStream);
+                if(objectEntityStream.get("status_code") != null){
+                    if(objectEntityStream.get("status_code").asInt() != 200 ){
+                        return okJsonFailed(objectEntityStream.get("status_code").asInt(),objectEntityStream.get("status_desc").textValue());
+                    }
+                }
 
-                ResponseEntity responseYoutubeKey = accountCameraRepository.YoutubeKey(accountId);
-                ObjectNode objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
-                System.out.println("OBJECT KEY : " + objectKey);
-                int maxqueue = Integer.parseInt(objectKey.get("max_history").toString().replaceAll("[^\\w\\s]", ""));
-                routineManagerYoutube.updateSchedule(device, accountId, objectKey, label, maxqueue);
+                cameraManager.putSchedule(accountId, device, label,objectEntityStream);
+
+//                routineManagerYoutube.updateSchedule(device, accountId, objectKey, label);
 
                 deviceJpaRepository.flush();
 

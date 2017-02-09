@@ -139,20 +139,6 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
 
         while (running) {
             System.out.println("CREATE EVENT " + stateTask);
-//            ESHubAccountCameraController responseEntity = youtubeService.createEvent(accessToken,title+" "+newTimePlusFive);
-//            ObjectNode responseBody = Json.parseToObject(responseEntity.getBody().toString());
-//
-//            statusCode = Integer.parseInt(responseBody.get("status_code").toString().replaceAll("[^\\w\\s]", ""));
-//            System.out.println(statusCode);
-//
-//            if(responseBody.get("status_code") != null && statusCode == 401){
-//                System.out.println("UNAUTHORIZED");
-//                //get access token by Refresh token
-//                accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken,clientId,clientSecret);
-//                responseEntity = youtubeService.createEvent(accessToken,title+" "+newTimePlusFive);
-//                responseBody = Json.parseToObject(responseEntity.getBody().toString());
-//
-//            }
 
             //round time for prolog
             Date dateHoursRound = toNearestWholeHour(date);
@@ -239,8 +225,6 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
 
             }
 
-//            objectEntityStream.put("device_id", device.getId());
-
             //CREATE MQTT RESPONSE JSON
             ObjectNode responseMqttJson = Json.buildObjectNode();
 //            responseMqttJson.put("cid",device.getId());
@@ -276,86 +260,6 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
             System.out.println("streamID : "+streamID);
             System.out.println("streamKey : "+streamKey);
 
-//            try {
-//                Thread.sleep(60000);
-//            }catch (InterruptedException ex){
-//                System.out.println(ex.getMessage());
-//            }
-//
-//
-//            //TRANSITION TESTING -> LIVE
-//            System.out.println("START EVENT "+stateTask);
-//
-//            state = "testing";
-//            ESHubAccountCameraController responseEntityTransitionStart = youtubeService.transitionEvent(accessToken,broadcastID,streamID,state);
-//
-//            ObjectNode responseBodyTransitionStart = Json.parseToObject(responseEntityTransitionStart.getBody().toString());
-//
-//            statusCode = Integer.parseInt(responseBodyTransitionStart.get("status_code").toString().replaceAll("[^\\w\\s]", ""));
-//            System.out.println(statusCode);
-//
-//            if(responseBodyTransitionStart.get("status_code") != null && statusCode == 401){
-//                System.out.println("UNAUTHORIZED");
-//                //get access token by Refresh token
-//                accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken,clientId,clientSecret);
-//                responseEntityTransitionStart = youtubeService.transitionEvent(accessToken,broadcastID,streamID,state);
-//                responseBodyTransitionStart = Json.parseToObject(responseEntityTransitionStart.getBody().toString());
-//
-//            }
-//
-//
-//            //MQTT MESSAGE IF NO DATA
-//            String statusNodata = responseBodyTransitionStart.get("data").get("stream_status").toString().replaceAll("[^\\w\\s]", "");
-//            if(statusNodata.equalsIgnoreCase("noData")){
-//
-//                while(statusNodata.equalsIgnoreCase("noData")){
-//
-//                    responseEntityTransitionStart = youtubeService.transitionEvent(accessToken,broadcastID,streamID,state);
-//                    responseBodyTransitionStart = Json.parseToObject(responseEntityTransitionStart.getBody().toString());
-//
-//                    this.message = MessageBuilder
-//                            .withPayload(responseBodyTransitionStart.toString())
-//                            .setHeader(MqttHeaders.TOPIC,
-//                                    "stream/transition/start")
-//                            .build();
-//
-//                    if (applicationEventPublisher != null && message != null) {
-//                        applicationEventPublisher.publishEvent(new MqttPublishEvent(this, this.message));
-//                    } else {
-//                        break;
-//                    }
-//
-//                    statusNodata = responseBodyTransitionStart.get("data").get("stream_status").toString().replaceAll("[^\\w\\s]", "");
-//                    if(!statusNodata.equalsIgnoreCase("noData")){
-//                        break;
-//                    }
-//                }
-//
-//            }
-
-//            //MQTT MESSAGE IF SUCCESS
-//            this.message = MessageBuilder
-//                    .withPayload(responseBodyTransitionStart.toString())
-//                    .setHeader(MqttHeaders.TOPIC,
-//                            "stream/transition/start")
-//                    .build();
-//
-//            if (applicationEventPublisher != null && message != null) {
-//                applicationEventPublisher.publishEvent(new MqttPublishEvent(this, this.message));
-//            } else {
-//                break;
-//            }
-//
-//            try{
-//                String dataStart = responseBodyTransitionStart.get("data").toString();
-//                System.out.println(dataStart);
-//            }catch (NullPointerException e){
-//                running = false;
-//                System.out.println(e.getMessage());
-//                break;
-//            }
-
-
             //MAKE TIMER TO Stop Stream
             try {
 //                Thread.sleep(300); // 58 minute
@@ -382,7 +286,7 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
 
             System.out.println("STOP EVENT " + stateTask);
             state = "complete";
-            Tuple.T2<Integer, ObjectNode> responseTransitionStop = youtubeService.transitionEvent(accessToken, broadcastID, streamID, state);
+            Tuple.T2<Integer, ObjectNode> responseTransitionStop = youtubeService.transitionEventComplete(accessToken, broadcastID, streamID, state);
 
             if (responseTransitionStop._1 == 401) {
                 System.out.println("UNAUTHORIZED");
@@ -390,7 +294,7 @@ public class ScheduleTaskYoutube implements Runnable, ApplicationEventPublisherA
                 System.out.println("CLIENT ID STOP : " + clientId);
                 accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, accountId);
                 System.out.println("stop access token : " + accessToken);
-                responseTransitionStop = youtubeService.transitionEvent(accessToken, broadcastID, streamID, state);
+                responseTransitionStop = youtubeService.transitionEventComplete(accessToken, broadcastID, streamID, state);
 
             }
 

@@ -1,5 +1,7 @@
 package io.iotera.emma.smarthome.camera;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.iotera.emma.smarthome.model.device.ESDevice;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -33,14 +35,14 @@ public class CameraManager implements ApplicationContextAware {
         return schedule;
     }
 
-    public boolean putSchedule(long accountId, String cameraId) {
+    public boolean putSchedule(long accountId, ESDevice device, String label, ObjectNode createObject) {
         CameraSchedule schedule = getSchedule(accountId);
-        return schedule.putSchedule(cameraId);
+        return schedule.putSchedule(device,label,createObject);
     }
 
-    public boolean updateStopSchedule(long accountId, String cameraId, String broadcastId, Date time) {
+    public boolean updateStopSchedule(long accountId, String cameraId, String broadcastId, Date time, String streamId) {
         CameraSchedule schedule = getSchedule(accountId);
-        return schedule.updateStopSchedule(cameraId, broadcastId, time);
+        return schedule.updateStopSchedule(cameraId, broadcastId, time, streamId);
     }
 
     public boolean removeSchedule(long accountId, String cameraId) {

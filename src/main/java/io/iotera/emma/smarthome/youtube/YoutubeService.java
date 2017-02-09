@@ -34,6 +34,8 @@ public class YoutubeService extends BaseController {
     @Autowired
     ESAccountCameraRepository accountCameraRepository;
 
+    ///////////////////////////////////////////LIST EVENT///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public Tuple.T2<Integer, ObjectNode> retrieveListEvent(String accessToken) {
 
         HttpHeaders headers = new HttpHeaders();
@@ -132,6 +134,8 @@ public class YoutubeService extends BaseController {
 
         return new Tuple.T2<Integer, ObjectNode>(responseCode, null);
     }
+
+    ///////////////////////////////////////////CREATE EVENT///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public Tuple.T2<Integer, ObjectNode> createEvent(String accessToken, String title) {
 
@@ -267,6 +271,7 @@ public class YoutubeService extends BaseController {
         String urlBroadcast = "https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet,status,contentDetails";
 
         HttpEntity<String> httpEntityBroadcast = new HttpEntity<String>(parent.toJSONString(), headers);
+        System.out.println("response : "+httpEntityBroadcast);
 
         ResponseEntity<String> responseBroadcast = null;
 
@@ -283,6 +288,8 @@ public class YoutubeService extends BaseController {
 
             return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, responseBroadcast);
         }
+
+        System.out.println("response : "+responseCode);
 
         return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
     }
@@ -375,9 +382,11 @@ public class YoutubeService extends BaseController {
         return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
     }
 
-    public Tuple.T2<Integer, ObjectNode> transitionEvent(String accessToken, String broadcastingID, String streamID, String urlStatus) {
+    ///////////////////////////////////////////TRANSITION EVENT///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        System.out.println("MASUK TRANSITION EVENT");
+    public Tuple.T2<Integer, ObjectNode> transitionEventStart(String accessToken, String broadcastingID, String streamID, String urlStatus) {
+
+        System.out.println("MASUK TRANSITION EVENT START");
 
         String lifeCycleStatus = "";
         int responseCode;
@@ -390,200 +399,157 @@ public class YoutubeService extends BaseController {
         headersTransition.setContentType(MediaType.APPLICATION_JSON);
         headersTransition.set("Authorization", "Bearer " + accessToken);
 
-        if (urlStatus.equalsIgnoreCase("testing")) {
+        //CHECK STATUS STREAM
+        //GET LIST STREAM BY ID
+        Tuple.T2<Integer, HttpEntity<String>> responseStream = checkStatusStream(accessToken,streamID);
 
-            //CHECK STATUS STREAM
-            //GET LIST STREAM BY ID
-            String urlStream = "https://www.googleapis.com/youtube/v3/liveStreams?part=status&id=" + streamID;
-//            System.out.println(urlStream);
-            HttpEntity<String> httpEntityStream = new HttpEntity<String>(headersTransition);
-            ResponseEntity<String> responseStream = null;
+        if(responseStream._1 == 200){
+            ObjectNode responseBodyStream = Json.parseToObjectNode(responseStream._2.getBody());
+            String statusStreaming = responseBodyStream.get("items").get(0).get("status").get("streamStatus").toString().replaceAll("[^\\w\\s]", "");
+            String statusHealth = responseBodyStream.get("items").get(0).get("status").get("healthStatus").get("status").toString().replaceAll("[^\\w\\s]", "");
+            System.out.println(statusStreaming);
+            System.out.println(statusHealth);
 
-            try {
-                responseStream = restTemplate.exchange(urlStream, HttpMethod.GET, httpEntityStream, String.class);
-                responseCode = responseStream.getStatusCode().value();
-            } catch (HttpClientErrorException e) {
-                responseCode = e.getStatusCode().value();
-                return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking status stream"));
-            } catch (HttpServerErrorException e) {
-                responseCode = e.getStatusCode().value();
-                return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking status stream"));
-            }
+            if (!statusHealth.equalsIgnoreCase("noData")) {
+                System.out.println("masuk testing");
 
-            if(responseCode == 200){
-                ObjectNode responseBodyStream = Json.parseToObjectNode(responseStream.getBody());
-                String statusStreaming = responseBodyStream.get("items").get(0).get("status").get("streamStatus").toString().replaceAll("[^\\w\\s]", "");
-                String statusHealth = responseBodyStream.get("items").get(0).get("status").get("healthStatus").get("status").toString().replaceAll("[^\\w\\s]", "");
-                System.out.println(statusStreaming);
-                System.out.println(statusHealth);
+                Tuple.T2<Integer, HttpEntity<String>> responseTesting = transitionChange(accessToken,urlStatus,broadcastingID);
 
-                if (!statusHealth.equalsIgnoreCase("noData")) {
-                    System.out.println("masuk testing");
+                if(responseTesting._1==200){
 
-                    Tuple.T2<Integer, HttpEntity<String>> responseTesting = transitionChange(accessToken,urlStatus,broadcastingID);
+                    ObjectNode responseBodyTransitionTesting = Json.parseToObjectNode(responseTesting._2.getBody());
 
-                    if(responseTesting._1==200){
+                    lifeCycleStatus = responseBodyTransitionTesting.get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
+                    System.out.println(lifeCycleStatus);
 
-                        ObjectNode responseBodyTransitionTesting = Json.parseToObjectNode(responseTesting._2.getBody());
+                    try {
+                        Thread.sleep(60000);
+                    } catch (InterruptedException ex) {
+                        System.out.println(ex.getMessage());
+                    }
 
-                        lifeCycleStatus = responseBodyTransitionTesting.get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
-                        System.out.println(lifeCycleStatus);
+                    //Check stream
+                    responseStream = checkStatusBroadcast(accessToken,broadcastingID);
 
-//            new java.util.Timer().schedule(
-//                    new java.util.TimerTask() {
-//                        @Override
-//                        public void run() {
-                        try {
-                            Thread.sleep(60000);
-                        } catch (InterruptedException ex) {
-                            System.out.println(ex.getMessage());
-                        }
+                    if(responseStream._1 == 200){
+                        ObjectNode responseBodyGetStatusBroadcast = Json.parseToObjectNode(responseStream._2.getBody());
 
-                        //GET LIFECYCLE STATUS
-                        String urlGetStatusBroadcast = "https://www.googleapis.com/youtube/v3/liveBroadcasts?part=status&id=" + broadcastingID;
-                        System.out.println(urlGetStatusBroadcast);
-                        HttpEntity<String> httpEntityGetStatusBroadcast = new HttpEntity<String>(headersTransition);
-                        RestTemplate restTemplate1 = new RestTemplate();
-                        ResponseEntity<String> responseGetStatusBroadcast = null;
+                        lifeCycleStatus = responseBodyGetStatusBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").textValue();
 
-                        try {
-                            responseGetStatusBroadcast = restTemplate1.exchange(urlGetStatusBroadcast, HttpMethod.GET, httpEntityGetStatusBroadcast, String.class);
-                            responseCode = responseGetStatusBroadcast.getStatusCode().value();
-                        } catch (HttpClientErrorException e) {
-                            responseCode = e.getStatusCode().value();
-                            return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking lifecycle status"));
-                        } catch (HttpServerErrorException e) {
-                            responseCode = e.getStatusCode().value();
-                            return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking lifecycle status"));
-                        }
+                        System.out.println("LIFE CYCLE AFTER DELAY : " + lifeCycleStatus);
+                        // your code here
+                        if (lifeCycleStatus.equalsIgnoreCase("testing")) {
+                            System.out.println("masuk live");
+                            urlStatus = "live";
 
-                        if(responseCode == 200){
-                            ObjectNode responseBodyGetStatusBroadcast = Json.parseToObjectNode(responseGetStatusBroadcast.getBody());
+                            Tuple.T2<Integer, HttpEntity<String>> responseLive = transitionChange(accessToken,urlStatus,broadcastingID);
 
-                            lifeCycleStatus = responseBodyGetStatusBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
+                            if(responseLive._1==200){
 
-                            System.out.println("LIFE CYCLE AFTER DELAY : " + lifeCycleStatus);
-                            // your code here
-                            if (lifeCycleStatus.equalsIgnoreCase("testing")) {
-                                System.out.println("masuk live");
-                                urlStatus = "live";
+                                dataObject.put("id", broadcastingID);
+                                dataObject.put("stream_status", urlStatus);
 
-                                Tuple.T2<Integer, HttpEntity<String>> responseLive = transitionChange(accessToken,urlStatus,broadcastingID);
+                                responseBodyJson.set("data", dataObject);
+                                responseBodyJson.put("status_code", 200);
+                                responseBodyJson.put("status", "success");
 
-                                if(responseLive._1==200){
-
-                                    dataObject.put("id", broadcastingID);
-                                    dataObject.put("stream_status", urlStatus);
-
-                                    responseBodyJson.set("data", dataObject);
-                                    responseBodyJson.put("status_code", 200);
-                                    responseBodyJson.put("status", "success");
-
-                                }else{
-                                    return new Tuple.T2<Integer, ObjectNode>(responseLive._1, responseFail.put("message","trouble when live transition"));
-                                }
-
-                            } else {
-                                return new Tuple.T2<Integer, ObjectNode>(-11, responseFail.put("message","transition still testStarting"));
+                            }else{
+                                return new Tuple.T2<Integer, ObjectNode>(responseLive._1, responseFail.put("message","trouble when live transition"));
                             }
+
+                        } else {
+                            return new Tuple.T2<Integer, ObjectNode>(-11, responseFail.put("message","transition still testStarting"));
                         }
-
-//                        }
-//                    },
-//                    20000
-//            );
-
-                    }else{
-                        return new Tuple.T2<Integer, ObjectNode>(responseTesting._1, responseFail.put("message","trouble when testing transition"));
                     }
 
-                } else {
-                    responseFail.put("stream_status", statusHealth);
-                    responseBodyJson.set("data", responseFail);
-                    return new Tuple.T2<Integer, ObjectNode>(-10, responseBodyJson);
+                }else{
+                    return new Tuple.T2<Integer, ObjectNode>(responseTesting._1, responseFail.put("message","trouble when testing transition"));
                 }
 
+            } else {
+                responseFail.put("stream_status", statusHealth);
+                responseBodyJson.set("data", responseFail);
+                return new Tuple.T2<Integer, ObjectNode>(-10, responseBodyJson);
             }
 
+        }else{
+            return new Tuple.T2<Integer, ObjectNode>(responseStream._1, responseFail.put("message","failed check stream status"));
+        }
+        return new Tuple.T2<Integer, ObjectNode>(200, responseBodyJson);
+    }
 
-        } else if (urlStatus.equalsIgnoreCase("live")) {
-            //CHECK STATUS STREAM
-            //GET LIST BROADCAST BY ID
-            String urlBroadcast = "https://www.googleapis.com/youtube/v3/liveBroadcasts?part=status&id=" + broadcastingID;
-//        System.out.println(urlStream);
-            HttpEntity<String> httpEntityBroadcast = new HttpEntity<String>(headersTransition);
+    public Tuple.T2<Integer, ObjectNode> transitionEventLive(String accessToken, String broadcastingID, String streamID, String urlStatus) {
+        System.out.println("MASUK TRANSITION EVENT Live");
 
-            ResponseEntity<String> responseBroadcast = null;
+        String lifeCycleStatus = "";
+        ObjectNode responseBodyJson = Json.buildObjectNode();
+        ObjectNode responseFail = Json.buildObjectNode();
+        ObjectNode dataObject = Json.buildObjectNode();
 
-            try {
-                responseBroadcast = restTemplate.exchange(urlBroadcast, HttpMethod.GET, httpEntityBroadcast, String.class);
-                responseCode = responseBroadcast.getStatusCode().value();
-            } catch (HttpClientErrorException e) {
-                responseCode = e.getStatusCode().value();
-                return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking status stream"));
-            } catch (HttpServerErrorException e) {
-                responseCode = e.getStatusCode().value();
-                return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking status stream"));
-            }
+        RestTemplate restTemplate = new RestTemplate();
+        headersTransition = new HttpHeaders();
+        headersTransition.setContentType(MediaType.APPLICATION_JSON);
+        headersTransition.set("Authorization", "Bearer " + accessToken);
 
-            if(responseCode == 200){
-                ObjectNode responseBodyBroadcast = Json.parseToObjectNode(responseBroadcast.getBody());
+        //CHECK STATUS STREAM
+        //GET LIST BROADCAST BY ID
+        Tuple.T2<Integer, HttpEntity<String>> responseStream = checkStatusBroadcast(accessToken,broadcastingID);
 
-//        System.out.println(responseBodyStream.get("items").get(0).get("status").get("healthStatus").get("status"));
+        if(responseStream._1 == 200){
+            ObjectNode responseBodyBroadcast = Json.parseToObjectNode(responseStream._2.getBody());
+            lifeCycleStatus = responseBodyBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
+            System.out.println(lifeCycleStatus);
 
-                lifeCycleStatus = responseBodyBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
-                System.out.println(lifeCycleStatus);
+            if (lifeCycleStatus.equalsIgnoreCase("testing")) {
 
-                if (lifeCycleStatus.equalsIgnoreCase("testing")) {
+                Tuple.T2<Integer, HttpEntity<String>> responseLive = transitionChange(accessToken,urlStatus,broadcastingID);
 
-                    Tuple.T2<Integer, HttpEntity<String>> responseLive = transitionChange(accessToken,urlStatus,broadcastingID);
+                if(responseLive._1==200){
 
-                    if(responseLive._1==200){
+                    dataObject.put("id", broadcastingID);
+                    dataObject.put("stream_status", urlStatus);
 
-                        dataObject.put("id", broadcastingID);
-                        dataObject.put("stream_status", urlStatus);
+                    responseBodyJson.set("data", dataObject);
+                    responseBodyJson.put("status_code", 200);
+                    responseBodyJson.put("status", "success");
 
-                        responseBodyJson.set("data", dataObject);
-                        responseBodyJson.put("status_code", 200);
-                        responseBodyJson.put("status", "success");
-
-                    }else{
-                        return new Tuple.T2<Integer, ObjectNode>(responseLive._1, responseFail.put("message","trouble when live transition"));
-                    }
-
-                } else {
-                    return new Tuple.T2<Integer, ObjectNode>(-11, responseFail.put("message","transition still testStarting"));
+                }else{
+                    return new Tuple.T2<Integer, ObjectNode>(responseLive._1, responseFail.put("message","trouble when live transition"));
                 }
+
+            } else {
+                return new Tuple.T2<Integer, ObjectNode>(-11, responseFail.put("message","transition still testStarting"));
             }
+        }else{
+            return new Tuple.T2<Integer, ObjectNode>(responseStream._1, responseFail.put("message","failed check stream status"));
+        }
 
+        return new Tuple.T2<Integer, ObjectNode>(200, responseBodyJson);
 
-        } else if (urlStatus.equalsIgnoreCase("complete")) {
+    }
+
+    public Tuple.T2<Integer, ObjectNode> transitionEventComplete(String accessToken, String broadcastingID, String streamID, String urlStatus) {
+
+        System.out.println("MASUK TRANSITION EVENT COMPLETE");
+
+        String lifeCycleStatus = "";
+        ObjectNode responseBodyJson = Json.buildObjectNode();
+        ObjectNode responseFail = Json.buildObjectNode();
+        ObjectNode dataObject = Json.buildObjectNode();
+
+        RestTemplate restTemplate = new RestTemplate();
+        headersTransition = new HttpHeaders();
+        headersTransition.setContentType(MediaType.APPLICATION_JSON);
+        headersTransition.set("Authorization", "Bearer " + accessToken);
+
             //CHECK STATUS STREAM
             //GET LIST BROADCAST BY ID
-            String urlBroadcast = "https://www.googleapis.com/youtube/v3/liveBroadcasts?part=status&id=" + broadcastingID;
-//        System.out.println(urlStream);
-            HttpEntity<String> httpEntityBroadcast = new HttpEntity<String>(headersTransition);
+            Tuple.T2<Integer, HttpEntity<String>> responseStream = checkStatusBroadcast(accessToken,broadcastingID);
 
-            ResponseEntity<String> responseBroadcast;
-
-            try {
-                responseBroadcast = restTemplate.exchange(urlBroadcast, HttpMethod.GET, httpEntityBroadcast, String.class);
-                responseCode = responseBroadcast.getStatusCode().value();
-            } catch (HttpClientErrorException e) {
-                responseCode = e.getStatusCode().value();
-                return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking status stream"));
-            } catch (HttpServerErrorException e) {
-                responseCode = e.getStatusCode().value();
-                return new Tuple.T2<Integer, ObjectNode>(responseCode, responseFail.put("message","problem checking status stream"));
-
-            }
-
-            if(responseCode == 200){
-                ObjectNode responseBodyBroadcast = Json.parseToObjectNode(responseBroadcast.getBody());
-
-//        System.out.println(responseBodyStream.get("items").get(0).get("status").get("healthStatus").get("status"));
-
-                lifeCycleStatus = responseBodyBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
+            if(responseStream._1 == 200){
+                ObjectNode responseBodyBroadcast = Json.parseToObjectNode(responseStream._2.getBody());
+                System.out.println(responseBodyBroadcast);
+                lifeCycleStatus = responseBodyBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").textValue();
                 System.out.println(lifeCycleStatus);
 
                 if (lifeCycleStatus.equalsIgnoreCase("live")) {
@@ -605,13 +571,69 @@ public class YoutubeService extends BaseController {
                 } else {
                     return new Tuple.T2<Integer, ObjectNode>(-12, responseFail.put("message","transition still liveStarting"));
                 }
+            }else{
+                return new Tuple.T2<Integer, ObjectNode>(responseStream._1, responseFail.put("message","failed check stream status"));
             }
 
+        return new Tuple.T2<Integer, ObjectNode>(200, responseBodyJson);
+    }
+
+    public Tuple.T2<Integer, HttpEntity<String>> checkStatusStream(String accessToken, String streamId){
+        RestTemplate restTemplate = new RestTemplate();
+        headersTransition = new HttpHeaders();
+        headersTransition.setContentType(MediaType.APPLICATION_JSON);
+        headersTransition.set("Authorization", "Bearer " + accessToken);
+
+        String urlStream = "https://www.googleapis.com/youtube/v3/liveStreams?part=status&id=" + streamId;
+        HttpEntity<String> httpEntityBroadcast = new HttpEntity<String>(headersTransition);
+        int responseCode;
+        ResponseEntity<String> responseBroadcast = null;
+
+        try {
+            responseBroadcast = restTemplate.exchange(urlStream, HttpMethod.GET, httpEntityBroadcast, String.class);
+            responseCode = responseBroadcast.getStatusCode().value();
+        } catch (HttpClientErrorException e) {
+            responseCode = e.getStatusCode().value();
+        } catch (HttpServerErrorException e) {
+            responseCode = e.getStatusCode().value();
         }
 
-        return new Tuple.T2<Integer, ObjectNode>(200, responseBodyJson);
+        if (responseCode == 200) {
 
+            return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, responseBroadcast);
+        }
+
+        return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
     }
+
+    public Tuple.T2<Integer, HttpEntity<String>> checkStatusBroadcast(String accessToken, String broadcastingID){
+        RestTemplate restTemplate = new RestTemplate();
+        headersTransition = new HttpHeaders();
+        headersTransition.setContentType(MediaType.APPLICATION_JSON);
+        headersTransition.set("Authorization", "Bearer " + accessToken);
+
+        String urlBroadcast = "https://www.googleapis.com/youtube/v3/liveBroadcasts?part=status&id=" + broadcastingID;
+        HttpEntity<String> httpEntityBroadcast = new HttpEntity<String>(headersTransition);
+        int responseCode;
+        ResponseEntity<String> responseBroadcast = null;
+
+        try {
+            responseBroadcast = restTemplate.exchange(urlBroadcast, HttpMethod.GET, httpEntityBroadcast, String.class);
+            responseCode = responseBroadcast.getStatusCode().value();
+        } catch (HttpClientErrorException e) {
+            responseCode = e.getStatusCode().value();
+        } catch (HttpServerErrorException e) {
+            responseCode = e.getStatusCode().value();
+        }
+
+        if (responseCode == 200) {
+
+            return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, responseBroadcast);
+        }
+
+        return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
+    }
+
 
     public Tuple.T2<Integer, HttpEntity<String>> transitionChange(String accessToken, String urlStatus, String broadcastingID) {
 
@@ -644,6 +666,7 @@ public class YoutubeService extends BaseController {
         return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
     }
 
+    ////////////////////////////////////////////KEY TOKEN///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public String getAccessTokenByRefreshToken(String refreshToken, String clientId, String clientSecret, long accountId) {
 

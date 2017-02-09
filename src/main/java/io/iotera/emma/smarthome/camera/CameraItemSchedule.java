@@ -1,5 +1,7 @@
 package io.iotera.emma.smarthome.camera;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.iotera.emma.smarthome.model.device.ESDevice;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -18,8 +20,10 @@ public class CameraItemSchedule implements ApplicationContextAware {
     private final String CRON_SCHEDULE = "0 55 * * * ?";
 
     private ApplicationContext applicationContext;
-    private String cameraId;
+    private ESDevice device;
     private long accountId;
+    private ObjectNode createObject;
+    private String label;
 
     private ThreadPoolTaskScheduler taskScheduler;
     private Future cameraInit;
@@ -32,10 +36,11 @@ public class CameraItemSchedule implements ApplicationContextAware {
         this.applicationContext = applicationContext;
     }
 
-    void initSchedule(String cameraId, long accountId) {
-        this.cameraId = cameraId;
+    void initSchedule(ESDevice device, long accountId, String label,ObjectNode createObject) {
+        this.device = device;
         this.accountId = accountId;
-
+        this.label = label;
+        this.createObject = createObject;
         this.taskScheduler = (ThreadPoolTaskScheduler) applicationContext.getBean("cameraThreadPoolTaskScheduler");
     }
 
@@ -43,10 +48,10 @@ public class CameraItemSchedule implements ApplicationContextAware {
         removeSchedule();
 
         CameraStartTask taskInit = applicationContext.getBean(CameraStartTask.class);
-        taskInit.initTask(accountId, cameraId, false);
+        taskInit.initTask(accountId, this.device, false, label,createObject);
 
         CameraStartTask taskSchedule = applicationContext.getBean(CameraStartTask.class);
-        taskSchedule.initTask(accountId, cameraId, true);
+        taskSchedule.initTask(accountId, this.device, true, label,createObject);
 
         this.cameraInit = this.taskScheduler.submit(taskInit);
         this.cameraStartSchedule = this.taskScheduler.schedule(taskSchedule,
@@ -55,18 +60,18 @@ public class CameraItemSchedule implements ApplicationContextAware {
         return true;
     }
 
-    boolean updateCameraStopSchedule(String broadcastId, Date time) {
+    boolean updateCameraStopSchedule(String broadcastId, Date time, String streamId) {
 
         if (this.cameraStopSchedule1 == null || this.cameraStopSchedule1.isCancelled() || this.cameraStopSchedule1.isDone()) {
             CameraStopTask taskStop = applicationContext.getBean(CameraStopTask.class);
-            taskStop.initTask(accountId, cameraId, broadcastId, true);
+            taskStop.initTask(accountId, this.device.getId(), broadcastId, true, streamId);
             this.cameraStopSchedule1 = this.taskScheduler.schedule(taskStop, time);
             return true;
         }
 
         if (this.cameraStopSchedule2 == null || this.cameraStopSchedule2.isCancelled() || this.cameraStopSchedule2.isDone()) {
             CameraStopTask taskStop = applicationContext.getBean(CameraStopTask.class);
-            taskStop.initTask(accountId, cameraId, broadcastId, true);
+            taskStop.initTask(accountId, this.device.getId(), broadcastId, true, streamId);
             this.cameraStopSchedule2 = this.taskScheduler.schedule(taskStop, time);
             return true;
         }

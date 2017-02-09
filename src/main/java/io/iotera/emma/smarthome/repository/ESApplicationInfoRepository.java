@@ -31,7 +31,7 @@ public class ESApplicationInfoRepository {
         queryBuilder.append("FROM ");
         queryBuilder.append("application_info_tbl ");
         queryBuilder.append("WHERE ");
-        queryBuilder.append("id = 0");
+        queryBuilder.append("id = 1");
 
         // Execute Query
         String queryString = queryBuilder.toString();
@@ -43,6 +43,7 @@ public class ESApplicationInfoRepository {
         }
 
         Object[] resultObjects = (Object[]) result;
+
         return new Tuple.T2<String, String>((String) resultObjects[0], (String) resultObjects[1]);
     }
 

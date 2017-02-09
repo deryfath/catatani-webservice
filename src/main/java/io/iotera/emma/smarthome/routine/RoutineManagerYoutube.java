@@ -89,9 +89,9 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
         return schedule.removeScheduleByDeviceId(deviceId,accountId);
     }
 
-    public boolean updateSchedule(ESDevice device, long accountId, ObjectNode ObjectKey, String title, int maxqueue) {
+    public boolean updateSchedule(ESDevice device, long accountId, ObjectNode ObjectKey, String title) {
         Schedule schedule = getSchedule(accountId);
-        this.maxqueue = maxqueue;
+        this.maxqueue = ObjectKey.get("max_history").asInt();
         return schedule.updateSchedule(device, accountId, ObjectKey, title, maxqueue);
     }
 
