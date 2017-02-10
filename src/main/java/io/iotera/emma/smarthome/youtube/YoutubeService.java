@@ -423,7 +423,7 @@ public class YoutubeService extends BaseController {
                     System.out.println(lifeCycleStatus);
 
                     try {
-                        Thread.sleep(60000);
+                        Thread.sleep(90000);
                     } catch (InterruptedException ex) {
                         System.out.println(ex.getMessage());
                     }

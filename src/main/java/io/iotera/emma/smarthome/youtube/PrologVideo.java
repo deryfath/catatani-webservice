@@ -117,7 +117,7 @@ public class PrologVideo extends BaseController {
                         statusNodata = responseEntityTransitionStart._2.get("data").get("stream_status").textValue();
                     }catch (NullPointerException e){
                         e.printStackTrace();
-                        return okJsonFailed(responseEntityTransitionStart._1,responseEntityTransitionStart._2.toString());
+                        break;
                     }
                     if(!statusNodata.equalsIgnoreCase("noData")){
                         break;

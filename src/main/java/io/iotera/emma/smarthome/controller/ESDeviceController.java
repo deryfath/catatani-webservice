@@ -3,6 +3,7 @@ package io.iotera.emma.smarthome.controller;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.camera.CameraManager;
+import io.iotera.emma.smarthome.camera.CameraStartTask;
 import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.emma.smarthome.model.device.ESRoom;
 import io.iotera.emma.smarthome.preference.DevicePref;
@@ -19,6 +20,9 @@ import io.iotera.util.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +55,9 @@ public class ESDeviceController extends ESBaseController {
 
     @Autowired
     PrologVideo prologVideo;
+
+    @Autowired
+    CameraStartTask cameraStartTask;
 
     public ResponseEntity listAll(long accountId) {
 
@@ -225,7 +232,14 @@ public class ESDeviceController extends ESBaseController {
                         room, roomId, accountId);
                 deviceJpaRepository.save(device);
 
-                ResponseEntity responseEntityStream = prologVideo.runVideoProlog(label, accountId);
+                DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date date = new Date();
+                System.out.println(dateFormat.format(date).toString());
+
+                //round time for prolog
+                Date dateHoursRound = cameraStartTask.toNearestWholeHour(date);
+                System.out.println(dateFormat.format(dateHoursRound).toString());
+                ResponseEntity responseEntityStream = prologVideo.runVideoProlog(label+" "+dateFormat.format(dateHoursRound).toString(), accountId);
                 ObjectNode objectEntityStream = Json.parseToObjectNode(responseEntityStream.getBody().toString());
 
                 System.out.println(objectEntityStream);
