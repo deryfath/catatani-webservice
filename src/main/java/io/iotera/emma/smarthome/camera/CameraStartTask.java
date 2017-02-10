@@ -62,7 +62,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
     private ESDevice device;
     private boolean fromSchedule;
     private ObjectNode objectKey;
-    private String title,accessToken,clientId,clientSecret,refreshToken;
+    private String title,accessToken,clientId,clientSecret,refreshToken,oldBroadcastID;
     private String stateTask,mqttTime,newTitle,broadcastID, streamID, streamKey,ingestionAddress,youtube_url;
     private int maxqueue,statusCode;
     private Message<String> message;
@@ -227,9 +227,18 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
 
         }
 
+        //get old broadcast id
+        ESDevice deviceList = deviceRepository.findByDeviceId(device.getId(),accountId);
+        String info = deviceList.getInfo();
+        ObjectNode objectInfo = Json.parseToObjectNode(info);
+
         //CREATE MQTT RESPONSE JSON
         ObjectNode responseMqttJson = Json.buildObjectNode();
 //            responseMqttJson.put("cid",device.getId());
+        if(objectInfo.get("ybid")!=null){
+            oldBroadcastID = objectInfo.get("ybid").textValue();
+            responseMqttJson.put("ybido",oldBroadcastID);
+        }
         responseMqttJson.put("tm",mqttTime);
         responseMqttJson.put("ysid",streamID);
         responseMqttJson.put("ysk",ingestionAddress+"/"+streamKey);
@@ -271,7 +280,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
         cameraManager.updateStopSchedule(accountId, device.getId(), broadcastID, stopTime, streamID);
     }
 
-    static Date toNearestWholeHour(Date d) {
+    public static Date toNearestWholeHour(Date d) {
         Calendar c = new GregorianCalendar();
         c.setTime(d);
 
