@@ -237,7 +237,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
 //            responseMqttJson.put("cid",device.getId());
         if(objectInfo.get("ybid")!=null){
             oldBroadcastID = objectInfo.get("ybid").textValue();
-            responseMqttJson.put("ybido",oldBroadcastID);
+            responseMqttJson.put("yobid",oldBroadcastID);
         }
         responseMqttJson.put("tm",mqttTime);
         responseMqttJson.put("ysid",streamID);

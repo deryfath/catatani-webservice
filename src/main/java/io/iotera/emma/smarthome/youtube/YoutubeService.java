@@ -144,23 +144,23 @@ public class YoutubeService extends BaseController {
         ObjectNode responseFail = Json.buildObjectNode();
         ObjectNode responseBodyJson = Json.buildObjectNode();
         ObjectNode dataObject = Json.buildObjectNode();
-        Tuple.T2<Integer, HttpEntity<String>> resultBind = null;
+        Tuple.T2<Integer, String> resultBind = null;
 
         //CREATE BROADCAST
-        Tuple.T2<Integer, HttpEntity<String>> resultBroadcast = createBroadcast(accessToken,title);
+        Tuple.T2<Integer, String> resultBroadcast = createBroadcast(accessToken,title);
 
         if(resultBroadcast._1==200){
 
-            Tuple.T2<Integer, HttpEntity<String>> resultStream = createStream(accessToken);
+            Tuple.T2<Integer, String> resultStream = createStream(accessToken);
 
             if(resultStream._1==200){
 
                 //GET BROADCAST ID FOR BIND
-                ObjectNode responseBodyBroadcast = Json.parseToObjectNode(resultBroadcast._2.getBody());
+                ObjectNode responseBodyBroadcast = Json.parseToObjectNode(resultBroadcast._2);
                 String broadcastID = responseBodyBroadcast.get("id").toString().replaceAll("[^\\w\\s\\-_]", "");
 
                 //GET STREAM ID FOR BIND
-                ObjectNode responseBodyStream = Json.parseToObjectNode(resultStream._2.getBody());
+                ObjectNode responseBodyStream = Json.parseToObjectNode(resultStream._2);
                 String streamID = responseBodyStream.get("id").toString().replaceAll("[^\\w\\s\\-_]", "");
 
                 //BINDING STREAM AND BROADCAST
@@ -176,7 +176,7 @@ public class YoutubeService extends BaseController {
                     dataObject.put("privacyStatus", responseBodyBroadcast.get("status").get("privacyStatus").textValue());
                     dataObject.put("recordingStatus", responseBodyBroadcast.get("status").get("recordingStatus").textValue());
                     String linkUrl = responseBodyBroadcast.get("contentDetails").get("monitorStream").get("embedHtml").textValue();
-                    String trimUrl = linkUrl.substring(linkUrl.indexOf("src=") + 6, linkUrl.indexOf("frameborder") - 3);
+                    String trimUrl = linkUrl.substring(linkUrl.indexOf("src=") + 5, linkUrl.indexOf("frameborder") - 3);
                     dataObject.put("link", trimUrl);
                     dataObject.put("stream_key", responseBodyStream.get("cdn").get("ingestionInfo").get("streamName").textValue());
                     dataObject.put("ingestion_address", responseBodyStream.get("cdn").get("ingestionInfo").get("ingestionAddress").textValue());
@@ -187,37 +187,19 @@ public class YoutubeService extends BaseController {
                     responseBodyJson.put("status_code", 200);
                     responseBodyJson.put("status", "success");
 
-                }else if (resultBind._1 == 403){
-                    responseFail.put("Message", "forbidden problem in bind");
-                    return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
-                }else if(resultBind._1 == 400){
-                    responseFail.put("Message", "bad request bind");
-                    return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
-                }else if(resultBind._1 == 401){
-                    responseFail.put("Message", "unauthorized problem bind");
-                    return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
+                }else{
+                    responseFail.put("Message", resultBind._2);
+                    return new Tuple.T2<Integer, ObjectNode>(resultBind._1, responseFail);
                 }
 
 
-            }else if (resultStream._1 == 403){
-                responseFail.put("Message", "forbidden problem in stream");
-                return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
-            }else if(resultStream._1 == 400){
-                responseFail.put("Message", "bad request stream");
-                return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
-            }else if(resultStream._1 == 401){
-                responseFail.put("Message", "unauthorized problem stream");
-                return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
+            }else{
+                responseFail.put("Message", resultStream._2);
+                return new Tuple.T2<Integer, ObjectNode>(resultStream._1, responseFail);
             }
 
-        }else if (resultBroadcast._1 == 403){
-            responseFail.put("Message", "forbidden problem in broadcast");
-            return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
-        }else if(resultBroadcast._1 == 400){
-            responseFail.put("Message", "bad request broadcast");
-            return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
-        }else if(resultBroadcast._1 == 401){
-            responseFail.put("Message", "unauthorized problem broadcast");
+        }else {
+            responseFail.put("Message", resultBroadcast._2);
             return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
         }
 
@@ -225,7 +207,7 @@ public class YoutubeService extends BaseController {
 
     }
 
-    public Tuple.T2<Integer, HttpEntity<String>> createBroadcast(String accessToken, String title){
+    public Tuple.T2<Integer, String> createBroadcast(String accessToken, String title){
 
         //get current date time with Date()
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.ENGLISH);
@@ -247,7 +229,7 @@ public class YoutubeService extends BaseController {
         status.putAll(privacyStatus);
 
         HashMap<String, Object> containDetailsData = new HashMap<String, Object>();
-        containDetailsData.put("enableEmbed", true);
+        containDetailsData.put("enableEmbed", false);
         containDetailsData.put("enableLowLatency", true);
 
         JSONObject contentDetails = new JSONObject();
@@ -262,6 +244,7 @@ public class YoutubeService extends BaseController {
         parent.putAll(data);
 
         int responseCode;
+        String responseMessage = null;
 
         //CREATE BROADCAST
         RestTemplate restTemplate = new RestTemplate();
@@ -280,21 +263,23 @@ public class YoutubeService extends BaseController {
             responseCode = responseBroadcast.getStatusCode().value();
         } catch (HttpClientErrorException e) {
             responseCode = e.getStatusCode().value();
+            responseMessage = e.getMessage();
         } catch (HttpServerErrorException e) {
             responseCode = e.getStatusCode().value();
+            responseMessage = e.getMessage();
         }
 
         if (responseCode == 200) {
 
-            return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, responseBroadcast);
+            return new Tuple.T2<Integer, String>(responseCode, responseBroadcast.getBody().toString());
         }
 
         System.out.println("response : "+responseCode);
 
-        return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
+        return new Tuple.T2<Integer, String>(responseCode, responseMessage);
     }
 
-    public Tuple.T2<Integer, HttpEntity<String>> createStream(String accessToken){
+    public Tuple.T2<Integer, String> createStream(String accessToken){
 
         //STREAM
         //Construct json Stream
@@ -319,6 +304,7 @@ public class YoutubeService extends BaseController {
 //        System.out.println(parentStream);
 
         int responseCode;
+        String responseMessage = "";
 
         //CREATE STREAM
         RestTemplate restTemplate = new RestTemplate();
@@ -335,21 +321,21 @@ public class YoutubeService extends BaseController {
             responseCode = responseStream.getStatusCode().value();
         } catch (HttpClientErrorException e) {
             responseCode = e.getStatusCode().value();
-
+            responseMessage = e.getMessage();
         } catch (HttpServerErrorException e) {
             responseCode = e.getStatusCode().value();
-
+            responseMessage = e.getMessage();
         }
 
         if (responseCode == 200) {
 
-            return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, responseStream);
+            return new Tuple.T2<Integer, String>(responseCode, responseStream.getBody().toString());
         }
 
-        return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
+        return new Tuple.T2<Integer, String>(responseCode, responseMessage);
     }
 
-    public Tuple.T2<Integer, HttpEntity<String>> createBind(String accessToken, String broadcastID, String streamID){
+    public Tuple.T2<Integer, String> createBind(String accessToken, String broadcastID, String streamID){
         //BIND STREAM TO BROADCAST
         //Bind broadcast & stream
         RestTemplate restTemplate = new RestTemplate();
@@ -362,6 +348,7 @@ public class YoutubeService extends BaseController {
         HttpEntity<String> httpEntityBind = new HttpEntity<String>(headers);
 
         int responseCode;
+        String responseMessage = "";
 
         ResponseEntity<String> responseBind = null;
 
@@ -370,16 +357,18 @@ public class YoutubeService extends BaseController {
             responseCode = responseBind.getStatusCode().value();
         } catch (HttpClientErrorException e) {
             responseCode = e.getStatusCode().value();
+            responseMessage = e.getMessage();
         } catch (HttpServerErrorException e) {
             responseCode = e.getStatusCode().value();
+            responseMessage = e.getMessage();
         }
 
         if (responseCode == 200) {
 
-            return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, responseBind);
+            return new Tuple.T2<Integer, String>(responseCode, responseBind.getBody().toString());
         }
 
-        return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
+        return new Tuple.T2<Integer, String>(responseCode, responseMessage);
     }
 
     ///////////////////////////////////////////TRANSITION EVENT///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -587,6 +576,7 @@ public class YoutubeService extends BaseController {
         String urlStream = "https://www.googleapis.com/youtube/v3/liveStreams?part=status&id=" + streamId;
         HttpEntity<String> httpEntityBroadcast = new HttpEntity<String>(headersTransition);
         int responseCode;
+        String responseMessage = "";
         ResponseEntity<String> responseBroadcast = null;
 
         try {
@@ -662,6 +652,9 @@ public class YoutubeService extends BaseController {
 
             return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, responseTransistionTesting);
         }
+
+        System.out.println("REQUEST : "+httpEntityTransitionTesting);
+        System.out.println("RESPONSE : "+responseTransistionTesting);
 
         return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
     }

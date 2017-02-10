@@ -357,7 +357,7 @@ public class ESDeviceRepository extends BaseController {
             oldYotubeId = infoObject.get("ybid").textValue();
         }
 
-        infoObject.put("ybido",oldYotubeId);
+        infoObject.put("yobid",oldYotubeId);
         infoObject.put("ybid",youtubeId);
         infoObject.put("ysid",streamId);
         infoObject.put("ysk",ingestionAddress+"/"+streamKey);

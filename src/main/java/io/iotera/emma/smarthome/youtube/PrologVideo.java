@@ -66,7 +66,7 @@ public class PrologVideo extends BaseController {
             return okJsonFailed(responseEntityCreate._1,responseEntityCreate._2.toString());
         }
 
-        System.out.println(responseEntityCreate);
+        System.out.println("RESPONSE CREATE : "+responseEntityCreate);
         StreamKey = responseEntityCreate._2.get("data").get("stream_key").textValue();
 
         try {
@@ -107,14 +107,17 @@ public class PrologVideo extends BaseController {
 
             //MQTT MESSAGE IF NO DATA
             String statusNodata = responseEntityTransitionStart._2.get("data").get("stream_status").textValue();
-
             if(statusNodata.equalsIgnoreCase("noData")){
 
                 while(statusNodata.equalsIgnoreCase("noData")){
 
                     responseEntityTransitionStart = youtubeService.transitionEventStart(accessToken,broadcastID,streamID,state);
                     try{
-                        statusNodata = responseEntityTransitionStart._2.get("data").get("stream_status").textValue();
+                        if(responseEntityTransitionStart._2.get("data").get("stream_status")!=null){
+                            System.out.println(responseEntityTransitionStart._2.get("data").get("stream_status"));
+                            statusNodata = responseEntityTransitionStart._2.get("data").get("stream_status").textValue();
+                        }
+
                     }catch (NullPointerException e){
                         e.printStackTrace();
                         break;
@@ -122,6 +125,9 @@ public class PrologVideo extends BaseController {
                     if(!statusNodata.equalsIgnoreCase("noData")){
                         break;
                     }
+                }
+                if(responseEntityTransitionStart._2.get("data").get("stream_status")!=null){
+                    System.out.println(responseEntityTransitionStart._2.get("data").get("stream_status"));
                 }
 
             }
