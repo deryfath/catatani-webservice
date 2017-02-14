@@ -62,12 +62,17 @@ public class PrologVideo extends BaseController {
             System.out.println("masuk CREATE");
             responseEntityCreate = youtubeService.createEvent(accessToken,title);
 
-        }else if(responseEntityCreate._1 == 400 || responseEntityCreate._1 == 403){
+        }else if(responseEntityCreate._1 != 200 && responseEntityCreate._1 != 401){
+            System.out.println("ERROR CREATE EVENT");
             return okJsonFailed(responseEntityCreate._1,responseEntityCreate._2.toString());
         }
 
         System.out.println("RESPONSE CREATE : "+responseEntityCreate);
-        StreamKey = responseEntityCreate._2.get("data").get("stream_key").textValue();
+        if(responseEntityCreate._2.get("data")!= null){
+            StreamKey = responseEntityCreate._2.get("data").get("stream_key").textValue();
+        }else{
+            return okJsonFailed(-3,"forbidden to create event");
+        }
 
         try {
 //            proc = Runtime.getRuntime().exec(env.getProperty("ffmpeg.prolog")+" -re -stream_loop -1 -i "+env.getProperty("ffmpeg.prolog.source")+" -tune zerolatency -vcodec libx264 -t 12:00:00 -pix_fmt + -c:v copy -c:a aac -strict experimental -f flv rtmp://a.rtmp.youtube.com/live2/"+StreamKey);
@@ -114,13 +119,13 @@ public class PrologVideo extends BaseController {
                     responseEntityTransitionStart = youtubeService.transitionEventStart(accessToken,broadcastID,streamID,state);
                     try{
                         if(responseEntityTransitionStart._2.get("data").get("stream_status")!=null){
-                            System.out.println(responseEntityTransitionStart._2.get("data").get("stream_status"));
+//                            System.out.println(responseEntityTransitionStart._2.get("data").get("stream_status"));
                             statusNodata = responseEntityTransitionStart._2.get("data").get("stream_status").textValue();
                         }
 
                     }catch (NullPointerException e){
                         e.printStackTrace();
-                        break;
+                        return okJsonFailed(-13,"Null Pointer Exception");
                     }
                     if(!statusNodata.equalsIgnoreCase("noData")){
                         break;

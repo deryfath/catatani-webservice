@@ -262,10 +262,12 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
 
         //STOP PROLOG VIDEO
         System.out.println(objectEntityStream);
-        String streamStatus = objectEntityStream.get("stream_status").get("data").get("stream_status").textValue();
-        if (streamStatus.equalsIgnoreCase("live")) {
-            prologVideo.stopVideoProlog();
-            deviceRepository.updateStatusInfoDevice(device.getId(), broadcastID, ingestionAddress, streamKey, streamID, youtube_url, mqttTime);
+        if(objectEntityStream.get("stream_status").get("data")!=null){
+            String streamStatus = objectEntityStream.get("stream_status").get("data").get("stream_status").textValue();
+            if (streamStatus.equalsIgnoreCase("live")) {
+                prologVideo.stopVideoProlog();
+                deviceRepository.updateStatusInfoDevice(device.getId(), broadcastID, ingestionAddress, streamKey, streamID, youtube_url, mqttTime);
+            }
         }
 
         System.out.println("broadcastID : "+broadcastID);

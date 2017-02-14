@@ -390,26 +390,26 @@ public class YoutubeService extends BaseController {
 
         //CHECK STATUS STREAM
         //GET LIST STREAM BY ID
-        Tuple.T2<Integer, HttpEntity<String>> responseStream = checkStatusStream(accessToken,streamID);
+        Tuple.T2<Integer, String> responseStream = checkStatusStream(accessToken,streamID);
 
         if(responseStream._1 == 200){
-            ObjectNode responseBodyStream = Json.parseToObjectNode(responseStream._2.getBody());
-            String statusStreaming = responseBodyStream.get("items").get(0).get("status").get("streamStatus").toString().replaceAll("[^\\w\\s]", "");
-            String statusHealth = responseBodyStream.get("items").get(0).get("status").get("healthStatus").get("status").toString().replaceAll("[^\\w\\s]", "");
+            ObjectNode responseBodyStream = Json.parseToObjectNode(responseStream._2);
+            String statusStreaming = responseBodyStream.get("items").get(0).get("status").get("streamStatus").textValue();
+            String statusHealth = responseBodyStream.get("items").get(0).get("status").get("healthStatus").get("status").textValue();
             System.out.println(statusStreaming);
             System.out.println(statusHealth);
 
             if (!statusHealth.equalsIgnoreCase("noData")) {
                 System.out.println("masuk testing");
 
-                Tuple.T2<Integer, HttpEntity<String>> responseTesting = transitionChange(accessToken,urlStatus,broadcastingID);
+                Tuple.T2<Integer, String> responseTesting = transitionChange(accessToken,urlStatus,broadcastingID);
 
                 if(responseTesting._1==200){
 
-                    ObjectNode responseBodyTransitionTesting = Json.parseToObjectNode(responseTesting._2.getBody());
+                    ObjectNode responseBodyTransitionTesting = Json.parseToObjectNode(responseTesting._2);
 
                     lifeCycleStatus = responseBodyTransitionTesting.get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
-                    System.out.println(lifeCycleStatus);
+                    System.out.println("LIFECYCLE STATUS : "+ lifeCycleStatus);
 
                     try {
                         Thread.sleep(90000);
@@ -421,17 +421,34 @@ public class YoutubeService extends BaseController {
                     responseStream = checkStatusBroadcast(accessToken,broadcastingID);
 
                     if(responseStream._1 == 200){
-                        ObjectNode responseBodyGetStatusBroadcast = Json.parseToObjectNode(responseStream._2.getBody());
+                        ObjectNode responseBodyGetStatusBroadcast = Json.parseToObjectNode(responseStream._2);
 
                         lifeCycleStatus = responseBodyGetStatusBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").textValue();
 
                         System.out.println("LIFE CYCLE AFTER DELAY : " + lifeCycleStatus);
+
+                        while(lifeCycleStatus.equalsIgnoreCase("testStarting")){
+                            System.out.println("masuk looping teststarting");
+                            responseStream = checkStatusBroadcast(accessToken,broadcastingID);
+                            if(responseStream._1 == 200) {
+                                responseBodyGetStatusBroadcast = Json.parseToObjectNode(responseStream._2);
+                                lifeCycleStatus = responseBodyGetStatusBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").textValue();
+
+                                if (lifeCycleStatus.equalsIgnoreCase("testing")) {
+                                    System.out.println("out test starting");
+                                    break;
+                                }
+                            }else{
+                                return new Tuple.T2<Integer, ObjectNode>(responseStream._1, responseFail.put("message",responseStream._2));
+                            }
+                        }
+
                         // your code here
                         if (lifeCycleStatus.equalsIgnoreCase("testing")) {
                             System.out.println("masuk live");
                             urlStatus = "live";
 
-                            Tuple.T2<Integer, HttpEntity<String>> responseLive = transitionChange(accessToken,urlStatus,broadcastingID);
+                            Tuple.T2<Integer, String> responseLive = transitionChange(accessToken,urlStatus,broadcastingID);
 
                             if(responseLive._1==200){
 
@@ -443,12 +460,14 @@ public class YoutubeService extends BaseController {
                                 responseBodyJson.put("status", "success");
 
                             }else{
-                                return new Tuple.T2<Integer, ObjectNode>(responseLive._1, responseFail.put("message","trouble when live transition"));
+                                return new Tuple.T2<Integer, ObjectNode>(responseLive._1, responseFail.put("message",responseLive._2));
                             }
 
                         } else {
                             return new Tuple.T2<Integer, ObjectNode>(-11, responseFail.put("message","transition still testStarting"));
                         }
+                    }else{
+                        return new Tuple.T2<Integer, ObjectNode>(responseStream._1, responseFail.put("message",responseStream._2));
                     }
 
                 }else{
@@ -456,13 +475,14 @@ public class YoutubeService extends BaseController {
                 }
 
             } else {
+
                 responseFail.put("stream_status", statusHealth);
                 responseBodyJson.set("data", responseFail);
                 return new Tuple.T2<Integer, ObjectNode>(-10, responseBodyJson);
             }
 
         }else{
-            return new Tuple.T2<Integer, ObjectNode>(responseStream._1, responseFail.put("message","failed check stream status"));
+            return new Tuple.T2<Integer, ObjectNode>(responseStream._1, responseFail.put("message",responseStream._2));
         }
         return new Tuple.T2<Integer, ObjectNode>(200, responseBodyJson);
     }
@@ -482,16 +502,16 @@ public class YoutubeService extends BaseController {
 
         //CHECK STATUS STREAM
         //GET LIST BROADCAST BY ID
-        Tuple.T2<Integer, HttpEntity<String>> responseStream = checkStatusBroadcast(accessToken,broadcastingID);
+        Tuple.T2<Integer, String> responseStream = checkStatusBroadcast(accessToken,broadcastingID);
 
         if(responseStream._1 == 200){
-            ObjectNode responseBodyBroadcast = Json.parseToObjectNode(responseStream._2.getBody());
+            ObjectNode responseBodyBroadcast = Json.parseToObjectNode(responseStream._2);
             lifeCycleStatus = responseBodyBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
             System.out.println(lifeCycleStatus);
 
             if (lifeCycleStatus.equalsIgnoreCase("testing")) {
 
-                Tuple.T2<Integer, HttpEntity<String>> responseLive = transitionChange(accessToken,urlStatus,broadcastingID);
+                Tuple.T2<Integer, String> responseLive = transitionChange(accessToken,urlStatus,broadcastingID);
 
                 if(responseLive._1==200){
 
@@ -503,14 +523,14 @@ public class YoutubeService extends BaseController {
                     responseBodyJson.put("status", "success");
 
                 }else{
-                    return new Tuple.T2<Integer, ObjectNode>(responseLive._1, responseFail.put("message","trouble when live transition"));
+                    return new Tuple.T2<Integer, ObjectNode>(responseLive._1, responseFail.put("message",responseLive._2));
                 }
 
             } else {
                 return new Tuple.T2<Integer, ObjectNode>(-11, responseFail.put("message","transition still testStarting"));
             }
         }else{
-            return new Tuple.T2<Integer, ObjectNode>(responseStream._1, responseFail.put("message","failed check stream status"));
+            return new Tuple.T2<Integer, ObjectNode>(responseStream._1, responseFail.put("message",responseStream._2));
         }
 
         return new Tuple.T2<Integer, ObjectNode>(200, responseBodyJson);
@@ -533,16 +553,16 @@ public class YoutubeService extends BaseController {
 
             //CHECK STATUS STREAM
             //GET LIST BROADCAST BY ID
-            Tuple.T2<Integer, HttpEntity<String>> responseStream = checkStatusBroadcast(accessToken,broadcastingID);
+            Tuple.T2<Integer, String> responseStream = checkStatusBroadcast(accessToken,broadcastingID);
 
             if(responseStream._1 == 200){
-                ObjectNode responseBodyBroadcast = Json.parseToObjectNode(responseStream._2.getBody());
+                ObjectNode responseBodyBroadcast = Json.parseToObjectNode(responseStream._2);
                 System.out.println(responseBodyBroadcast);
                 lifeCycleStatus = responseBodyBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").textValue();
                 System.out.println(lifeCycleStatus);
 
                 if (lifeCycleStatus.equalsIgnoreCase("live")) {
-                    Tuple.T2<Integer, HttpEntity<String>> responseComplete = transitionChange(accessToken,urlStatus,broadcastingID);
+                    Tuple.T2<Integer, String> responseComplete = transitionChange(accessToken,urlStatus,broadcastingID);
 
                     if(responseComplete._1==200){
 
@@ -554,20 +574,20 @@ public class YoutubeService extends BaseController {
                         responseBodyJson.put("status", "success");
 
                     }else{
-                        return new Tuple.T2<Integer, ObjectNode>(responseComplete._1, responseFail.put("message","trouble when complete transition"));
+                        return new Tuple.T2<Integer, ObjectNode>(responseComplete._1, responseFail.put("message",responseComplete._2));
                     }
 
                 } else {
                     return new Tuple.T2<Integer, ObjectNode>(-12, responseFail.put("message","transition still liveStarting"));
                 }
             }else{
-                return new Tuple.T2<Integer, ObjectNode>(responseStream._1, responseFail.put("message","failed check stream status"));
+                return new Tuple.T2<Integer, ObjectNode>(responseStream._1, responseFail.put("message",responseStream._2));
             }
 
         return new Tuple.T2<Integer, ObjectNode>(200, responseBodyJson);
     }
 
-    public Tuple.T2<Integer, HttpEntity<String>> checkStatusStream(String accessToken, String streamId){
+    public Tuple.T2<Integer, String> checkStatusStream(String accessToken, String streamId){
         RestTemplate restTemplate = new RestTemplate();
         headersTransition = new HttpHeaders();
         headersTransition.setContentType(MediaType.APPLICATION_JSON);
@@ -584,19 +604,21 @@ public class YoutubeService extends BaseController {
             responseCode = responseBroadcast.getStatusCode().value();
         } catch (HttpClientErrorException e) {
             responseCode = e.getStatusCode().value();
+            responseMessage = e.getMessage();
         } catch (HttpServerErrorException e) {
             responseCode = e.getStatusCode().value();
+            responseMessage = e.getMessage();
         }
 
         if (responseCode == 200) {
 
-            return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, responseBroadcast);
+            return new Tuple.T2<Integer, String>(responseCode, responseBroadcast.getBody().toString());
         }
 
-        return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
+        return new Tuple.T2<Integer, String>(responseCode, responseMessage);
     }
 
-    public Tuple.T2<Integer, HttpEntity<String>> checkStatusBroadcast(String accessToken, String broadcastingID){
+    public Tuple.T2<Integer, String> checkStatusBroadcast(String accessToken, String broadcastingID){
         RestTemplate restTemplate = new RestTemplate();
         headersTransition = new HttpHeaders();
         headersTransition.setContentType(MediaType.APPLICATION_JSON);
@@ -605,6 +627,7 @@ public class YoutubeService extends BaseController {
         String urlBroadcast = "https://www.googleapis.com/youtube/v3/liveBroadcasts?part=status&id=" + broadcastingID;
         HttpEntity<String> httpEntityBroadcast = new HttpEntity<String>(headersTransition);
         int responseCode;
+        String responseMessage = "";
         ResponseEntity<String> responseBroadcast = null;
 
         try {
@@ -612,20 +635,22 @@ public class YoutubeService extends BaseController {
             responseCode = responseBroadcast.getStatusCode().value();
         } catch (HttpClientErrorException e) {
             responseCode = e.getStatusCode().value();
+            responseMessage = e.getMessage();
         } catch (HttpServerErrorException e) {
             responseCode = e.getStatusCode().value();
+            responseMessage = e.getMessage();
         }
 
         if (responseCode == 200) {
 
-            return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, responseBroadcast);
+            return new Tuple.T2<Integer, String>(responseCode, responseBroadcast.getBody().toString());
         }
 
-        return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
+        return new Tuple.T2<Integer, String>(responseCode, responseMessage);
     }
 
 
-    public Tuple.T2<Integer, HttpEntity<String>> transitionChange(String accessToken, String urlStatus, String broadcastingID) {
+    public Tuple.T2<Integer, String> transitionChange(String accessToken, String urlStatus, String broadcastingID) {
 
         RestTemplate restTemplate = new RestTemplate();
         headersTransition = new HttpHeaders();
@@ -636,7 +661,7 @@ public class YoutubeService extends BaseController {
         HttpEntity<String> httpEntityTransitionTesting = new HttpEntity<String>(headersTransition);
 
         int responseCode;
-
+        String responseMessage = "";
         ResponseEntity<String> responseTransistionTesting = null;
 
         try {
@@ -644,19 +669,21 @@ public class YoutubeService extends BaseController {
             responseCode = responseTransistionTesting.getStatusCode().value();
         } catch (HttpClientErrorException e) {
             responseCode = e.getStatusCode().value();
+            responseMessage = e.getMessage();
         } catch (HttpServerErrorException e) {
             responseCode = e.getStatusCode().value();
+            responseMessage = e.getMessage();
         }
 
         if (responseCode == 200) {
 
-            return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, responseTransistionTesting);
+            return new Tuple.T2<Integer, String>(responseCode, responseTransistionTesting.getBody().toString());
         }
 
         System.out.println("REQUEST : "+httpEntityTransitionTesting);
         System.out.println("RESPONSE : "+responseTransistionTesting);
 
-        return new Tuple.T2<Integer, HttpEntity<String>>(responseCode, null);
+        return new Tuple.T2<Integer, String>(responseCode, responseMessage);
     }
 
     ////////////////////////////////////////////KEY TOKEN///////////////////////////////////////////////////////////////////////////////////////////////////////
