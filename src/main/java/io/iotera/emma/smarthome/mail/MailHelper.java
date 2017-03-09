@@ -1,6 +1,5 @@
 package io.iotera.emma.smarthome.mail;
 
-import io.iotera.emma.smarthome.utility.ESUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.mail.javamail.JavaMailSender;

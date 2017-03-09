@@ -2,12 +2,9 @@ package io.iotera.emma.smarthome.controller.client;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.controller.ESAccountController;
-import io.iotera.emma.smarthome.controller.ESBaseController;
 import io.iotera.emma.smarthome.model.client.ESClient;
-import io.iotera.emma.smarthome.model.client.ESClientParuru;
 import io.iotera.emma.smarthome.model.client.ESClientProfile;
 import io.iotera.emma.smarthome.repository.ESClientRepository.ESClientJpaRepository;
-import io.iotera.emma.smarthome.repository.ESClientRepository.ESClientParuruJpaRepository;
 import io.iotera.emma.smarthome.repository.ESClientRepository.ESClientProfileJpaRepository;
 import io.iotera.emma.smarthome.utility.ESUtility;
 import io.iotera.emma.smarthome.utility.ResourceUtility;
@@ -21,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -56,14 +52,14 @@ public class ESClientAccountController extends ESAccountController {
             response.put("phone_number", client.getPhoneNumber());
             response.put("first_name", client.getFirstName());
             response.put("last_name", client.getLastName());
-            response.put("registered_date", formatDate(client.getRegisteredDate(),"yyyy-MM-dd HH:mm:ss"));
+            response.put("registered_date", formatDate(client.getRegisteredDate(), "yyyy-MM-dd HH:mm:ss"));
             ESClientProfile clientProfile = client.getClientProfile();
             response.put("gender", clientProfile.getGender() == 1 ? "female" : "male");
-            response.put("dob", formatDate(clientProfile.getDob(),"yyyy-MM-dd HH:mm:ss"));
+            response.put("dob", formatDate(clientProfile.getDob(), "yyyy-MM-dd HH:mm:ss"));
         }
         if (attrList.contains("pic")) {
             response.put("picture", client.picturePath(getProperty("host.path")));
-            response.put("picture_last_updated", formatDate(client.getPictureLastUpdated(),"yyyy-MM-dd HH:mm:ss"));
+            response.put("picture_last_updated", formatDate(client.getPictureLastUpdated(), "yyyy-MM-dd HH:mm:ss"));
         }
         response.put("status_desc", "get_client_success");
         response.put("status_code", 0);
@@ -156,7 +152,7 @@ public class ESClientAccountController extends ESAccountController {
                     clientProfile.setDob(dob);
                     editProfile = true;
                 }
-                response.put("dob", formatDate(dob,"yyyy-MM-dd HH:mm:ss"));
+                response.put("dob", formatDate(dob, "yyyy-MM-dd HH:mm:ss"));
             }
 
             if (editProfile) {
@@ -188,7 +184,7 @@ public class ESClientAccountController extends ESAccountController {
             edit = true;
 
             response.put("picture", client.picturePath(getProperty("host.path")));
-            response.put("picture_last_updated", formatDate(client.getPictureLastUpdated(),"yyyy-MM-dd HH:mm:ss"));
+            response.put("picture_last_updated", formatDate(client.getPictureLastUpdated(), "yyyy-MM-dd HH:mm:ss"));
         }
 
         if (edit) {

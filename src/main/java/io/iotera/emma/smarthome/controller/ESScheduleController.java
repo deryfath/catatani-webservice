@@ -186,7 +186,7 @@ public class ESScheduleController extends ESRoutineController {
         System.out.println("masuk SCHEDULING");
         ObjectNode response = Json.buildObjectNode();
 
-        String title = rget(body,"broadcast_title");
+        String title = rget(body, "broadcast_title");
 
 //        Runnable runnable = new Runnable() {
 //            public void run() {
@@ -201,7 +201,7 @@ public class ESScheduleController extends ESRoutineController {
 //        routineManagerYoutube.updateSchedule(accountId, accessToken, title);
 
         ObjectNode responseBodyJson = Json.buildObjectNode();
-        responseBodyJson.put("status","Initializing schedule");
+        responseBodyJson.put("status", "Initializing schedule");
 
         response.set("data", responseBodyJson);
         response.put("status_code", 0);

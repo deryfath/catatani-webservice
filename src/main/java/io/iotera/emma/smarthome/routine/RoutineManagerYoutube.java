@@ -2,21 +2,15 @@ package io.iotera.emma.smarthome.routine;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.device.ESDevice;
-import io.iotera.emma.smarthome.model.device.ESRoom;
-import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.repository.ESAccountCameraRepository;
 import io.iotera.emma.smarthome.repository.ESCameraHistoryRepository;
 import io.iotera.emma.smarthome.repository.ESDeviceRepository;
 import io.iotera.emma.smarthome.youtube.YoutubeService;
-import io.iotera.util.Json;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.ResponseEntity;
-import org.springframework.integration.mqtt.support.MqttHeaders;
-import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.Message;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
@@ -46,21 +40,20 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
     private ApplicationContext applicationContext;
     private int maxqueue;
     private boolean manualDelete = false;
+    private ConcurrentHashMap<Long, Schedule> schedulers = new ConcurrentHashMap<Long, Schedule>();
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
     }
 
-    private RoutineManagerYoutube getScheduleManager() {
-        return this;
-    }
-
     //////////////
     // Schedule //
     //////////////
 
-    private ConcurrentHashMap<Long, Schedule> schedulers = new ConcurrentHashMap<Long, Schedule>();
+    private RoutineManagerYoutube getScheduleManager() {
+        return this;
+    }
 
     private Schedule getSchedule(long accountId) {
         if (schedulers.containsKey(accountId)) {
@@ -80,13 +73,13 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
 
     public boolean removeSchedule(long accountId, String stateTask, ESDevice device) {
         Schedule schedule = getSchedule(accountId);
-        return schedule.removeSchedule(stateTask,device);
+        return schedule.removeSchedule(stateTask, device);
     }
 
     public boolean removeScheduleByDeviceId(long accountId, String deviceId) {
         this.manualDelete = true;
         Schedule schedule = getSchedule(accountId);
-        return schedule.removeScheduleByDeviceId(deviceId,accountId);
+        return schedule.removeScheduleByDeviceId(deviceId, accountId);
     }
 
     public boolean updateSchedule(ESDevice device, long accountId, ObjectNode ObjectKey, String title) {
@@ -97,7 +90,7 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
 
     public boolean updateScheduleContinue(ESDevice device, long accountId, ObjectNode ObjectKey, String title, String stateTask) {
         Schedule schedule = getSchedule(accountId);
-        return schedule.updateScheduleContinue(device,accountId, ObjectKey, title, stateTask);
+        return schedule.updateScheduleContinue(device, accountId, ObjectKey, title, stateTask);
     }
 
     private class Schedule {
@@ -110,7 +103,7 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
         private ConcurrentHashMap<String, ScheduledFuture> scheduleFuturesProlog;
         private ConcurrentHashMap<String, ScheduledFuture> scheduleFutures;
         private ConcurrentHashMap<String, ScheduledFuture> scheduleFutures2;
-        private ScheduledFuture scheduledFutureProlog,scheduledFuture,scheduledFuture2;
+        private ScheduledFuture scheduledFutureProlog, scheduledFuture, scheduledFuture2;
         private ScheduleTaskYoutube taskProlog = new ScheduleTaskYoutube();
         private ScheduleTaskYoutube task = new ScheduleTaskYoutube();
         private ScheduleTaskYoutube task2 = new ScheduleTaskYoutube();
@@ -125,16 +118,16 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
         }
 
         private boolean putSchedule(ESDevice device, long accountId, ObjectNode objectKey, String title, int maxqueue) {
-            if (this.scheduleFuturesProlog.isEmpty() && this.taskSchedulerProlog == null ) {
+            if (this.scheduleFuturesProlog.isEmpty() && this.taskSchedulerProlog == null) {
                 this.taskSchedulerProlog = (ThreadPoolTaskScheduler) applicationContext.getBean("routineThreadPoolTaskScheduler");
             }
 
-            if (this.scheduleFutures.isEmpty() && this.taskScheduler == null ) {
-                this.taskScheduler = (ThreadPoolTaskScheduler)applicationContext.getBean("routineThreadPoolTaskScheduler");
+            if (this.scheduleFutures.isEmpty() && this.taskScheduler == null) {
+                this.taskScheduler = (ThreadPoolTaskScheduler) applicationContext.getBean("routineThreadPoolTaskScheduler");
             }
 
             if (this.scheduleFutures2.isEmpty() && this.taskScheduler2 == null) {
-                this.taskScheduler2 = (ThreadPoolTaskScheduler)applicationContext.getBean("routineThreadPoolTaskScheduler");
+                this.taskScheduler2 = (ThreadPoolTaskScheduler) applicationContext.getBean("routineThreadPoolTaskScheduler");
             }
 
             Date date = new Date();
@@ -146,12 +139,12 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
             System.out.println(hours);
 
             //task prolog
-            if(minute != 55){
-                String cronProlog = "* "+minute+" "+hours+" * * ?";
+            if (minute != 55) {
+                String cronProlog = "* " + minute + " " + hours + " * * ?";
                 System.out.println("MASUK THREAD PROLOG");
-                System.out.println("cronProlog : "+cronProlog);
+                System.out.println("cronProlog : " + cronProlog);
                 taskProlog = applicationContext.getBean(ScheduleTaskYoutube.class);
-                taskProlog.setTask(getScheduleManager(), accountId, objectKey, title,"taskProlog", device, maxqueue);
+                taskProlog.setTask(getScheduleManager(), accountId, objectKey, title, "taskProlog", device, maxqueue);
 
                 this.scheduledFutureProlog = this.taskSchedulerProlog.schedule(
                         taskProlog,
@@ -160,22 +153,22 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
                 this.scheduleFuturesProlog.put(device.getId(), this.scheduledFutureProlog);
             }
 
-            if(minute>55){
+            if (minute > 55) {
                 hours++;
             }
 
             int hoursPlusTwo = hours + 2;
 
-            String cronExpression = "* 55 "+hours+"-"+hoursPlusTwo+" * * ?";
+            String cronExpression = "* 55 " + hours + "-" + hoursPlusTwo + " * * ?";
 //            String cronExpression = "* 0/10 * * * ?";
 
-            System.out.println("CRON EXP : "+cronExpression);
+            System.out.println("CRON EXP : " + cronExpression);
 
             //task 1
 
             System.out.println("MASUK THREAD 1");
             task = applicationContext.getBean(ScheduleTaskYoutube.class);
-            task.setTask(getScheduleManager(), accountId, objectKey, title,"task1", device, maxqueue);
+            task.setTask(getScheduleManager(), accountId, objectKey, title, "task1", device, maxqueue);
 
             this.scheduledFuture = this.taskScheduler.schedule(
                     task,
@@ -206,7 +199,7 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
         }
 
         private boolean putScheduleContinue(ESDevice device, long accountId, ObjectNode ObjectKey, String title, String stateTask) {
-            if (this.scheduleFutures.isEmpty() && this.taskScheduler == null ) {
+            if (this.scheduleFutures.isEmpty() && this.taskScheduler == null) {
                 this.taskScheduler = (ThreadPoolTaskScheduler) applicationContext.getBean("routineThreadPoolTaskScheduler");
             }
 
@@ -214,7 +207,7 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
                 this.taskScheduler2 = (ThreadPoolTaskScheduler) applicationContext.getBean("routineThreadPoolTaskScheduler");
             }
 
-            System.out.println("MAX QUEUE : "+maxqueue);
+            System.out.println("MAX QUEUE : " + maxqueue);
 
             Date date = new Date();
             Calendar cal = Calendar.getInstance();
@@ -224,7 +217,7 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
             System.out.println(minute);
             System.out.println(hours);
 
-            if(minute>55){
+            if (minute > 55) {
                 hours++;
             }
 
@@ -235,12 +228,12 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
             String cronExpression = "";
 
             //task 1
-            if(stateTask.equalsIgnoreCase("task1")) {
+            if (stateTask.equalsIgnoreCase("task1")) {
                 System.out.println("MASUK THREAD 1 CONTINUE");
-                cronExpression = "0 55 "+hours+" * * ?";
-                System.out.println("CRON EXP : "+cronExpression);
+                cronExpression = "0 55 " + hours + " * * ?";
+                System.out.println("CRON EXP : " + cronExpression);
                 task = applicationContext.getBean(ScheduleTaskYoutube.class);
-                task.setTask(getScheduleManager(), accountId, ObjectKey, title, "task1",device,maxqueue);
+                task.setTask(getScheduleManager(), accountId, ObjectKey, title, "task1", device, maxqueue);
 
                 this.scheduledFuture = this.taskScheduler.schedule(
                         task,
@@ -250,14 +243,14 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
             }
 
             //task 2
-            if(stateTask.equalsIgnoreCase("task2")) {
+            if (stateTask.equalsIgnoreCase("task2")) {
 
                 System.out.println("MASUK THREAD 2 CONTINUE");
                 cronExpression = "0 55 " + hours + " * * ?";
                 System.out.println("CRON EXP2 : " + cronExpression);
 
                 task2 = applicationContext.getBean(ScheduleTaskYoutube.class);
-                task2.setTask(getScheduleManager(), accountId, ObjectKey, title, "task2", device,maxqueue);
+                task2.setTask(getScheduleManager(), accountId, ObjectKey, title, "task2", device, maxqueue);
 
                 this.scheduledFuture2 = this.taskScheduler2.schedule(
                         task2,
@@ -271,7 +264,7 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
 
         private boolean removeSchedule(String stateTask, ESDevice device) {
 
-            if(stateTask.equalsIgnoreCase("taskProlog") && this.taskSchedulerProlog != null){
+            if (stateTask.equalsIgnoreCase("taskProlog") && this.taskSchedulerProlog != null) {
                 System.out.println("STOP THREAD PROLOG");
                 this.scheduledFutureProlog.cancel(true);
                 this.scheduleFuturesProlog.remove(device.getId());
@@ -280,7 +273,7 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
                     this.taskSchedulerProlog.destroy();
                     this.taskSchedulerProlog = null;
                 }
-            }else if(stateTask.equalsIgnoreCase("task1") && this.taskScheduler != null){
+            } else if (stateTask.equalsIgnoreCase("task1") && this.taskScheduler != null) {
                 System.out.println("STOP THREAD 1");
                 this.scheduledFuture.cancel(true);
                 this.scheduleFutures.remove(device.getId());
@@ -289,7 +282,7 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
                     this.taskScheduler.destroy();
                     this.taskScheduler = null;
                 }
-            }else if(stateTask.equalsIgnoreCase("task2") && this.taskScheduler2 != null) {
+            } else if (stateTask.equalsIgnoreCase("task2") && this.taskScheduler2 != null) {
                 System.out.println("STOP THREAD 2");
                 this.scheduledFuture2.cancel(true);
                 this.scheduleFutures2.remove(device.getId());
@@ -307,7 +300,7 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
 
             System.out.println("REMOVE THREAD SCHEDULE BY DEVICE ID");
             //STOP CURRENT THREAD
-            System.out.println("SCHEDULE FUTURE PROLOG : "+this.scheduleFuturesProlog.containsKey(deviceId));
+            System.out.println("SCHEDULE FUTURE PROLOG : " + this.scheduleFuturesProlog.containsKey(deviceId));
 
             if (this.scheduleFuturesProlog.containsKey(deviceId)) {
                 System.out.println("STOP THREAD PROLOG MANUAL");
@@ -320,7 +313,7 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
 //                completeYoutubeStream(deviceId,accountId);
             }
 
-            System.out.println("SCHEDULE FUTURE : "+this.scheduleFutures.containsKey(deviceId));
+            System.out.println("SCHEDULE FUTURE : " + this.scheduleFutures.containsKey(deviceId));
             if (this.scheduleFutures.containsKey(deviceId)) {
                 System.out.println("STOP THREAD 1 MANUAL");
                 this.scheduledFuture.cancel(true);
@@ -333,7 +326,7 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
 
             }
 
-            System.out.println("SCHEDULE FUTURE 2 : "+this.scheduleFutures2.containsKey(deviceId));
+            System.out.println("SCHEDULE FUTURE 2 : " + this.scheduleFutures2.containsKey(deviceId));
 
             if (this.scheduleFutures2.containsKey(deviceId)) {
                 System.out.println("STOP THREAD 2 MANUAL");
@@ -353,7 +346,7 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
             return true;
         }
 
-        private boolean updateSchedule(ESDevice device, long accountId,  ObjectNode objectKey, String title, int maxqueue) {
+        private boolean updateSchedule(ESDevice device, long accountId, ObjectNode objectKey, String title, int maxqueue) {
             // Remove existing schedule
             if (this.scheduleFutures.containsKey(device.getId())) {
                 ScheduledFuture scheduledFuture = this.scheduleFutures.get(device.getId());
@@ -388,7 +381,7 @@ public class RoutineManagerYoutube implements ApplicationContextAware {
 //            }
 
             // Put new schedule
-            if(!manualDelete) {
+            if (!manualDelete) {
                 putScheduleContinue(device, accountId, ObjectKey, title, stateTask);
             }
             return true;

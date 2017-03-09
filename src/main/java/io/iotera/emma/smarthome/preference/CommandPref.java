@@ -6,5 +6,5 @@ public class CommandPref {
     public static final String ROUTINE = "routine";
 
     public static final String ROUTINE_ACK = "routine_ack";
-    public static final String ROUTINE_RES= "routine_res";
+    public static final String ROUTINE_RES = "routine_res";
 }

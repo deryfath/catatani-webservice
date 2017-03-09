@@ -2,8 +2,8 @@ package io.iotera.emma.smarthome.repository;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.camera.ESCameraHistory;
-import io.iotera.web.spring.controller.BaseController;
 import io.iotera.util.Json;
+import io.iotera.web.spring.controller.BaseController;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
@@ -19,15 +19,11 @@ import java.util.List;
 @Repository
 public class ESCameraHistoryRepository extends BaseController {
 
-    @Transactional
-    public interface ESCameraHistoryJpaRepository extends JpaRepository<ESCameraHistory, Long> {
-    }
-
     @PersistenceContext
     EntityManager entityManager;
 
     @Transactional
-    public List<ESCameraHistory> listCameraHistoryByDeviceId(String deviceId){
+    public List<ESCameraHistory> listCameraHistoryByDeviceId(String deviceId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -49,7 +45,7 @@ public class ESCameraHistoryRepository extends BaseController {
     }
 
     @Transactional
-    public ResponseEntity countRowHistoryCamera(String deviceId){
+    public ResponseEntity countRowHistoryCamera(String deviceId) {
 
         List<ESCameraHistory> listHistoryId = null;
         ObjectNode deviceObject = Json.buildObjectNode();
@@ -72,8 +68,8 @@ public class ESCameraHistoryRepository extends BaseController {
         query.setParameter("device_id", deviceId);
         listHistoryId = query.getResultList();
 
-        if(listHistoryId.size() != 0){
-            deviceObject.put("youtube_id",listHistoryId.get(0).getYoutubeBroadcastId());
+        if (listHistoryId.size() != 0) {
+            deviceObject.put("youtube_id", listHistoryId.get(0).getYoutubeBroadcastId());
         }
 
         queryBuilder = new StringBuilder();
@@ -90,9 +86,9 @@ public class ESCameraHistoryRepository extends BaseController {
         query.setParameter("device_id", deviceId);
         listCountRow = query.getResultList();
 
-        if(listCountRow.size() != 0){
+        if (listCountRow.size() != 0) {
 
-            deviceObject.put("count",listCountRow.size());
+            deviceObject.put("count", listCountRow.size());
         }
 
         return okJson(deviceObject);
@@ -147,6 +143,10 @@ public class ESCameraHistoryRepository extends BaseController {
         result += applianceQuery.executeUpdate();
 
         return result;
+    }
+
+    @Transactional
+    public interface ESCameraHistoryJpaRepository extends JpaRepository<ESCameraHistory, Long> {
     }
 
 }

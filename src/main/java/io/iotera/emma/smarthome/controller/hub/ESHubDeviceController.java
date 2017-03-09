@@ -15,7 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/hub/device")
@@ -26,18 +29,14 @@ public class ESHubDeviceController extends ESDeviceController {
 
     @Autowired
     YoutubeService youtubeService;
-
+    @Autowired
+    ESDeviceRepository deviceRepository;
+    @Autowired
+    ESAccountCameraRepository accountYoutubeCameraRepository;
     private String refreshToken = "";
     private String clientId = "";
     private String clientSecret = "";
-
     private String accessToken = "";
-
-    @Autowired
-    ESDeviceRepository deviceRepository;
-
-    @Autowired
-    ESAccountCameraRepository accountYoutubeCameraRepository;
 
     @RequestMapping(value = "/listall", method = RequestMethod.GET)
     public ResponseEntity listAll(HttpEntity<String> entity) {
@@ -235,16 +234,16 @@ public class ESHubDeviceController extends ESDeviceController {
 
         String title = responseBodyPost.get("broadcast_title").toString().replaceAll("[^\\w\\s]", "");
 
-        Tuple.T2<Integer, ObjectNode> responseEntity = youtubeService.createEvent(objectKey.get("access_token").toString().replaceAll("[^\\w\\s\\-_.]", ""),title);
+        Tuple.T2<Integer, ObjectNode> responseEntity = youtubeService.createEvent(objectKey.get("access_token").toString().replaceAll("[^\\w\\s\\-_.]", ""), title);
 
-        if(responseEntity._1 == 401){
+        if (responseEntity._1 == 401) {
             System.out.println("UNAUTHORIZED");
             //get access token by Refresh token
-            accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken,clientId,clientSecret,accountId);
-            responseEntity = youtubeService.createEvent(accessToken,title);
+            accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, accountId);
+            responseEntity = youtubeService.createEvent(accessToken, title);
 
-        }else if(responseEntity._1 == 400 || responseEntity._1 == 403){
-            return okJsonFailed(responseEntity._1,responseEntity._2.textValue());
+        } else if (responseEntity._1 == 400 || responseEntity._1 == 403) {
+            return okJsonFailed(responseEntity._1, responseEntity._2.textValue());
         }
 
 //        scheduleController.create(responseBodyPost,123,accessToken);
@@ -266,7 +265,7 @@ public class ESHubDeviceController extends ESDeviceController {
 
         ObjectNode responseBodyJson = Json.buildObjectNode();
 
-        prologVideo.runVideoProlog("TEST Image",accountId);
+        prologVideo.runVideoProlog("TEST Image", accountId);
 
         ObjectNode dataObject = Json.buildObjectNode();
         dataObject.put("status", "PROLOG VIDEO RUN");
@@ -292,7 +291,6 @@ public class ESHubDeviceController extends ESDeviceController {
 
         return okJson(responseBodyJson);
     }
-
 
 
 }

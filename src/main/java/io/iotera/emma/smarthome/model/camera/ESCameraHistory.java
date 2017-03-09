@@ -4,10 +4,7 @@ import io.iotera.emma.smarthome.model.device.ESDevice;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
-
 import java.util.Date;
-
-import static javax.persistence.GenerationType.IDENTITY;
 
 @Entity
 @Table(name = "camera_history_tbl")

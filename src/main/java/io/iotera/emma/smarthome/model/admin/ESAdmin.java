@@ -7,7 +7,7 @@ import javax.persistence.*;
 public class ESAdmin {
 
     @Id
-    @GeneratedValue(strategy= GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     protected long id;
 
     @Column(nullable = false)

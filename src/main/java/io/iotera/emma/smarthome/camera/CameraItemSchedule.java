@@ -36,7 +36,7 @@ public class CameraItemSchedule implements ApplicationContextAware {
         this.applicationContext = applicationContext;
     }
 
-    void initSchedule(ESDevice device, long accountId, String label,ObjectNode createObject) {
+    void initSchedule(ESDevice device, long accountId, String label, ObjectNode createObject) {
         this.device = device;
         this.accountId = accountId;
         this.label = label;
@@ -48,10 +48,10 @@ public class CameraItemSchedule implements ApplicationContextAware {
         removeSchedule();
 
         CameraStartTask taskInit = applicationContext.getBean(CameraStartTask.class);
-        taskInit.initTask(accountId, this.device, false, label,createObject);
+        taskInit.initTask(accountId, this.device, false, label, createObject);
 
         CameraStartTask taskSchedule = applicationContext.getBean(CameraStartTask.class);
-        taskSchedule.initTask(accountId, this.device, true, label,createObject);
+        taskSchedule.initTask(accountId, this.device, true, label, createObject);
 
         this.cameraInit = this.taskScheduler.submit(taskInit);
         this.cameraStartSchedule = this.taskScheduler.schedule(taskSchedule,

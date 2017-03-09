@@ -321,7 +321,7 @@ public class ESDeviceRepository extends BaseController {
     }
 
     @Transactional
-    public int updateStatusInfoDevice(String deviceId, String youtubeId,String ingestionAddress, String streamKey, String streamId, String youtubeUrl, String time) {
+    public int updateStatusInfoDevice(String deviceId, String youtubeId, String ingestionAddress, String streamKey, String streamId, String youtubeUrl, String time) {
 
         System.out.println("APPEND INFO");
         // Build Query
@@ -342,29 +342,29 @@ public class ESDeviceRepository extends BaseController {
 
         String infoTmp = "";
 
-        if(listDevice.size() != 0){
+        if (listDevice.size() != 0) {
             infoTmp = listDevice.get(0).getInfo();
         }
 
         ObjectNode infoObject = Json.parseToObjectNode(infoTmp);
-        if(infoObject == null){
+        if (infoObject == null) {
             infoObject = Json.buildObjectNode();
         }
 
         //get old youtube id
         String oldYotubeId = "";
-        if(infoObject.get("ybid") != null){
+        if (infoObject.get("ybid") != null) {
             oldYotubeId = infoObject.get("ybid").textValue();
         }
 
-        infoObject.put("yobid",oldYotubeId);
-        infoObject.put("ybid",youtubeId);
-        infoObject.put("ysid",streamId);
-        infoObject.put("ysk",ingestionAddress+"/"+streamKey);
-        infoObject.put("yurl",youtubeUrl);
-        infoObject.put("tm",time);
+        infoObject.put("yobid", oldYotubeId);
+        infoObject.put("ybid", youtubeId);
+        infoObject.put("ysid", streamId);
+        infoObject.put("ysk", ingestionAddress + "/" + streamKey);
+        infoObject.put("yurl", youtubeUrl);
+        infoObject.put("tm", time);
 
-        System.out.println("INFO TMP: "+infoObject);
+        System.out.println("INFO TMP: " + infoObject);
 
         queryBuilder = new StringBuilder();
         queryBuilder.append("UPDATE ");

@@ -1,7 +1,6 @@
 package io.iotera.emma.smarthome.mqtt;
 
 import io.iotera.emma.smarthome.config.MqttOutboundConfig;
-import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;

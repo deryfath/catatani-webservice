@@ -5,15 +5,12 @@ import io.iotera.emma.smarthome.model.account.ESAccount;
 import io.iotera.emma.smarthome.model.account.ESAccountParuru;
 import io.iotera.emma.smarthome.model.client.ESClient;
 import io.iotera.emma.smarthome.model.client.ESClientParuru;
-import io.iotera.emma.smarthome.repository.ESAccountRepository;
 import io.iotera.emma.smarthome.repository.ESAccountRepository.ESAccountJpaRepository;
 import io.iotera.emma.smarthome.repository.ESAccountRepository.ESAccountParuruJpaRepository;
-import io.iotera.emma.smarthome.repository.ESClientRepository;
 import io.iotera.emma.smarthome.repository.ESClientRepository.ESClientJpaRepository;
 import io.iotera.emma.smarthome.repository.ESClientRepository.ESClientParuruJpaRepository;
 import io.iotera.emma.smarthome.utility.ESUtility;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 
 import java.nio.charset.StandardCharsets;

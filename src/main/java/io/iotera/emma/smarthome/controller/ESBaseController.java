@@ -7,13 +7,12 @@ import io.iotera.emma.smarthome.repository.ESAccessRepository;
 import io.iotera.emma.smarthome.repository.ESAccountRepository.ESAccountJpaRepository;
 import io.iotera.emma.smarthome.repository.ESAdminRepository.ESAdminJpaRepository;
 import io.iotera.emma.smarthome.repository.ESClientRepository.ESClientJpaRepository;
-import io.iotera.web.spring.controller.BaseController;
 import io.iotera.util.Json;
+import io.iotera.web.spring.controller.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
-import org.springframework.integration.mqtt.support.DefaultPahoMessageConverter;
 
 public class ESBaseController extends BaseController {
 

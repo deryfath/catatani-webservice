@@ -33,7 +33,7 @@ public class CameraSchedule implements ApplicationContextAware {
 
         if (!this.cameraItemSchedules.containsKey(device.getId())) {
             CameraItemSchedule schedule = applicationContext.getBean(CameraItemSchedule.class);
-            schedule.initSchedule(device, accountId, label,createObject);
+            schedule.initSchedule(device, accountId, label, createObject);
             this.cameraItemSchedules.put(device.getId(), schedule);
             return schedule.updateCameraStartSchedule();
         }

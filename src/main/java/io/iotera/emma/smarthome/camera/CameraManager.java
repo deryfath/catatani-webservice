@@ -37,7 +37,7 @@ public class CameraManager implements ApplicationContextAware {
 
     public boolean putSchedule(long accountId, ESDevice device, String label, ObjectNode createObject) {
         CameraSchedule schedule = getSchedule(accountId);
-        return schedule.putSchedule(device,label,createObject);
+        return schedule.putSchedule(device, label, createObject);
     }
 
     public boolean updateStopSchedule(long accountId, String cameraId, String broadcastId, Date time, String streamId) {

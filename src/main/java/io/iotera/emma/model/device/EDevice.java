@@ -2,7 +2,10 @@ package io.iotera.emma.model.device;
 
 import org.hibernate.annotations.GenericGenerator;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.MappedSuperclass;
 import java.util.Date;
 
 @MappedSuperclass
@@ -64,8 +67,8 @@ public class EDevice {
     }
 
     protected EDevice(String label, int category, int type,
-                   String uid, String address, String info,
-                   boolean on, int state) {
+                      String uid, String address, String info,
+                      boolean on, int state) {
         this.label = label;
         this.category = category;
         this.type = type;

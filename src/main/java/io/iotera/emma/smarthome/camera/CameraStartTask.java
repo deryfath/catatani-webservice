@@ -19,7 +19,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.http.ResponseEntity;
 import org.springframework.integration.mqtt.support.MqttHeaders;
 import org.springframework.integration.support.MessageBuilder;
-import org.springframework.jdbc.support.nativejdbc.OracleJdbc4NativeJdbcExtractor;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 
@@ -62,14 +61,27 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
     private ESDevice device;
     private boolean fromSchedule;
     private ObjectNode objectKey;
-    private String title,accessToken,clientId,clientSecret,refreshToken,oldBroadcastID;
-    private String stateTask,mqttTime,newTitle,broadcastID, streamID, streamKey,ingestionAddress,youtube_url;
-    private int maxqueue,statusCode;
+    private String title, accessToken, clientId, clientSecret, refreshToken, oldBroadcastID;
+    private String stateTask, mqttTime, newTitle, broadcastID, streamID, streamKey, ingestionAddress, youtube_url;
+    private int maxqueue, statusCode;
     private Message<String> message;
-    private  ResponseEntity responseEntityStream;
-    private  ObjectNode objectEntityStream;
+    private ResponseEntity responseEntityStream;
+    private ObjectNode objectEntityStream;
 
     private volatile ApplicationEventPublisher applicationEventPublisher;
+
+    public static Date toNearestWholeHour(Date d) {
+        Calendar c = new GregorianCalendar();
+        c.setTime(d);
+
+        if (c.get(Calendar.MINUTE) <= 59)
+            c.set(Calendar.HOUR, c.get(Calendar.HOUR));
+
+        c.set(Calendar.MINUTE, 0);
+        c.set(Calendar.SECOND, 0);
+
+        return c.getTime();
+    }
 
     @Override
     public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -154,7 +166,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
             objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
             System.out.println("OBJECT KEY : " + objectKey);
 
-            System.out.println("DATE HOURS ROUND : "+dateHoursRound);
+            System.out.println("DATE HOURS ROUND : " + dateHoursRound);
             mqttTime = dateFormat.format(dateHoursRound).toString();
             newTitle = title + " " + mqttTime;
         }
@@ -205,20 +217,20 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
 
             String youtube_title = objectEntityStream.get("stream_data").get("data").get("title").textValue();
 
-            try{
+            try {
                 broadcastID = objectEntityStream.get("stream_data").get("data").get("broadcast_id").textValue();
                 streamID = objectEntityStream.get("stream_data").get("data").get("stream_id").textValue();
                 streamKey = objectEntityStream.get("stream_data").get("data").get("stream_key").textValue();
                 ingestionAddress = objectEntityStream.get("stream_data").get("data").get("ingestion_address").textValue();
-                youtube_url = "https://youtu.be/"+broadcastID;
-            }catch (NullPointerException e){
-                System.out.println("error : "+e.getMessage());
+                youtube_url = "https://youtu.be/" + broadcastID;
+            } catch (NullPointerException e) {
+                System.out.println("error : " + e.getMessage());
 
             }
 
             try {
                 ESCameraHistory cameraHistory = new ESCameraHistory(youtube_title, youtube_url, broadcastID, streamID,
-                        ingestionAddress+"/"+streamKey, dateFormat.parse(mqttTime), device);
+                        ingestionAddress + "/" + streamKey, dateFormat.parse(mqttTime), device);
 
                 deviceCameraHistoryJpaRepository.saveAndFlush(cameraHistory);
             } catch (ParseException e) {
@@ -228,30 +240,30 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
         }
 
         //get old broadcast id
-        ESDevice deviceList = deviceRepository.findByDeviceId(device.getId(),accountId);
+        ESDevice deviceList = deviceRepository.findByDeviceId(device.getId(), accountId);
         String info = deviceList.getInfo();
         ObjectNode objectInfo = Json.parseToObjectNode(info);
 
         //CREATE MQTT RESPONSE JSON
         ObjectNode responseMqttJson = Json.buildObjectNode();
 //            responseMqttJson.put("cid",device.getId());
-        if(objectInfo.get("ybid")!=null){
+        if (objectInfo.get("ybid") != null) {
             oldBroadcastID = objectInfo.get("ybid").textValue();
-            responseMqttJson.put("yobid",oldBroadcastID);
+            responseMqttJson.put("yobid", oldBroadcastID);
         }
-        responseMqttJson.put("tm",mqttTime);
-        responseMqttJson.put("ysid",streamID);
-        responseMqttJson.put("ysk",ingestionAddress+"/"+streamKey);
-        responseMqttJson.put("ybid",broadcastID);
-        responseMqttJson.put("yurl",youtube_url);
+        responseMqttJson.put("tm", mqttTime);
+        responseMqttJson.put("ysid", streamID);
+        responseMqttJson.put("ysk", ingestionAddress + "/" + streamKey);
+        responseMqttJson.put("ybid", broadcastID);
+        responseMqttJson.put("yurl", youtube_url);
 
         //MQTT MESSAGE
         this.message = MessageBuilder
                 .withPayload(responseMqttJson.toString())
                 .setHeader(MqttHeaders.TOPIC,
                         "command/" + accountId + "/stream/" + device.getId())
-                .setHeader(MqttHeaders.RETAINED,true)
-                .setHeader(MqttHeaders.QOS,2)
+                .setHeader(MqttHeaders.RETAINED, true)
+                .setHeader(MqttHeaders.QOS, 2)
                 .build();
 
         if (applicationEventPublisher != null && message != null) {
@@ -268,9 +280,9 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
             deviceRepository.updateStatusInfoDevice(device.getId(), broadcastID, ingestionAddress, streamKey, streamID, youtube_url, mqttTime);
         }
 
-        System.out.println("broadcastID : "+broadcastID);
-        System.out.println("streamID : "+streamID);
-        System.out.println("streamKey : "+streamKey);
+        System.out.println("broadcastID : " + broadcastID);
+        System.out.println("streamID : " + streamID);
+        System.out.println("streamKey : " + streamKey);
 
 
         // Add stop schedule
@@ -278,18 +290,5 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
 //        calendar1.add(Calendar.MINUTE,1);
 //        stopTime = calendar1.getTime();
         cameraManager.updateStopSchedule(accountId, device.getId(), broadcastID, stopTime, streamID);
-    }
-
-    public static Date toNearestWholeHour(Date d) {
-        Calendar c = new GregorianCalendar();
-        c.setTime(d);
-
-        if (c.get(Calendar.MINUTE) <= 59)
-            c.set(Calendar.HOUR, c.get(Calendar.HOUR));
-
-        c.set(Calendar.MINUTE, 0);
-        c.set(Calendar.SECOND, 0);
-
-        return c.getTime();
     }
 }

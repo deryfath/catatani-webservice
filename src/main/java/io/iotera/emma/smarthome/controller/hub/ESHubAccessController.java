@@ -61,9 +61,9 @@ public class ESHubAccessController extends ESBaseController {
             accountObject.put("last_name", client.getLastName());
             accountObject.put("picture", client.picturePath(getProperty("host.path")));
             accountObject.put("picture_last_updated", formatDate(
-                    client.getPictureLastUpdated(),"yyyy-MM-dd HH:mm:ss"));
+                    client.getPictureLastUpdated(), "yyyy-MM-dd HH:mm:ss"));
             accountObject.put("access_added", formatDate(
-                    access.getAddedTime(),"yyyy-MM-dd HH:mm:ss"));
+                    access.getAddedTime(), "yyyy-MM-dd HH:mm:ss"));
             accountObject.put("account_id", access.getAccountId());
 
             accountArray.add(accountObject);

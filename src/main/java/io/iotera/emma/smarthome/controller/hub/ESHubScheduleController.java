@@ -88,10 +88,10 @@ public class ESHubScheduleController extends ESScheduleController {
         long accountId = account.getId();
 
         // Result
-        return delete(body,accountId);
+        return delete(body, accountId);
     }
 
-    @RequestMapping(value = "/add/youtube", method = RequestMethod.POST,produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/add/youtube", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity addScheduleYoutube(HttpEntity<String> entity) {
 
         // Request Header
@@ -112,7 +112,7 @@ public class ESHubScheduleController extends ESScheduleController {
 //        long accountId = account.getId();
 
         // Result
-        return scheduleYoutube(body,123,objectKey.get("access_token").toString().replaceAll("[^\\w\\s\\-_.]", ""));
+        return scheduleYoutube(body, 123, objectKey.get("access_token").toString().replaceAll("[^\\w\\s\\-_.]", ""));
     }
 
 }

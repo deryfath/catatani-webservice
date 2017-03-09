@@ -1,12 +1,8 @@
 package io.iotera.emma.smarthome.model.device;
 
 import io.iotera.emma.model.device.EDevice;
-import io.iotera.emma.smarthome.model.camera.ESCameraHistory;
 
 import javax.persistence.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 @Entity
 @Table(name = "device_tbl")
@@ -63,32 +59,6 @@ public class ESDevice extends EDevice {
     // Getter & Setter //
     /////////////////////
 
-    public String getParent() {
-        return parent;
-    }
-
-    public void setParent(String parent) {
-        this.parent = parent;
-    }
-
-
-    public ESRoom getRoom() {
-        return room;
-    }
-
-    public void setRoom(ESRoom room) {
-        this.room = room;
-    }
-
-    @Transient
-    public String getRoomId() {
-        return parent.split("/")[1];
-    }
-
-    ////////////
-    // Method //
-    ////////////
-
     public static String parent(String deviceId, String roomId, long accountId) {
         StringBuilder pBuilder = new StringBuilder();
         pBuilder.append(accountId);
@@ -110,6 +80,31 @@ public class ESDevice extends EDevice {
         }
 
         return pBuilder.toString();
+    }
+
+    public String getParent() {
+        return parent;
+    }
+
+    public void setParent(String parent) {
+        this.parent = parent;
+    }
+
+    public ESRoom getRoom() {
+        return room;
+    }
+
+    public void setRoom(ESRoom room) {
+        this.room = room;
+    }
+
+    ////////////
+    // Method //
+    ////////////
+
+    @Transient
+    public String getRoomId() {
+        return parent.split("/")[1];
     }
 
 }

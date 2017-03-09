@@ -22,7 +22,6 @@ import org.springframework.http.ResponseEntity;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -177,7 +176,7 @@ public class ESDeviceController extends ESBaseController {
         String roomId = rget(body, "esroom");
         int category = rget(body, "escat", Integer.class);
         int type = rget(body, "estype", Integer.class);
-        String info = get(body,"esinfo");
+        String info = get(body, "esinfo");
 
         // Check room
         ESRoom room = roomRepository.findByRoomId(roomId, accountId);
@@ -200,10 +199,6 @@ public class ESDeviceController extends ESBaseController {
                 return okJsonFailed(-3, "device_uid_not_available");
             }
 
-            if (!deviceRepository.findByAddress(address, accountId).isEmpty()) {
-                return okJsonFailed(-4, "device_address_not_available");
-            }
-
             if (category == DevicePref.CAT_REMOTE) {
 
                 device = new ESDevice(label, category, type, uid, address, info, false, 0,
@@ -212,6 +207,10 @@ public class ESDeviceController extends ESBaseController {
                 deviceJpaRepository.saveAndFlush(device);
 
             } else if (category == DevicePref.CAT_CAMERA) {
+
+                if (!deviceRepository.findByAddress(address, accountId).isEmpty()) {
+                    return okJsonFailed(-4, "device_address_not_available");
+                }
 
                 Tuple.T2<String, String> token = accountCameraRepository.getAccessTokenAndRefreshToken(accountId);
                 if (token == null) {
@@ -239,17 +238,17 @@ public class ESDeviceController extends ESBaseController {
                 //round time for prolog
                 Date dateHoursRound = cameraStartTask.toNearestWholeHour(date);
                 System.out.println(dateFormat.format(dateHoursRound).toString());
-                ResponseEntity responseEntityStream = prologVideo.runVideoProlog(label+" "+dateFormat.format(dateHoursRound).toString(), accountId);
+                ResponseEntity responseEntityStream = prologVideo.runVideoProlog(label + " " + dateFormat.format(dateHoursRound).toString(), accountId);
                 ObjectNode objectEntityStream = Json.parseToObjectNode(responseEntityStream.getBody().toString());
 
                 System.out.println(objectEntityStream);
-                if(objectEntityStream.get("status_code") != null){
-                    if(objectEntityStream.get("status_code").asInt() != 200 ){
-                        return okJsonFailed(objectEntityStream.get("status_code").asInt(),objectEntityStream.get("status_desc").textValue());
+                if (objectEntityStream.get("status_code") != null) {
+                    if (objectEntityStream.get("status_code").asInt() != 200) {
+                        return okJsonFailed(objectEntityStream.get("status_code").asInt(), objectEntityStream.get("status_desc").textValue());
                     }
                 }
 
-                cameraManager.putSchedule(accountId, device, label,objectEntityStream);
+                cameraManager.putSchedule(accountId, device, label, objectEntityStream);
 
 //                routineManagerYoutube.updateSchedule(device, accountId, objectKey, label);
 
