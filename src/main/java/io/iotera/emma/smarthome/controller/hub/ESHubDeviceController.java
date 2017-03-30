@@ -5,15 +5,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.controller.ESDeviceController;
 import io.iotera.emma.smarthome.model.account.ESAccount;
-import io.iotera.emma.smarthome.repository.ESAccountCameraRepository;
-import io.iotera.emma.smarthome.repository.ESDeviceRepository;
-import io.iotera.emma.smarthome.youtube.PrologVideo;
-import io.iotera.emma.smarthome.youtube.YoutubeService;
+import io.iotera.emma.smarthome.repository.ESDeviceRepo;
 import io.iotera.util.Json;
-import io.iotera.util.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,22 +16,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/hub/device")
+@RequestMapping("/hub/device")
 public class ESHubDeviceController extends ESDeviceController {
 
     @Autowired
-    PrologVideo prologVideo;
-
-    @Autowired
-    YoutubeService youtubeService;
-    @Autowired
-    ESDeviceRepository deviceRepository;
-    @Autowired
-    ESAccountCameraRepository accountYoutubeCameraRepository;
-    private String refreshToken = "";
-    private String clientId = "";
-    private String clientSecret = "";
-    private String accessToken = "";
+    ESDeviceRepo deviceRepository;
 
     @RequestMapping(value = "/listall", method = RequestMethod.GET)
     public ResponseEntity listAll(HttpEntity<String> entity) {
@@ -94,6 +78,7 @@ public class ESHubDeviceController extends ESDeviceController {
 
         // Request Body
         ObjectNode body = payloadObject(entity);
+
         // Account
         ESAccount account = accountHub(hubToken);
         long accountId = account.getId();
@@ -208,93 +193,4 @@ public class ESHubDeviceController extends ESDeviceController {
         return okJson(response);
     }
 
-    @RequestMapping(value = "/create/stream", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity createStream(HttpEntity<String> entity) {
-
-        // Request Header
-        //authenticateToken(entity);
-        String hubToken = hubToken(entity);
-
-        // Account
-        ESAccount account = accountHub(hubToken);
-        long accountId = account.getId();
-        System.out.println(accountId);
-        //get access token, refresh token, client_secret, client_id
-        ResponseEntity responseYoutubeKey = accountYoutubeCameraRepository.YoutubeKey(accountId);
-        ObjectNode objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
-
-        accessToken = objectKey.get("access_token").toString().replaceAll("[^\\w\\s\\-_.]", "");
-        clientId = objectKey.get("client_id").toString().replaceAll("[^\\w\\s\\-_.]", "");
-        clientSecret = objectKey.get("client_secret").toString().replaceAll("[^\\w\\s\\-_.]", "");
-        refreshToken = objectKey.get("refresh_token").toString().replaceAll("[^\\w\\s\\-_./]", "");
-
-        ObjectNode responseBodyPost = Json.parseToObjectNode(entity.getBody());
-
-        System.out.println(responseBodyPost.get("broadcast_title"));
-
-        String title = responseBodyPost.get("broadcast_title").toString().replaceAll("[^\\w\\s]", "");
-
-        Tuple.T2<Integer, ObjectNode> responseEntity = youtubeService.createEvent(objectKey.get("access_token").toString().replaceAll("[^\\w\\s\\-_.]", ""), title);
-
-        if (responseEntity._1 == 401) {
-            System.out.println("UNAUTHORIZED");
-            //get access token by Refresh token
-            accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, accountId);
-            responseEntity = youtubeService.createEvent(accessToken, title);
-
-        } else if (responseEntity._1 == 400 || responseEntity._1 == 403) {
-            return okJsonFailed(responseEntity._1, responseEntity._2.textValue());
-        }
-
-//        scheduleController.create(responseBodyPost,123,accessToken);
-
-        return okJson(responseEntity._2);
-
-    }
-
-    @RequestMapping(value = "/run/ffmpeg", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity runFFFMPEG(HttpEntity<String> entity) {
-
-        // Request Header
-        //authenticateToken(entity);
-        String hubToken = hubToken(entity);
-
-        // Account
-        ESAccount account = accountHub(hubToken);
-        long accountId = account.getId();
-
-        ObjectNode responseBodyJson = Json.buildObjectNode();
-
-        prologVideo.runVideoProlog("TEST Image", accountId);
-
-        ObjectNode dataObject = Json.buildObjectNode();
-        dataObject.put("status", "PROLOG VIDEO RUN");
-        responseBodyJson.set("data", dataObject);
-        responseBodyJson.put("status_code", 0);
-        responseBodyJson.put("status", "success");
-
-        return okJson(responseBodyJson);
-    }
-
-    @RequestMapping(value = "/stop/ffmpeg", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity stopFFFMPEG(HttpEntity<String> entity) {
-
-        ObjectNode responseBodyJson = Json.buildObjectNode();
-        ObjectNode dataObject = Json.buildObjectNode();
-
-        prologVideo.stopVideoProlog();
-
-        dataObject.put("status", "FFMPEG STOP");
-        responseBodyJson.set("data", dataObject);
-        responseBodyJson.put("status_code", 0);
-        responseBodyJson.put("status", "success");
-
-        return okJson(responseBodyJson);
-    }
-
-
 }
-
-
-
-

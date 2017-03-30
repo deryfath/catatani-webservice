@@ -3,8 +3,10 @@ package io.iotera.emma.smarthome.model.account;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "account_camera_tbl")
+@Table(name = ESAccountCamera.NAME)
 public class ESAccountCamera {
+
+    public static final String NAME = "v2_account_camera_tbl";
 
     @Id
     @Column(unique = true, nullable = false)
@@ -25,7 +27,6 @@ public class ESAccountCamera {
     @Column(name = "max_history")
     protected int maxHistory;
 
-
     ////////////
     // Column //
     ////////////
@@ -41,9 +42,9 @@ public class ESAccountCamera {
     protected ESAccountCamera() {
     }
 
-    public ESAccountCamera(long id, String accessToken, String refreshToken, String youtubeId, String youtubeEmail,
-                           int maxHistory, ESAccount account) {
-        this.id = id;
+    public ESAccountCamera(String accessToken, String refreshToken, String youtubeId, String youtubeEmail,
+                           int maxHistory, ESAccount account, long accountId) {
+        this.id = accountId;
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.youtubeId = youtubeId;
