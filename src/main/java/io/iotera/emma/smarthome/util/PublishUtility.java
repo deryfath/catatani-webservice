@@ -1,4 +1,4 @@
-package io.iotera.emma.smarthome.utility;
+package io.iotera.emma.smarthome.util;
 
 import io.iotera.util.Text;
 
@@ -43,6 +43,5 @@ public class PublishUtility {
     public static String topicClientHub(long accountId, String type) {
         return topicClientHub(accountId, type, null);
     }
-
 
 }

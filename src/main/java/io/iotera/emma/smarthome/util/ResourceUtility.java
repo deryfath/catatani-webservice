@@ -1,4 +1,4 @@
-package io.iotera.emma.smarthome.utility;
+package io.iotera.emma.smarthome.util;
 
 import java.io.File;
 import java.io.FileOutputStream;

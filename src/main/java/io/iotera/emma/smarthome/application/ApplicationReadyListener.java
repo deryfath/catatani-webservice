@@ -1,11 +1,9 @@
 package io.iotera.emma.smarthome.application;
 
-import io.iotera.emma.smarthome.camera.CameraManager;
 import io.iotera.emma.smarthome.model.routine.ESRoutine;
-import io.iotera.emma.smarthome.repository.ESRoutineRepository;
+import io.iotera.emma.smarthome.repository.ESRoutineRepo;
 import io.iotera.emma.smarthome.routine.RoutineManager;
-import io.iotera.emma.smarthome.utility.RoutineUtility;
-import io.iotera.emma.smarthome.youtube.YoutubeService;
+import io.iotera.emma.smarthome.util.RoutineUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
@@ -17,22 +15,16 @@ import java.util.List;
 public class ApplicationReadyListener implements ApplicationListener<ApplicationReadyEvent> {
 
     @Autowired
-    ESRoutineRepository routineRepository;
+    ESRoutineRepo routineRepo;
 
     @Autowired
     RoutineManager routineManager;
-
-    @Autowired
-    YoutubeService youtubeService;
-
-    @Autowired
-    CameraManager cameraManager;
 
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
 
         // Add Schedule
-        List<ESRoutine> routines = routineRepository.listActiveSchedule();
+        List<ESRoutine> routines = routineRepo.listActiveSchedule();
         for (ESRoutine routine : routines) {
             long accountId = routine.getAccountId();
             String cronExpression = RoutineUtility.getCronExpression(routine.getDaysOfWeek(),

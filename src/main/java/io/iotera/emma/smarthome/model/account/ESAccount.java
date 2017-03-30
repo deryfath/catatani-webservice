@@ -1,22 +1,15 @@
 package io.iotera.emma.smarthome.model.account;
 
-import io.iotera.emma.smarthome.model.access.ESAccess;
-import io.iotera.emma.smarthome.utility.ResourceUtility;
 import io.iotera.util.Encrypt;
 
 import javax.persistence.*;
 import java.util.Date;
 
 @Entity
-@Table(name = "account_tbl")
-@SqlResultSetMapping(
-        name = "accessByClientId",
-        entities = {
-                @EntityResult(entityClass = ESAccount.class),
-                @EntityResult(entityClass = ESAccess.class)
-        }
-)
+@Table(name = ESAccount.NAME)
 public class ESAccount {
+
+    public static final String NAME = "v2_account_tbl";
 
     @Id
     @TableGenerator(name = "generate_account_id", initialValue = 1000000000, allocationSize = 1)
@@ -27,26 +20,41 @@ public class ESAccount {
     @Column(nullable = false)
     protected String email;
 
+    @Column(nullable = false)
+    protected String username;
+
     @Column(name = "phone_number", nullable = false)
     protected String phoneNumber;
 
     @Column(name = "pass", nullable = false)
     protected String password;
 
+    @Column(name = "google_id")
+    protected String googleId;
+
+    @Column(name = "facebook_id")
+    protected String facebookId;
+
+    ////////////
+    // Client //
+    @Column(name = "ctoken", nullable = false)
+    protected String clientToken;
+
+    /////////
+    // Hub //
+    @Column(name = "hactive", nullable = false)
+    protected boolean hubActive;
+
+    @Column(name = "hactive_time")
+    protected Date hubActiveTime;
+
     @Column(name = "htoken", nullable = false)
     protected String hubToken;
 
-    @Column(nullable = false)
-    protected String name;
-
-    @Column
-    protected String picture;
-
-    @Column(name = "picture_last_updated")
-    protected Date pictureLastUpdated;
-
-    @Column(name = "registered_date", nullable = false)
-    protected Date registeredDate;
+    ///////////
+    // Order //
+    @Column(name = "__registered__", nullable = false)
+    protected Date registeredTime;
 
     /////////////
     // Payment //
@@ -74,10 +82,10 @@ public class ESAccount {
     protected ESAccountParuru accountParuru;
 
     @OneToOne(mappedBy = "account", fetch = FetchType.LAZY)
-    protected ESAccountProfile accountProfile;
+    protected ESAccountClient accountClient;
 
     @OneToOne(mappedBy = "account", fetch = FetchType.LAZY)
-    protected ESAccountLocation accountLocation;
+    protected ESAccountHub accountHub;
 
     @OneToOne(mappedBy = "account", fetch = FetchType.LAZY)
     protected ESAccountForgotPassword accountForgotPassword;
@@ -92,18 +100,23 @@ public class ESAccount {
     protected ESAccount() {
     }
 
-    public ESAccount(String email, String password, String phoneNumber, String name) {
+    public ESAccount(String email, String username, String password, String phoneNumber,
+                     String googleId, String facebookId) {
         Date now = new Date();
 
         this.email = email;
+        this.username = username;
         this.password = password;
         this.phoneNumber = phoneNumber;
-        this.name = name;
+        this.googleId = googleId;
+        this.facebookId = facebookId;
 
-        this.pictureLastUpdated = now;
+        generateClientToken();
 
-        this.registeredDate = now;
         generateHubToken();
+        this.hubActive = false;
+
+        this.registeredTime = now;
 
         // TODO
         // default value are false
@@ -118,14 +131,11 @@ public class ESAccount {
     ////////////
 
     public void generateHubToken() {
-        this.hubToken = Encrypt.SHA256("Emma" + (new Date().getTime()));
+        this.hubToken = Encrypt.SHA256("Emma-" + (new Date().getTime()));
     }
 
-    public String picturePath(String hostPath) {
-        if (picture == null || picture.isEmpty()) {
-            return "";
-        }
-        return ResourceUtility.resourceImagePath(hostPath, picture);
+    public void generateClientToken() {
+        this.clientToken = Encrypt.SHA256("Emma-" + (new Date().getTime()));
     }
 
     /////////////////////
@@ -144,6 +154,14 @@ public class ESAccount {
         this.email = email;
     }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
     public String getPhoneNumber() {
         return phoneNumber;
     }
@@ -160,6 +178,46 @@ public class ESAccount {
         this.password = password;
     }
 
+    public String getGoogleId() {
+        return googleId;
+    }
+
+    public void setGoogleId(String googleId) {
+        this.googleId = googleId;
+    }
+
+    public String getFacebookId() {
+        return facebookId;
+    }
+
+    public void setFacebookId(String facebookId) {
+        this.facebookId = facebookId;
+    }
+
+    public String getClientToken() {
+        return clientToken;
+    }
+
+    public void setClientToken(String clientToken) {
+        this.clientToken = clientToken;
+    }
+
+    public boolean isHubActive() {
+        return hubActive;
+    }
+
+    public void setHubActive(boolean hubActive) {
+        this.hubActive = hubActive;
+    }
+
+    public Date getHubActiveTime() {
+        return hubActiveTime;
+    }
+
+    public void setHubActiveDate(Date hubActiveTime) {
+        this.hubActiveTime = hubActiveTime;
+    }
+
     public String getHubToken() {
         return hubToken;
     }
@@ -168,32 +226,8 @@ public class ESAccount {
         this.hubToken = hubToken;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getPicture() {
-        return picture;
-    }
-
-    public void setPicture(String picture) {
-        this.picture = picture;
-    }
-
-    public Date getPictureLastUpdated() {
-        return pictureLastUpdated;
-    }
-
-    public void setPictureLastUpdated(Date pictureLastUpdated) {
-        this.pictureLastUpdated = pictureLastUpdated;
-    }
-
-    public Date getRegisteredDate() {
-        return registeredDate;
+    public Date getRegisteredTime() {
+        return registeredTime;
     }
 
     public boolean isPaymentActive() {
@@ -232,12 +266,12 @@ public class ESAccount {
         return accountParuru;
     }
 
-    public ESAccountLocation getAccountLocation() {
-        return accountLocation;
+    public ESAccountClient getAccountClient() {
+        return accountClient;
     }
 
-    public ESAccountProfile getAccountProfile() {
-        return accountProfile;
+    public ESAccountHub getAccountHub() {
+        return accountHub;
     }
 
     public ESAccountForgotPassword getAccountForgotPassword() {
@@ -247,5 +281,4 @@ public class ESAccount {
     public ESAccountCamera getAccountCamera() {
         return accountCamera;
     }
-
 }

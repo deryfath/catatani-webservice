@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/hub/room")
+@RequestMapping("/hub/room")
 public class ESHubRoomController extends ESRoomController {
 
     @RequestMapping(value = "/listall", method = RequestMethod.GET)

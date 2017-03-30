@@ -40,8 +40,8 @@ public class EDevice {
     @Column(name = "__status_on__", nullable = false)
     protected boolean on;
 
-    @Column(name = "__status_state__", nullable = false)
-    protected int state;
+    @Column(name = "__status_state__", length = 1023)
+    protected String state;
 
     ///////////
     // Order //
@@ -68,7 +68,7 @@ public class EDevice {
 
     protected EDevice(String label, int category, int type,
                       String uid, String address, String info,
-                      boolean on, int state) {
+                      boolean on, String state) {
         this.label = label;
         this.category = category;
         this.type = type;
@@ -145,11 +145,11 @@ public class EDevice {
         this.on = on;
     }
 
-    public int getState() {
+    public String getState() {
         return state;
     }
 
-    public void setState(int state) {
+    public void setState(String state) {
         this.state = state;
     }
 

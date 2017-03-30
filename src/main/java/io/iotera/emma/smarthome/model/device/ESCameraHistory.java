@@ -1,14 +1,15 @@
-package io.iotera.emma.smarthome.model.camera;
+package io.iotera.emma.smarthome.model.device;
 
-import io.iotera.emma.smarthome.model.device.ESDevice;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.util.Date;
 
 @Entity
-@Table(name = "camera_history_tbl")
+@Table(name = ESCameraHistory.NAME)
 public class ESCameraHistory {
+
+    public static final String NAME = "v2_camera_history_tbl";
 
     @Id
     @GeneratedValue(generator = "uuid")

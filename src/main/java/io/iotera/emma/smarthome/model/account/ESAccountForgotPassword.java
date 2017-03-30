@@ -3,8 +3,10 @@ package io.iotera.emma.smarthome.model.account;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "account_forgot_pass_tbl")
+@Table(name = ESAccountForgotPassword.NAME)
 public class ESAccountForgotPassword {
+
+    public static final String NAME = "v2_account_forgot_pass_tbl";
 
     @Id
     @Column(unique = true, nullable = false)

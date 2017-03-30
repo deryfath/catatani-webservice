@@ -1,13 +1,28 @@
 package io.iotera.emma.smarthome.config.mqtt;
 
-/*@Configuration*/
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.integration.annotation.MessagingGateway;
+import org.springframework.integration.annotation.ServiceActivator;
+import org.springframework.integration.channel.DirectChannel;
+import org.springframework.integration.mqtt.core.MqttPahoClientFactory;
+import org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHandler;
+
+import java.util.Date;
+
+@Configuration
 public class MqttControlPublisherConfig {
 
-    /*
     private static final String CLIENT_ID = "mqtt-control-publisher";
 
     @Autowired
-    MqttPahoClientFactory mqttClientFactory;
+    @Qualifier("mqttClientFactory")
+    MqttPahoClientFactory clientFactory;
 
     @Bean(name = "mqttControlPublisherChannel")
     public MessageChannel mqttControlPublisherChannel() {
@@ -19,7 +34,7 @@ public class MqttControlPublisherConfig {
     public MessageHandler mqttControlPublisherHandler() {
         MqttPahoMessageHandler messageHandler = new MqttPahoMessageHandler(
                 CLIENT_ID + "-" + new Date().getTime(),
-                mqttClientFactory);
+                clientFactory);
         messageHandler.setAsync(true);
         messageHandler.setAsyncEvents(true);
         messageHandler.setDefaultQos(2);
@@ -30,6 +45,5 @@ public class MqttControlPublisherConfig {
     public interface MqttControlPublisherGateway {
         void send(Message<String> message);
     }
-    */
 
 }

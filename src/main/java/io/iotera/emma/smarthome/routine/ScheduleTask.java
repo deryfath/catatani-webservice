@@ -4,15 +4,14 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
-import io.iotera.emma.smarthome.repository.ESRoutineRepository;
-import io.iotera.emma.smarthome.utility.PublishUtility;
+import io.iotera.emma.smarthome.repository.ESRoutineRepo;
+import io.iotera.emma.smarthome.util.PublishUtility;
 import io.iotera.util.Json;
 import io.iotera.util.concurrent.LatchWithResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.context.annotation.Scope;
-import org.springframework.core.env.Environment;
 import org.springframework.integration.mqtt.support.MqttHeaders;
 import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.Message;
@@ -28,10 +27,7 @@ public class ScheduleTask implements Runnable, ApplicationEventPublisherAware {
     RoutineManager routineManager;
 
     @Autowired
-    Environment env;
-
-    @Autowired
-    ESRoutineRepository routineRepository;
+    ESRoutineRepo routineRepo;
 
     private long accountId;
     private String routineId;
@@ -50,20 +46,18 @@ public class ScheduleTask implements Runnable, ApplicationEventPublisherAware {
         this.routineId = routineId;
 
         ObjectNode routineObject = Json.buildObjectNode();
-        routineObject.put("rid", routineId);
         routineObject.put("rc", routineCategory);
         ObjectNode commandsObject = Json.parseToObjectNode(commands);
-        routineObject.set("cm", commandsObject);
+        routineObject.set("cms", commandsObject);
         ArrayNode clientsArray = Json.parseToArrayNode(clients);
-        routineObject.set("cl", clientsArray);
+        routineObject.set("cls", clientsArray);
 
         if (commandsObject != null) {
             this.message = MessageBuilder
                     .withPayload(Json.toStringIgnoreNull(routineObject))
                     .setHeader(MqttHeaders.TOPIC,
-                            PublishUtility.topic(env.getProperty("mqtt.topic.command"),
-                                    accountId,
-                                    CommandPref.ROUTINE))
+                            PublishUtility.topicHub(accountId, CommandPref.SCHEDULE, routineId))
+                    .setHeader(MqttHeaders.QOS, 2)
                     .build();
         }
     }
@@ -76,7 +70,8 @@ public class ScheduleTask implements Runnable, ApplicationEventPublisherAware {
         while (countdown >= 0) {
 
             if (applicationEventPublisher != null && message != null) {
-                applicationEventPublisher.publishEvent(new MqttPublishEvent(this, this.message));
+                applicationEventPublisher.publishEvent(new MqttPublishEvent(this,
+                        CommandPref.SCHEDULE, this.message));
             } else {
                 break;
             }
@@ -98,7 +93,7 @@ public class ScheduleTask implements Runnable, ApplicationEventPublisherAware {
         }
 
         if (sent) {
-            routineRepository.updateExecuted(this.routineId, this.accountId);
+            routineRepo.updateExecuted(this.routineId, this.accountId);
         }
 
     }

@@ -1,77 +1,84 @@
 package io.iotera.emma.smarthome.controlstatus;
 
-import io.iotera.util.Number;
+import io.iotera.emma.smarthome.preference.DevicePref;
 
-public class ControlStatus {
-
-    /////////////
-    // Builder //
-    /////////////
-
-    public static ControlStatus build(String control, String info) {
-        return new ControlStatus(control, info);
-    }
-
-    public static ControlStatus build(String control) {
-        return new ControlStatus(control);
-    }
-
-    public static ControlStatus build(int control, String info) {
-        return new ControlStatus(String.valueOf(control), info);
-    }
-
-    public static ControlStatus build(int control) {
-        return new ControlStatus(String.valueOf(control));
-    }
-
-    public static ControlStatus build(boolean on, String info) {
-        return new ControlStatus(on ? "1" : "0", info);
-    }
-
-    public static ControlStatus build(boolean on) {
-        return new ControlStatus(on ? "1" : "0");
-    }
-
-    ////////////////////
-    // Control Status //
-    ////////////////////
+public abstract class ControlStatus {
 
     protected final String control;
-
+    protected final String oldState;
+    protected final String currentState;
     protected String info;
     protected boolean updateInfo = false;
 
-    protected ControlStatus(String control, String info) {
+    protected ControlStatus(String control, String oldState) {
         this.control = control;
-        this.info = info;
-        this.updateInfo = true;
+        this.oldState = oldState;
+        if (control != null) {
+            this.currentState = currentStatusAfterControl(control, oldState);
+        } else {
+            this.currentState = currentStateOld(oldState);
+        }
     }
 
-    protected ControlStatus(String control) {
-        this.control = control;
+    protected ControlStatus(String oldState) {
+        this(null, oldState);
     }
 
-    public final String get() {
+    public static ControlStatus buildByCategory(String control, String oldState, int dc) {
+        if (dc == DevicePref.CAT_AC) {
+            return buildAC(control, oldState);
+        }
+        return buildOnOff(control, oldState);
+    }
+
+    public static ControlStatus buildByCategory(String oldState, int dc) {
+        if (dc == DevicePref.CAT_AC) {
+            return buildAC(oldState);
+        }
+        return buildOnOff(oldState);
+    }
+
+    public static ControlStatus buildOnOff(String control, String oldState) {
+        return new OnOffControlStatus(control, oldState);
+    }
+
+    public static ControlStatus buildOnOff(String oldState) {
+        return new OnOffControlStatus(oldState);
+    }
+
+    public static ControlStatus buildAC(String control, String oldState) {
+        return new ACControlStatus(control, oldState);
+    }
+
+    public static ControlStatus buildAC(String oldState) {
+        return new ACControlStatus(oldState);
+    }
+
+    protected abstract String currentStatusAfterControl(String control, String oldState);
+
+    protected abstract String currentStateOld(String oldState);
+
+    public abstract boolean isOn();
+
+    public final String getControl() {
         return control;
     }
 
-    public boolean update() {
-        return Number.isInt(control);
+    public final String getOldState() {
+        return oldState;
     }
 
-    public boolean isOn() {
-        return !control.equals("0");
+    public final String getCurrentState() {
+        return currentState;
     }
 
-    public int getState() {
-        if (Number.isInt(control)) {
-            return Integer.parseInt(control);
-        }
-        return 0;
-    }
-
-    public final boolean updateInfo() {
+    public final boolean isUpdateInfo() {
         return updateInfo;
+    }
+
+    public final void setInfo(String info, boolean updateInfo) {
+        this.info = info;
+        this.updateInfo = updateInfo;
     }
 
     public final String getInfo() {
@@ -80,7 +87,7 @@ public class ControlStatus {
 
     @Override
     public final String toString() {
-        return get();
+        return currentState;
     }
 
 }

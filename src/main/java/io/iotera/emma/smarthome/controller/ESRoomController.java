@@ -4,11 +4,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.account.ESAccount;
 import io.iotera.emma.smarthome.model.device.ESRoom;
-import io.iotera.emma.smarthome.repository.ESRoomRepository;
-import io.iotera.emma.smarthome.repository.ESRoomRepository.ESRoomJpaRepository;
-import io.iotera.emma.smarthome.utility.ESUtility;
-import io.iotera.emma.smarthome.utility.ResourceUtility;
+import io.iotera.emma.smarthome.repository.ESRoomRepo;
+import io.iotera.emma.smarthome.util.ResourceUtility;
 import io.iotera.util.Json;
+import io.iotera.util.Random;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,25 +18,25 @@ import java.util.List;
 public class ESRoomController extends ESBaseController {
 
     @Autowired
-    ESRoomRepository roomRepository;
+    ESRoomRepo roomRepo;
 
     @Autowired
-    ESRoomJpaRepository roomJpaRepository;
+    ESRoomRepo.ESRoomJRepo roomJRepo;
 
     protected ResponseEntity listAll(long accountId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
         ArrayNode roomArray = Json.buildArrayNode();
-        List<ESRoom> rooms = roomRepository.listByAccountId(accountId);
+        List<ESRoom> rooms = roomRepo.listByAccountId(accountId);
         for (ESRoom room : rooms) {
             ObjectNode roomObject = Json.buildObjectNode();
             roomObject.put("id", room.getId());
             roomObject.put("name", room.getName());
             roomObject.put("category", room.getCategory());
-            roomObject.put("picture", room.picturePath(getProperty("host.path")));
+            roomObject.put("picture", room.picturePath(getProperty("host.path.remote")));
             roomObject.put("picture_last_updated",
-                    formatDate(room.getPictureLastUpdated(), "yyyy-MM-dd HH:mm:ss"));
+                    formatDate(room.getPictureLastUpdated()));
             roomObject.put("info", room.getInfo());
             roomObject.put("parent", room.getParent());
 
@@ -63,12 +62,12 @@ public class ESRoomController extends ESBaseController {
         String info = get(body, "esinfo");
 
         // Check room name
-        if (!roomRepository.findByName(name, accountId).isEmpty()) {
+        if (!roomRepo.findByName(name, accountId).isEmpty()) {
             return okJsonFailed(-2, "room_name_not_available");
         }
 
-        ESRoom room = new ESRoom(name, category, info, account, accountId);
-        roomJpaRepository.save(room);
+        ESRoom room = new ESRoom(name, category, info, accountId);
+        roomJRepo.save(room);
 
         if (has(body, "espic")) {
             String picture = get(body, "espic");
@@ -76,15 +75,21 @@ public class ESRoomController extends ESBaseController {
             String attachment = getProperty("attachment.path");
 
             byte[] data = Base64.decodeBase64(picture);
-            String filename = ESUtility.randomString(8);
+            String filename = Random.alphaNumericLowerCase(8);
             ResourceUtility.save(data, attachment, path, filename);
             room.setPicture(path + "/" + filename);
             room.setPictureLastUpdated(new Date());
         }
-        roomJpaRepository.saveAndFlush(room);
+        roomJRepo.saveAndFlush(room);
 
         response.put("id", room.getId());
         response.put("name", room.getName());
+        response.put("category", room.getCategory());
+        response.put("picture", room.picturePath(getProperty("host.path.remote")));
+        response.put("picture_last_updated",
+                formatDate(room.getPictureLastUpdated()));
+        response.put("info", room.getInfo());
+        response.put("parent", room.getParent());
         response.put("status_code", 0);
         response.put("status", "success");
 
@@ -97,7 +102,7 @@ public class ESRoomController extends ESBaseController {
         // Response
         ObjectNode response = Json.buildObjectNode();
 
-        ESRoom room = roomRepository.findByRoomId(roomId, accountId);
+        ESRoom room = roomRepo.findByRoomId(roomId, accountId);
         if (room == null) {
             return notFound("room (" + roomId + ") not found");
         }
@@ -105,9 +110,9 @@ public class ESRoomController extends ESBaseController {
         response.put("id", room.getId());
         response.put("name", room.getName());
         response.put("category", room.getCategory());
-        response.put("picture", room.picturePath(getProperty("host.path")));
+        response.put("picture", room.picturePath(getProperty("host.path.remote")));
         response.put("picture_last_updated",
-                formatDate(room.getPictureLastUpdated(), "yyyy-MM-dd HH:mm:ss"));
+                formatDate(room.getPictureLastUpdated()));
         response.put("info", room.getInfo());
         response.put("parent", room.getParent());
         response.put("status_code", 0);
@@ -126,7 +131,7 @@ public class ESRoomController extends ESBaseController {
         boolean edit = false;
         String roomId = rget(body, "esroom");
 
-        ESRoom room = roomRepository.findByRoomId(roomId, accountId);
+        ESRoom room = roomRepo.findByRoomId(roomId, accountId);
         if (room == null) {
             return okJsonFailed(-1, "room_not_found");
         }
@@ -138,7 +143,7 @@ public class ESRoomController extends ESBaseController {
             String name = get(body, "esname");
             // Check room name
             if (!room.getName().equals(name)) {
-                if (!roomRepository.findByName(name, accountId).isEmpty()) {
+                if (!roomRepo.findByName(name, accountId).isEmpty()) {
                     return okJsonFailed(-2, "room_name_not_available");
                 }
                 room.setName(name);
@@ -178,7 +183,7 @@ public class ESRoomController extends ESBaseController {
             if (!picture.isEmpty()) {
                 // Update
                 byte[] data = Base64.decodeBase64(picture);
-                String newFilename = ESUtility.randomString(8);
+                String newFilename = Random.alphaNumericLowerCase(8);
                 ResourceUtility.save(data, attachment, path, newFilename);
                 room.setPicture(path + "/" + newFilename);
             } else {
@@ -188,12 +193,12 @@ public class ESRoomController extends ESBaseController {
             room.setPictureLastUpdated(new Date());
             edit = true;
 
-            response.put("picture", room.picturePath(getProperty("host.path")));
-            response.put("picture_last_updated", formatDate(room.getPictureLastUpdated(), "yyyy-MM-dd HH:mm:ss"));
+            response.put("picture", room.picturePath(getProperty("host.path.remote")));
+            response.put("picture_last_updated", formatDate(room.getPictureLastUpdated()));
         }
 
         if (edit) {
-            roomJpaRepository.saveAndFlush(room);
+            roomJRepo.saveAndFlush(room);
         }
 
         response.put("status_code", 0);
@@ -211,7 +216,7 @@ public class ESRoomController extends ESBaseController {
         // DELETE
         String roomId = rget(body, "esroom");
 
-        ESRoom room = roomRepository.findByRoomId(roomId, accountId);
+        ESRoom room = roomRepo.findByRoomId(roomId, accountId);
         if (room == null) {
             return okJsonFailed(-1, "room_not_found");
         }
@@ -221,7 +226,7 @@ public class ESRoomController extends ESBaseController {
 
         // Delete child
         Date now = new Date();
-        roomRepository.deleteChild(now, roomId, accountId);
+        roomRepo.deleteChild(now, roomId, accountId);
 
         // Delete picture
         String attachment = getProperty("attachment.path");
@@ -233,7 +238,7 @@ public class ESRoomController extends ESBaseController {
         room.setDeleted(true);
         room.setDeletedTime(now);
 
-        roomJpaRepository.saveAndFlush(room);
+        roomJRepo.saveAndFlush(room);
 
         response.put("status_code", 0);
         response.put("status", "success");

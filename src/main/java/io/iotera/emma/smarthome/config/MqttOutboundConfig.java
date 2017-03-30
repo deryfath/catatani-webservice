@@ -1,32 +1,9 @@
 package io.iotera.emma.smarthome.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
-import org.springframework.http.ResponseEntity;
-import org.springframework.integration.annotation.IntegrationComponentScan;
-import org.springframework.integration.annotation.MessagingGateway;
-import org.springframework.integration.annotation.ServiceActivator;
-import org.springframework.integration.channel.DirectChannel;
-import org.springframework.integration.mqtt.core.DefaultMqttPahoClientFactory;
-import org.springframework.integration.mqtt.core.MqttPahoClientFactory;
-import org.springframework.integration.mqtt.event.MqttMessageDeliveredEvent;
-import org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessageHandler;
-import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.async.DeferredResult;
-
-import java.util.Date;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-@Configuration
-@IntegrationComponentScan
+/*@Configuration
+@IntegrationComponentScan*/
 public class MqttOutboundConfig {
+/*
 
     @Autowired
     Environment env;
@@ -34,8 +11,8 @@ public class MqttOutboundConfig {
     @Bean
     public MqttPahoClientFactory mqttClientFactory() {
         DefaultMqttPahoClientFactory factory = new DefaultMqttPahoClientFactory();
-        factory.setServerURIs(env.getProperty("mqtt.url"));
-        factory.setUserName(env.getProperty("mqtt.user"));
+        factory.setServerURIs(env.getProperty("mqtt.url.local"));
+        factory.setUserName(env.getProperty("mqtt.username"));
         factory.setPassword(env.getProperty("mqtt.password"));
         return factory;
     }
@@ -83,5 +60,6 @@ public class MqttOutboundConfig {
         }
 
     }
+*/
 
 }

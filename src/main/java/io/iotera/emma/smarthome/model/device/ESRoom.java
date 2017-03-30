@@ -1,29 +1,20 @@
 package io.iotera.emma.smarthome.model.device;
 
 import io.iotera.emma.model.device.ERoom;
-import io.iotera.emma.smarthome.model.account.ESAccount;
-import io.iotera.emma.smarthome.utility.ResourceUtility;
+import io.iotera.emma.smarthome.util.ResourceUtility;
 
-import javax.persistence.*;
-import java.util.List;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 
 @Entity
-@Table(name = "room_tbl")
+@Table(name = ESRoom.NAME)
 public class ESRoom extends ERoom {
+
+    public static final String NAME = "v2_room_tbl";
 
     @Column(name = "__parent__", nullable = false)
     protected String parent;
-
-    ////////////
-    // Column //
-    ////////////
-
-    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL)
-    public List<ESDevice> devices;
-
-    @ManyToOne
-    @JoinColumn(name = "account_id", nullable = false)
-    protected ESAccount account;
 
     /////////////////
     // Constructor //
@@ -32,9 +23,8 @@ public class ESRoom extends ERoom {
     protected ESRoom() {
     }
 
-    public ESRoom(String name, int category, String info, ESAccount account, long accountId) {
+    public ESRoom(String name, int category, String info, long accountId) {
         super(name, category, info);
-        this.account = account;
         this.parent = parent(accountId);
 
     }
@@ -43,17 +33,21 @@ public class ESRoom extends ERoom {
     // Getter & Setter //
     /////////////////////
 
-    public String getParent() {
-        return parent;
+    public static String parent(long accountId) {
+        return accountId + "/";
     }
 
-    public void setParent(String parent) {
-        this.parent = parent;
+    public String getParent() {
+        return parent;
     }
 
     ////////////
     // Method //
     ////////////
+
+    public void setParent(String parent) {
+        this.parent = parent;
+    }
 
     public String picturePath(String hostPath) {
         if (picture == null) {
@@ -62,8 +56,5 @@ public class ESRoom extends ERoom {
         return ResourceUtility.resourceImagePath(hostPath, picture);
     }
 
-    public static String parent(long accountId) {
-        return accountId + "/";
-    }
-
 }
+

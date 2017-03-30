@@ -3,9 +3,9 @@ package io.iotera.emma.smarthome.controller;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.routine.ESRoutine;
-import io.iotera.emma.smarthome.repository.ESRoutineRepository;
+import io.iotera.emma.smarthome.repository.ESRoutineRepo;
 import io.iotera.emma.smarthome.routine.RoutineManager;
-import io.iotera.emma.smarthome.utility.RoutineUtility;
+import io.iotera.emma.smarthome.util.RoutineUtility;
 import io.iotera.util.Json;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,10 +19,10 @@ public class ESRoutineController extends ESBaseController {
     RoutineManager routineManager;
 
     @Autowired
-    ESRoutineRepository routineRepository;
+    ESRoutineRepo routineRepository;
 
     @Autowired
-    ESRoutineRepository.ESRoutineJpaRepository routineJpaRepository;
+    ESRoutineRepo.ESRoutineJRepo routineJpaRepository;
 
     protected ResponseEntity listAll(long accountId) {
 
@@ -41,9 +41,9 @@ public class ESRoutineController extends ESBaseController {
             routineObject.set("commands", Json.parseToObjectNode(routine.getCommands()));
             routineObject.set("clients", Json.parseToArrayNode(routine.getClients()));
             routineObject.put("active", routine.isActive());
-            routineObject.put("last_executed", formatDate(routine.getLastExecuted(), "yyyy-MM-dd HH:mm:ss"));
+            routineObject.put("last_executed", formatDate(routine.getLastExecuted()));
             routineObject.set("last_executed_commands", Json.parseToObjectNode(routine.getLastExecutedCommands()));
-            routineObject.put("last_succeeded", formatDate(routine.getLastSucceeded(), "yyyy-MM-dd HH:mm:ss"));
+            routineObject.put("last_succeeded", formatDate(routine.getLastSucceeded()));
             routineObject.put("parent", routine.getParent());
             routineArray.add(routineObject);
         }
@@ -112,9 +112,9 @@ public class ESRoutineController extends ESBaseController {
         response.set("commands", Json.parseToObjectNode(routine.getCommands()));
         response.set("clients", Json.parseToArrayNode(routine.getClients()));
         response.put("active", routine.isActive());
-        response.put("last_executed", formatDate(routine.getLastExecuted(), "yyyy-MM-dd HH:mm:ss"));
+        response.put("last_executed", formatDate(routine.getLastExecuted()));
         response.set("last_executed_commands", Json.parseToObjectNode(routine.getLastExecutedCommands()));
-        response.put("last_succeeded", formatDate(routine.getLastSucceeded(), "yyyy-MM-dd HH:mm:ss"));
+        response.put("last_succeeded", formatDate(routine.getLastSucceeded()));
         response.put("parent", routine.getParent());
         response.put("status_code", 0);
         response.put("status", "success");

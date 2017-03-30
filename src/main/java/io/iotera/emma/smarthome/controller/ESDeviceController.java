@@ -7,12 +7,10 @@ import io.iotera.emma.smarthome.camera.CameraStartTask;
 import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.emma.smarthome.model.device.ESRoom;
 import io.iotera.emma.smarthome.preference.DevicePref;
-import io.iotera.emma.smarthome.repository.ESAccountCameraRepository;
-import io.iotera.emma.smarthome.repository.ESApplicationInfoRepository;
-import io.iotera.emma.smarthome.repository.ESDeviceRepository;
-import io.iotera.emma.smarthome.repository.ESDeviceRepository.ESDeviceJpaRepository;
-import io.iotera.emma.smarthome.repository.ESRoomRepository;
-import io.iotera.emma.smarthome.routine.RoutineManagerYoutube;
+import io.iotera.emma.smarthome.repository.ESAccountCameraRepo;
+import io.iotera.emma.smarthome.repository.ESApplicationInfoRepo;
+import io.iotera.emma.smarthome.repository.ESDeviceRepo;
+import io.iotera.emma.smarthome.repository.ESRoomRepo;
 import io.iotera.emma.smarthome.youtube.PrologVideo;
 import io.iotera.emma.smarthome.youtube.YoutubeService;
 import io.iotera.util.Json;
@@ -29,25 +27,21 @@ import java.util.Map;
 public class ESDeviceController extends ESBaseController {
 
     @Autowired
-    ESDeviceRepository deviceRepository;
+    ESDeviceRepo deviceRepo;
 
     @Autowired
-    ESAccountCameraRepository accountCameraRepository;
+    ESAccountCameraRepo accountCameraRepo;
 
     @Autowired
-    ESApplicationInfoRepository applicationInfoRepository;
+    ESApplicationInfoRepo applicationInfoRepo;
 
     @Autowired
-    ESDeviceJpaRepository deviceJpaRepository;
+    ESDeviceRepo.ESDeviceJRepo deviceJRepo;
 
     @Autowired
     CameraManager cameraManager;
-
     @Autowired
-    RoutineManagerYoutube routineManagerYoutube;
-
-    @Autowired
-    ESRoomRepository roomRepository;
+    ESRoomRepo roomRepo;
 
     @Autowired
     YoutubeService youtubeService;
@@ -58,14 +52,14 @@ public class ESDeviceController extends ESBaseController {
     @Autowired
     CameraStartTask cameraStartTask;
 
-    public ResponseEntity listAll(long accountId) {
+    protected ResponseEntity listAll(long accountId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
 
         ArrayNode deviceArray = Json.buildArrayNode();
-        Map<String, String> rooms = roomRepository.listRoomName(accountId);
-        List<ESDevice> devices = deviceRepository.listByAccountId(accountId);
+        Map<String, String> rooms = roomRepo.listRoomName(accountId);
+        List<ESDevice> devices = deviceRepo.listByAccountId(accountId);
 
         for (String roomId : rooms.keySet()) {
             for (ESDevice device : devices) {
@@ -106,7 +100,8 @@ public class ESDeviceController extends ESBaseController {
         ObjectNode response = Json.buildObjectNode();
 
         ArrayNode deviceArray = Json.buildArrayNode();
-        List<ESDevice> devices = deviceRepository.listByRoomId(roomId, accountId);
+        Map<String, String> rooms = roomRepo.listRoomName(accountId);
+        List<ESDevice> devices = deviceRepo.listByRoomId(roomId, accountId);
         for (ESDevice device : devices) {
             ObjectNode deviceObject = Json.buildObjectNode();
 
@@ -119,7 +114,9 @@ public class ESDeviceController extends ESBaseController {
             deviceObject.put("info", device.getInfo());
             deviceObject.put("status_on", device.isOn());
             deviceObject.put("status_state", device.getState());
-            deviceObject.put("room_name", device.getRoom().getName());
+
+            String roomName = rooms.get(roomId);
+            deviceObject.put("room_name", roomName);
             deviceObject.put("parent", device.getParent());
 
             deviceArray.add(deviceObject);
@@ -139,7 +136,8 @@ public class ESDeviceController extends ESBaseController {
         ObjectNode response = Json.buildObjectNode();
 
         ArrayNode deviceArray = Json.buildArrayNode();
-        List<ESDevice> devices = deviceRepository.listByCategory(category, accountId);
+        Map<String, String> rooms = roomRepo.listRoomName(accountId);
+        List<ESDevice> devices = deviceRepo.listByCategory(category, accountId);
         for (ESDevice device : devices) {
             ObjectNode deviceObject = Json.buildObjectNode();
 
@@ -152,7 +150,9 @@ public class ESDeviceController extends ESBaseController {
             deviceObject.put("info", device.getInfo());
             deviceObject.put("status_on", device.isOn());
             deviceObject.put("status_state", device.getState());
-            deviceObject.put("room_name", device.getRoom().getName());
+
+            String roomName = rooms.get(device.getRoomId());
+            deviceObject.put("room_name", roomName);
             deviceObject.put("parent", device.getParent());
 
             deviceArray.add(deviceObject);
@@ -176,16 +176,20 @@ public class ESDeviceController extends ESBaseController {
         String roomId = rget(body, "esroom");
         int category = rget(body, "escat", Integer.class);
         int type = rget(body, "estype", Integer.class);
+        String state = get(body, "esstate");
+        if (state == null) {
+            state = "{\"st\", 0}";
+        }
         String info = get(body, "esinfo");
 
         // Check room
-        ESRoom room = roomRepository.findByRoomId(roomId, accountId);
+        ESRoom room = roomRepo.findByRoomId(roomId, accountId);
         if (room == null) {
             return okJsonFailed(-1, "room_not_found");
         }
 
         // Check device label
-        if (!deviceRepository.findByLabel(label, accountId).isEmpty()) {
+        if (!deviceRepo.findByLabel(label, accountId).isEmpty()) {
             return okJsonFailed(-2, "device_label_not_available");
         }
 
@@ -195,31 +199,31 @@ public class ESDeviceController extends ESBaseController {
             String uid = rget(body, "esuid");
             String address = rget(body, "esaddress");
 
-            if (!deviceRepository.findByUid(uid, accountId).isEmpty()) {
+            if (!deviceRepo.findByUid(uid, accountId).isEmpty()) {
                 return okJsonFailed(-3, "device_uid_not_available");
             }
 
             if (category == DevicePref.CAT_REMOTE) {
 
-                device = new ESDevice(label, category, type, uid, address, info, false, 0,
-                        room, roomId, accountId);
+                device = new ESDevice(label, category, type, uid, address, info, false, state,
+                        roomId, accountId);
 
-                deviceJpaRepository.saveAndFlush(device);
+                deviceJRepo.saveAndFlush(device);
 
             } else if (category == DevicePref.CAT_CAMERA) {
 
-                if (!deviceRepository.findByAddress(address, accountId).isEmpty()) {
+                if (!deviceRepo.findByAddress(address, accountId).isEmpty()) {
                     return okJsonFailed(-4, "device_address_not_available");
                 }
 
-                Tuple.T2<String, String> token = accountCameraRepository.getAccessTokenAndRefreshToken(accountId);
+                Tuple.T2<String, String> token = accountCameraRepo.getAccessTokenAndRefreshToken(accountId);
                 if (token == null) {
                     return okJsonFailed(-20, "youtube_api_not_available");
                 }
 
                 System.out.println("masuk client secret");
 
-                Tuple.T2<String, String> youtubeClientApi = applicationInfoRepository.getClientIdAndClientSecret();
+                Tuple.T2<String, String> youtubeClientApi = applicationInfoRepo.getClientIdAndClientSecret();
                 if (youtubeClientApi == null) {
                     return internalServerError("internal_server_error");
                 }
@@ -227,9 +231,9 @@ public class ESDeviceController extends ESBaseController {
                 String clientId = youtubeClientApi._1;
                 String clientSecret = youtubeClientApi._2;
 
-                device = new ESDevice(label, category, type, uid, address, info, false, 0,
-                        room, roomId, accountId);
-                deviceJpaRepository.save(device);
+                device = new ESDevice(label, category, type, uid, address, info, false, null,
+                        roomId, accountId);
+                deviceJRepo.save(device);
 
                 DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 Date date = new Date();
@@ -252,14 +256,14 @@ public class ESDeviceController extends ESBaseController {
 
 //                routineManagerYoutube.updateSchedule(device, accountId, objectKey, label);
 
-                deviceJpaRepository.flush();
+                deviceJRepo.flush();
 
             } else {
 
-                device = new ESDevice(label, category, type, uid, address, info, false, 0,
-                        room, roomId, accountId);
+                device = new ESDevice(label, category, type, uid, address, info, false, state,
+                        roomId, accountId);
 
-                deviceJpaRepository.saveAndFlush(device);
+                deviceJRepo.saveAndFlush(device);
 
             }
 
@@ -268,24 +272,32 @@ public class ESDeviceController extends ESBaseController {
             String remoteId = rget(body, "esremote");
 
             // Check remote
-            ESDevice remote = deviceRepository.findByDeviceId(remoteId, accountId);
+            ESDevice remote = deviceRepo.findByDeviceId(remoteId, accountId);
             if (remote == null || remote.getCategory() != DevicePref.CAT_REMOTE) {
                 return okJsonFailed(-11, "remote_not_found");
             }
 
             // Check type
-            if (!deviceRepository.findByType(type, remoteId, accountId).isEmpty()) {
+            if (!deviceRepo.findByType(type, remoteId, accountId).isEmpty()) {
                 return okJsonFailed(-12, "type_not_available");
             }
 
-            device = ESDevice.buildAppliance(label, category, type, "", "", info, false, 0,
-                    room, remoteId, roomId, accountId);
+            device = ESDevice.buildAppliance(label, category, type, "", "", info, false, state,
+                    remoteId, roomId, accountId);
 
-            deviceJpaRepository.saveAndFlush(device);
+            deviceJRepo.saveAndFlush(device);
         }
 
         response.put("id", device.getId());
         response.put("label", device.getLabel());
+        response.put("category", device.getCategory());
+        response.put("type", device.getType());
+        response.put("uid", device.getUid());
+        response.put("address", device.getAddress());
+        response.put("status_on", device.isOn());
+        response.put("status_state", device.getState());
+        response.put("info", device.getInfo());
+        response.put("parent", device.getParent());
         response.put("status_code", 0);
         response.put("status", "success");
 
@@ -298,7 +310,7 @@ public class ESDeviceController extends ESBaseController {
         // Response
         ObjectNode response = Json.buildObjectNode();
 
-        ESDevice device = deviceRepository.findByDeviceId(deviceId, accountId);
+        ESDevice device = deviceRepo.findByDeviceId(deviceId, accountId);
         if (device == null) {
             return notFound("device (" + deviceId + ") not found");
         }
@@ -329,7 +341,7 @@ public class ESDeviceController extends ESBaseController {
         boolean edit = false;
         String deviceId = rget(body, "esdevice");
 
-        ESDevice device = deviceRepository.findByDeviceId(deviceId, accountId);
+        ESDevice device = deviceRepo.findByDeviceId(deviceId, accountId);
         if (device == null) {
             return okJsonFailed(-1, "device_not_found");
         }
@@ -342,7 +354,7 @@ public class ESDeviceController extends ESBaseController {
 
             if (!device.getRoomId().equals(roomId)) {
                 // Check room
-                ESRoom room = roomRepository.findByRoomId(roomId, accountId);
+                ESRoom room = roomRepo.findByRoomId(roomId, accountId);
                 if (room == null) {
                     return okJsonFailed(-2, "room_not_found");
                 }
@@ -352,7 +364,6 @@ public class ESDeviceController extends ESBaseController {
                     remoteId = device.getParent().split("/")[2];
                 }
 
-                device.setRoom(room);
                 device.setParent(ESDevice.parent(remoteId, roomId, accountId));
                 edit = true;
 
@@ -365,7 +376,7 @@ public class ESDeviceController extends ESBaseController {
 
             // Check device label
             if (!device.getLabel().equals(label)) {
-                if (!deviceRepository.findByLabel(label, accountId).isEmpty()) {
+                if (!deviceRepo.findByLabel(label, accountId).isEmpty()) {
                     return okJsonFailed(-3, "device_label_not_available");
                 }
                 device.setLabel(label);
@@ -393,7 +404,7 @@ public class ESDeviceController extends ESBaseController {
         }
 
         if (edit) {
-            deviceJpaRepository.saveAndFlush(device);
+            deviceJRepo.saveAndFlush(device);
         }
 
         response.put("status_code", 0);
@@ -411,7 +422,7 @@ public class ESDeviceController extends ESBaseController {
         // DELETE
         String deviceId = rget(body, "esdevice");
 
-        ESDevice device = deviceRepository.findByDeviceId(deviceId, accountId);
+        ESDevice device = deviceRepo.findByDeviceId(deviceId, accountId);
         if (device == null) {
             return okJsonFailed(-1, "device_not_found");
         }
@@ -421,7 +432,7 @@ public class ESDeviceController extends ESBaseController {
 
         Date now = new Date();
         if (device.getCategory() == DevicePref.CAT_REMOTE || device.getCategory() == DevicePref.CAT_CAMERA) {
-            deviceRepository.deleteChild(now, deviceId, accountId);
+            deviceRepo.deleteChild(now, deviceId, accountId);
 
         } else if (device.getCategory() == DevicePref.CAT_CAMERA) {
             // TODO Stop Camera
@@ -435,7 +446,7 @@ public class ESDeviceController extends ESBaseController {
         device.setDeleted(true);
         device.setDeletedTime(now);
 
-        deviceJpaRepository.saveAndFlush(device);
+        deviceJRepo.saveAndFlush(device);
 
         response.put("status_code", 0);
         response.put("status", "success");

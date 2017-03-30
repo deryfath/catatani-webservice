@@ -2,10 +2,8 @@ package io.iotera.emma.smarthome.mqtt;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.preference.CommandPref;
-import io.iotera.emma.smarthome.repository.ESDeviceRepository;
-import io.iotera.emma.smarthome.routine.RoutineAckEvent;
-import io.iotera.emma.smarthome.routine.RoutineResEvent;
-import io.iotera.emma.smarthome.utility.PublishUtility;
+import io.iotera.emma.smarthome.repository.ESDeviceRepo;
+import io.iotera.emma.smarthome.util.PublishUtility;
 import io.iotera.util.Json;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -21,10 +19,9 @@ import org.springframework.stereotype.Component;
 @Component("mqttMessageHandler")
 public class MqttMessageHandler implements MessageHandler, ApplicationEventPublisherAware {
 
-    private volatile ApplicationEventPublisher applicationEventPublisher;
-
     @Autowired
-    ESDeviceRepository deviceRepository;
+    ESDeviceRepo deviceRepo;
+    private volatile ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -73,7 +70,7 @@ public class MqttMessageHandler implements MessageHandler, ApplicationEventPubli
             String control = payload.get("control").textValue().trim();
 
             if (resultCode == 0) {
-                deviceRepository.updateStatus(deviceId, category, control, accountId);
+                //deviceRepo.updateStatus(deviceId, category, control, accountId);
             }
 
                     /*
@@ -122,19 +119,7 @@ public class MqttMessageHandler implements MessageHandler, ApplicationEventPubli
                     .build();
 
             if (applicationEventPublisher != null) {
-                applicationEventPublisher.publishEvent(new MqttPublishEvent(this, sendMessage));
-            }
-
-        } else if (type.equals(CommandPref.ROUTINE_ACK)) {
-
-            if (applicationEventPublisher != null) {
-                applicationEventPublisher.publishEvent(new RoutineAckEvent(this, payload));
-            }
-
-        } else if (type.equals(CommandPref.ROUTINE_RES)) {
-
-            if (applicationEventPublisher != null) {
-                applicationEventPublisher.publishEvent(new RoutineResEvent(this, accountId, payload));
+                applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CONTROL, sendMessage));
             }
 
         }

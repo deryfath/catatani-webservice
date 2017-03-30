@@ -1,13 +1,13 @@
 package io.iotera.emma.smarthome.controller;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.iotera.emma.smarthome.model.access.ESAccess;
 import io.iotera.emma.smarthome.model.account.ESAccount;
-import io.iotera.emma.smarthome.model.client.ESClient;
-import io.iotera.emma.smarthome.repository.ESAccessRepository;
-import io.iotera.emma.smarthome.repository.ESAccountRepository.ESAccountJpaRepository;
-import io.iotera.emma.smarthome.repository.ESAdminRepository.ESAdminJpaRepository;
-import io.iotera.emma.smarthome.repository.ESClientRepository.ESClientJpaRepository;
+import io.iotera.emma.smarthome.repository.ESAccessRepo;
+import io.iotera.emma.smarthome.repository.ESAccountRepo;
+import io.iotera.emma.smarthome.repository.ESAdminRepo;
 import io.iotera.util.Json;
+import io.iotera.util.Tuple;
 import io.iotera.web.spring.controller.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -17,16 +17,13 @@ import org.springframework.http.ResponseEntity;
 public class ESBaseController extends BaseController {
 
     @Autowired
-    ESAccountJpaRepository accountJpaRepository;
+    ESAccountRepo.ESAccountJRepo accountJRepo;
 
     @Autowired
-    ESClientJpaRepository clientJpaRepository;
+    ESAdminRepo.ESAdminJRepo adminJRepo;
 
     @Autowired
-    ESAdminJpaRepository adminJpaRepository;
-
-    @Autowired
-    ESAccessRepository accessRepository;
+    ESAccessRepo accessRepo;
 
     @Autowired
     Environment env;
@@ -138,7 +135,7 @@ public class ESBaseController extends BaseController {
     /////////////
 
     protected ESAccount accountHub(String hubToken) {
-        ESAccount account = accountJpaRepository.findByHubTokenAndDeactivateFalse(hubToken);
+        ESAccount account = accountJRepo.findByHubTokenAndDeactivateFalse(hubToken);
         if (account == null) {
             returnUnauthorized("invalid hub token");
         }
@@ -146,7 +143,7 @@ public class ESBaseController extends BaseController {
     }
 
     protected ESAccount accountWithPayment(String hubToken) {
-        ESAccount account = accountJpaRepository.findByHubTokenAndDeactivateFalse(hubToken);
+        ESAccount account = accountJRepo.findByHubTokenAndDeactivateFalse(hubToken);
         if (account == null) {
             returnUnauthorized("invalid hub token");
         }
@@ -158,19 +155,40 @@ public class ESBaseController extends BaseController {
     }
 
     protected ESAccount accountAccess(String accessToken, long clientId) {
-        ESAccount account = accessRepository.findAccountByAccessToken(accessToken, clientId);
+        if (ESAccess.isDefaultAccess(accessToken, clientId)) {
+            return accountJRepo.findByIdAndDeactivateFalse(clientId);
+        }
+
+        ESAccount account = accessRepo.findHubByAccessToken(accessToken, clientId);
         if (account == null) {
             returnUnauthorized("invalid access token");
         }
+
         return account;
+    }
+
+    protected ESAccount adminAccess(String accessToken, long clientId) {
+        if (ESAccess.isDefaultAccess(accessToken, clientId)) {
+            return accountJRepo.findByIdAndDeactivateFalse(clientId);
+        }
+
+        Tuple.T2<ESAccount, Boolean> accountAdmin = accessRepo.findHubByAccessTokenAdmin(accessToken, clientId);
+        if (accountAdmin._1 == null) {
+            returnUnauthorized("invalid access token");
+        }
+        if (!accountAdmin._2) {
+            returnForbidden("need administration access");
+        }
+
+        return accountAdmin._1;
     }
 
     ////////////
     // Client //
     ////////////
 
-    protected ESClient client(String clientToken) {
-        ESClient client = clientJpaRepository.findByClientTokenAndDeactivateFalse(clientToken);
+    protected ESAccount accountClient(String clientToken) {
+        ESAccount client = accountJRepo.findByClientTokenAndDeactivateFalse(clientToken);
         if (client == null) {
             returnUnauthorized("invalid client token");
         }
@@ -182,7 +200,7 @@ public class ESBaseController extends BaseController {
     ///////////
 
     protected void admin(String adminToken) {
-        if (adminJpaRepository.findByToken(adminToken) == null) {
+        if (adminJRepo.findByToken(adminToken) == null) {
             returnUnauthorized("invalid admin token");
         }
     }

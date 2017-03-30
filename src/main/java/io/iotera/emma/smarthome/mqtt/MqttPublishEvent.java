@@ -8,14 +8,20 @@ public class MqttPublishEvent extends ApplicationEvent {
     private static final long serialVersionUID = 1L;
 
     private Message<String> message;
+    private String type;
 
-    public MqttPublishEvent(Object source, Message<String> message) {
+    public MqttPublishEvent(Object source, String type, Message<String> message) {
         super(source);
         this.message = message;
+        this.type = type;
     }
 
     public Message<String> getMessage() {
         return message;
+    }
+
+    public String getType() {
+        return type;
     }
 
 }

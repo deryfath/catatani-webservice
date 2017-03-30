@@ -1,4 +1,4 @@
-package io.iotera.emma.smarthome.utility;
+package io.iotera.emma.smarthome.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -79,18 +79,18 @@ public class RoutineUtility {
                 continue;
             }
 
-            if (value.has("dc") && value.has("cs")) {
+            if (value.has("dc") && value.has("cos")) {
                 JsonNode dc = value.get("dc");
                 if (dc.getNodeType() != JsonNodeType.NUMBER) {
                     continue;
                 }
-                JsonNode cs = value.get("cs");
-                if (!cs.isArray()) {
+                JsonNode cos = value.get("cos");
+                if (!cos.isArray()) {
                     continue;
                 }
 
                 boolean csv = true;
-                for (JsonNode cso : cs) {
+                for (JsonNode cso : cos) {
                     if (cso.getNodeType() != JsonNodeType.STRING) {
                         csv = false;
                         break;
@@ -102,7 +102,7 @@ public class RoutineUtility {
 
                 ObjectNode newValue = Json.buildObjectNode();
                 newValue.put("dc", dc.intValue());
-                newValue.set("cs", cs);
+                newValue.set("cos", cos);
 
                 newCommandsObject.set(key, newValue);
             }

@@ -12,12 +12,7 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 
 @Repository
-public class ESApplicationInfoRepository {
-
-    @Transactional
-    public interface ESApplicationInfoJpaRepository extends JpaRepository<ESApplicationInfo, Long> {
-
-    }
+public class ESApplicationInfoRepo {
 
     @PersistenceContext
     EntityManager entityManager;
@@ -29,7 +24,7 @@ public class ESApplicationInfoRepository {
         queryBuilder.append("SELECT ");
         queryBuilder.append("youtube_api_client_id, youtube_api_client_secret ");
         queryBuilder.append("FROM ");
-        queryBuilder.append("application_info_tbl ");
+        queryBuilder.append(ESApplicationInfo.NAME).append(" ");
         queryBuilder.append("WHERE ");
         queryBuilder.append("id = 1");
 
@@ -45,6 +40,11 @@ public class ESApplicationInfoRepository {
         Object[] resultObjects = (Object[]) result;
 
         return new Tuple.T2<String, String>((String) resultObjects[0], (String) resultObjects[1]);
+    }
+
+    @Transactional
+    public interface ESApplicationInfoJRepo extends JpaRepository<ESApplicationInfo, Long> {
+
     }
 
 }

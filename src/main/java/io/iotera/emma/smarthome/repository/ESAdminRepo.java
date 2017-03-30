@@ -6,10 +6,10 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository
-public class ESAdminRepository {
+public class ESAdminRepo {
 
     @Transactional
-    public interface ESAdminJpaRepository extends JpaRepository<ESAdmin, Long> {
+    public interface ESAdminJRepo extends JpaRepository<ESAdmin, Long> {
         ESAdmin findByToken(String token);
     }
 

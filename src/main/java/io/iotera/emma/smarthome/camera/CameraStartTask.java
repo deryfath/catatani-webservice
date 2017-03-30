@@ -1,13 +1,14 @@
 package io.iotera.emma.smarthome.camera;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.iotera.emma.smarthome.model.camera.ESCameraHistory;
+import io.iotera.emma.smarthome.model.device.ESCameraHistory;
 import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
-import io.iotera.emma.smarthome.repository.ESAccountCameraRepository;
-import io.iotera.emma.smarthome.repository.ESApplicationInfoRepository;
-import io.iotera.emma.smarthome.repository.ESCameraHistoryRepository;
-import io.iotera.emma.smarthome.repository.ESDeviceRepository;
+import io.iotera.emma.smarthome.preference.CommandPref;
+import io.iotera.emma.smarthome.repository.ESAccountCameraRepo;
+import io.iotera.emma.smarthome.repository.ESApplicationInfoRepo;
+import io.iotera.emma.smarthome.repository.ESCameraHistoryRepo;
+import io.iotera.emma.smarthome.repository.ESDeviceRepo;
 import io.iotera.emma.smarthome.youtube.PrologVideo;
 import io.iotera.emma.smarthome.youtube.YoutubeService;
 import io.iotera.util.Json;
@@ -34,10 +35,10 @@ import java.util.GregorianCalendar;
 public class CameraStartTask implements Runnable, ApplicationEventPublisherAware {
 
     @Autowired
-    ESAccountCameraRepository accountCameraRepository;
+    ESAccountCameraRepo accountCameraRepo;
 
     @Autowired
-    ESApplicationInfoRepository applicationInfoRepository;
+    ESApplicationInfoRepo applicationInfoRepo;
 
     @Autowired
     CameraManager cameraManager;
@@ -49,13 +50,13 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
     PrologVideo prologVideo;
 
     @Autowired
-    ESCameraHistoryRepository historyCameraRepository;
+    ESCameraHistoryRepo historyCameraRepo;
 
     @Autowired
-    ESCameraHistoryRepository.ESCameraHistoryJpaRepository deviceCameraHistoryJpaRepository;
+    ESCameraHistoryRepo.ESCameraHistoryJRepo deviceCameraHistoryJRepo;
 
     @Autowired
-    ESDeviceRepository deviceRepository;
+    ESDeviceRepo deviceRepository;
 
     private long accountId;
     private ESDevice device;
@@ -128,7 +129,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
             calendar.set(Calendar.MINUTE, 5);
             stopTime = calendar.getTime();
 
-            Tuple.T2<String, String> youtubeClientApi = applicationInfoRepository.getClientIdAndClientSecret();
+            Tuple.T2<String, String> youtubeClientApi = applicationInfoRepo.getClientIdAndClientSecret();
             if (youtubeClientApi == null) {
                 return;
             }
@@ -136,13 +137,13 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
             String clientId = youtubeClientApi._1;
             String clientSecret = youtubeClientApi._2;
 
-            Tuple.T2<String, String> token = accountCameraRepository.getAccessTokenAndRefreshToken(accountId);
+            Tuple.T2<String, String> token = accountCameraRepo.getAccessTokenAndRefreshToken(accountId);
             if (token == null) {
                 //TODO Token not found
                 return;
             }
 
-            ResponseEntity responseYoutubeKey = accountCameraRepository.YoutubeKey(accountId);
+            ResponseEntity responseYoutubeKey = accountCameraRepo.YoutubeKey(accountId);
             objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
             System.out.println("OBJECT KEY : " + objectKey);
 
@@ -162,7 +163,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
             calendar.set(Calendar.MINUTE, 5);
             stopTime = calendar.getTime();
 
-            ResponseEntity responseYoutubeKey = accountCameraRepository.YoutubeKey(accountId);
+            ResponseEntity responseYoutubeKey = accountCameraRepo.YoutubeKey(accountId);
             objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
             System.out.println("OBJECT KEY : " + objectKey);
 
@@ -182,7 +183,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
             System.out.println("OBJECT ENTITY STREAM : " + objectEntityStream);
 
             //DELETE OLD YOUTUBE LINK
-            ResponseEntity cameraHistoryCount = historyCameraRepository.countRowHistoryCamera(device.getId());
+            ResponseEntity cameraHistoryCount = historyCameraRepo.countRowHistoryCamera(device.getId());
             ObjectNode responseCamera = Json.parseToObjectNode(cameraHistoryCount.getBody().toString());
             System.out.println("responseCamera : " + responseCamera);
             if (responseCamera.size() != 0) {
@@ -190,7 +191,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
                 if (Integer.parseInt(responseCamera.get("count").toString()) > maxqueue) {
 
                     //DELETE FIRST ROW HISTORY CAMERA
-                    historyCameraRepository.deleteFirstRowByDeviceId(device.getId());
+                    historyCameraRepo.deleteFirstRowByDeviceId(device.getId());
 
                     //DELETE ON YOUTUBE API
                     ResponseEntity responseEntityDelete = youtubeService.deleteEventById(accessToken, responseCamera.get("youtube_id").toString());
@@ -211,8 +212,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
                 }
             }
 
-
-            //INSERT INTO TABlE camera_history_tbl
+            //INSERT INTO TABlE camera_history
             System.out.println("response success : " + objectEntityStream.get("stream_data"));
 
             String youtube_title = objectEntityStream.get("stream_data").get("data").get("title").textValue();
@@ -232,7 +232,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
                 ESCameraHistory cameraHistory = new ESCameraHistory(youtube_title, youtube_url, broadcastID, streamID,
                         ingestionAddress + "/" + streamKey, dateFormat.parse(mqttTime), device);
 
-                deviceCameraHistoryJpaRepository.saveAndFlush(cameraHistory);
+                deviceCameraHistoryJRepo.saveAndFlush(cameraHistory);
             } catch (ParseException e) {
                 e.printStackTrace();
             }
@@ -267,14 +267,15 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
                 .build();
 
         if (applicationEventPublisher != null && message != null) {
-            applicationEventPublisher.publishEvent(new MqttPublishEvent(this, this.message));
+            applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_START,
+                    this.message));
         } else {
             System.out.println("MQTT NULL");
         }
 
         //STOP PROLOG VIDEO
         System.out.println(objectEntityStream);
-        if(objectEntityStream.get("stream_status").get("data")!=null){
+        if (objectEntityStream.get("stream_status").get("data") != null) {
             String streamStatus = objectEntityStream.get("stream_status").get("data").get("stream_status").textValue();
             if (streamStatus.equalsIgnoreCase("live")) {
                 prologVideo.stopVideoProlog();

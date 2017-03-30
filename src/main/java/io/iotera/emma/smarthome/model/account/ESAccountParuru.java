@@ -3,8 +3,10 @@ package io.iotera.emma.smarthome.model.account;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "account_paruru_tbl")
+@Table(name = ESAccountParuru.NAME)
 public class ESAccountParuru {
+
+    public static final String NAME = "v2_account_paruru_tbl";
 
     @Id
     @Column(unique = true, nullable = false)
@@ -45,5 +47,4 @@ public class ESAccountParuru {
     public void setParuru(String paruru) {
         this.paruru = paruru;
     }
-
 }

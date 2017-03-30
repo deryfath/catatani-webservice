@@ -15,11 +15,7 @@ import java.util.Date;
 import java.util.List;
 
 @Repository
-public class ESRoutineRepository {
-
-    @Transactional
-    public interface ESRoutineJpaRepository extends JpaRepository<ESRoutine, String> {
-    }
+public class ESRoutineRepo {
 
     @PersistenceContext
     EntityManager entityManager;
@@ -31,7 +27,7 @@ public class ESRoutineRepository {
         queryBuilder.append("SELECT ");
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
-        queryBuilder.append("routine_tbl ");
+        queryBuilder.append(ESRoutine.NAME).append(" ");
         queryBuilder.append("WHERE ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
@@ -54,7 +50,7 @@ public class ESRoutineRepository {
         queryBuilder.append("SELECT ");
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
-        queryBuilder.append("routine_tbl ");
+        queryBuilder.append(ESRoutine.NAME).append(" ");
         queryBuilder.append("WHERE ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
@@ -79,7 +75,7 @@ public class ESRoutineRepository {
         queryBuilder.append("SELECT ");
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
-        queryBuilder.append("routine_tbl ");
+        queryBuilder.append(ESRoutine.NAME).append(" ");
         queryBuilder.append("WHERE ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
@@ -103,7 +99,7 @@ public class ESRoutineRepository {
         queryBuilder.append("SELECT ");
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
-        queryBuilder.append("routine_tbl ");
+        queryBuilder.append(ESRoutine.NAME).append(" ");
         queryBuilder.append("WHERE ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
@@ -128,7 +124,7 @@ public class ESRoutineRepository {
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("UPDATE ");
-        queryBuilder.append("routine_tbl ");
+        queryBuilder.append(ESRoutine.NAME).append(" ");
         queryBuilder.append("SET ");
         queryBuilder.append("last_executed = :now,");
         queryBuilder.append("last_executed_commands = null ");
@@ -157,7 +153,7 @@ public class ESRoutineRepository {
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("UPDATE ");
-        queryBuilder.append("routine_tbl ");
+        queryBuilder.append(ESRoutine.NAME).append(" ");
         queryBuilder.append("SET ");
         queryBuilder.append("last_executed_commands = :commands");
         if (success) {
@@ -182,6 +178,10 @@ public class ESRoutineRepository {
         query.setParameter("accountId", ESRoutine.parent(accountId));
 
         return query.executeUpdate();
+    }
+
+    @Transactional
+    public interface ESRoutineJRepo extends JpaRepository<ESRoutine, String> {
     }
 
 }

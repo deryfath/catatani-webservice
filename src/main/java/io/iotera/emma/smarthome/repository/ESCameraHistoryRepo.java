@@ -1,7 +1,7 @@
 package io.iotera.emma.smarthome.repository;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.iotera.emma.smarthome.model.camera.ESCameraHistory;
+import io.iotera.emma.smarthome.model.device.ESCameraHistory;
 import io.iotera.util.Json;
 import io.iotera.web.spring.controller.BaseController;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,7 +17,7 @@ import java.util.Date;
 import java.util.List;
 
 @Repository
-public class ESCameraHistoryRepository extends BaseController {
+public class ESCameraHistoryRepo extends BaseController {
 
     @PersistenceContext
     EntityManager entityManager;
@@ -30,7 +30,7 @@ public class ESCameraHistoryRepository extends BaseController {
         queryBuilder.append("SELECT ");
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
-        queryBuilder.append("camera_history_tbl ");
+        queryBuilder.append(ESCameraHistory.NAME).append(" ");
         queryBuilder.append("WHERE ");
         queryBuilder.append("device_id = :device_id ");
         queryBuilder.append("ORDER BY ");
@@ -56,7 +56,7 @@ public class ESCameraHistoryRepository extends BaseController {
         queryBuilder.append("SELECT ");
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
-        queryBuilder.append("camera_history_tbl ");
+        queryBuilder.append(ESCameraHistory.NAME).append(" ");
         queryBuilder.append("WHERE ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
@@ -76,7 +76,7 @@ public class ESCameraHistoryRepository extends BaseController {
         queryBuilder.append("SELECT ");
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
-        queryBuilder.append("camera_history_tbl ");
+        queryBuilder.append(ESCameraHistory.NAME).append(" ");
         queryBuilder.append("WHERE device_id = :device_id ");
         queryBuilder.append("AND ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
@@ -102,7 +102,7 @@ public class ESCameraHistoryRepository extends BaseController {
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("DELETE ");
         queryBuilder.append("FROM ");
-        queryBuilder.append("camera_history_tbl ");
+        queryBuilder.append(ESCameraHistory.NAME).append(" ");
         queryBuilder.append("WHERE ");
         queryBuilder.append("device_id = :device_id ");
         queryBuilder.append("ORDER BY history_time ASC limit 1 ");
@@ -127,7 +127,7 @@ public class ESCameraHistoryRepository extends BaseController {
         // Build Query
         StringBuilder applianceBuilder = new StringBuilder();
         applianceBuilder.append("UPDATE ");
-        applianceBuilder.append("camera_history_tbl ");
+        applianceBuilder.append(ESCameraHistory.NAME).append(" ");
         applianceBuilder.append("SET ");
         applianceBuilder.append("__deleted_flag__ = TRUE, ");
         applianceBuilder.append("__deleted_time__ = :dtime ");
@@ -146,7 +146,7 @@ public class ESCameraHistoryRepository extends BaseController {
     }
 
     @Transactional
-    public interface ESCameraHistoryJpaRepository extends JpaRepository<ESCameraHistory, Long> {
+    public interface ESCameraHistoryJRepo extends JpaRepository<ESCameraHistory, Long> {
     }
 
 }

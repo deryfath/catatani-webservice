@@ -2,8 +2,8 @@ package io.iotera.emma.smarthome.controller;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.iotera.emma.smarthome.model.camera.ESCameraHistory;
-import io.iotera.emma.smarthome.repository.ESCameraHistoryRepository;
+import io.iotera.emma.smarthome.model.device.ESCameraHistory;
+import io.iotera.emma.smarthome.repository.ESCameraHistoryRepo;
 import io.iotera.util.Json;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +13,7 @@ import java.util.List;
 public class ESCameraController extends ESBaseController {
 
     @Autowired
-    ESCameraHistoryRepository cameraHistoryRepository;
+    ESCameraHistoryRepo cameraHistoryRepository;
 
     protected ResponseEntity listHistoryByDeviceId(String deviceId) {
 
@@ -31,7 +31,7 @@ public class ESCameraController extends ESBaseController {
             cameraObject.put("youtube_broadcast_id", cameraHistory.getYoutubeBroadcastId());
             cameraObject.put("youtube_stream_id", cameraHistory.getYoutubeStreamId());
             cameraObject.put("youtube_stream_key", cameraHistory.getYoutubeStreamKey());
-            cameraObject.put("history_time", formatDate(cameraHistory.getHistoryTime(), "yyyy-MM-dd HH:mm:ss"));
+            cameraObject.put("history_time", formatDate(cameraHistory.getHistoryTime()));
             cameraObject.put("device_id", deviceId);
 
             cameraArray.add(cameraObject);

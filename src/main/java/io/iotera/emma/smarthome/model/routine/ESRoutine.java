@@ -1,14 +1,15 @@
 package io.iotera.emma.smarthome.model.routine;
 
-
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.util.Date;
 
 @Entity
-@Table(name = "routine_tbl")
+@Table(name = ESRoutine.NAME)
 public class ESRoutine {
+
+    public static final String NAME = "v2_routine_tbl";
 
     @Id
     @GeneratedValue(generator = "uuid")
@@ -99,6 +100,10 @@ public class ESRoutine {
     /////////////////////
     // Getter & Setter //
     /////////////////////
+
+    public static String parent(long accountId) {
+        return accountId + "/";
+    }
 
     public String getId() {
         return id;
@@ -224,16 +229,12 @@ public class ESRoutine {
         return deletedTime;
     }
 
-    public void setDeletedTime(Date deletedTime) {
-        this.deletedTime = deletedTime;
-    }
-
     ////////////
     // Method //
     ////////////
 
-    public static String parent(long accountId) {
-        return accountId + "/";
+    public void setDeletedTime(Date deletedTime) {
+        this.deletedTime = deletedTime;
     }
 
     @Transient

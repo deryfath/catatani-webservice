@@ -6,8 +6,10 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "application_info_tbl")
+@Table(name = ESApplicationInfo.NAME)
 public class ESApplicationInfo {
+
+    public static final String NAME = "application_info_tbl";
 
     @Id
     @Column(unique = true, nullable = false)

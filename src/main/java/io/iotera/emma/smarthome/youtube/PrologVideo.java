@@ -1,11 +1,10 @@
 package io.iotera.emma.smarthome.youtube;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.iotera.emma.smarthome.controller.ESDeviceController;
-import io.iotera.emma.smarthome.repository.ESAccountCameraRepository;
+import io.iotera.emma.smarthome.controller.ESBaseController;
+import io.iotera.emma.smarthome.repository.ESAccountCameraRepo;
 import io.iotera.util.Json;
 import io.iotera.util.Tuple;
-import io.iotera.web.spring.controller.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +19,7 @@ import java.io.InputStreamReader;
  * Created by nana on 12/22/2016.
  */
 @Service
-public class PrologVideo extends BaseController {
+public class PrologVideo extends ESBaseController {
 
     Process proc;
     String accessToken = "";
@@ -29,7 +28,7 @@ public class PrologVideo extends BaseController {
     String refreshToken = "";
 
     @Autowired
-    ESAccountCameraRepository accountYoutubeCameraRepository;
+    ESAccountCameraRepo accountYoutubeCameraRepository;
 
     @Autowired
     YoutubeService youtubeService;
@@ -37,7 +36,7 @@ public class PrologVideo extends BaseController {
     @Autowired
     Environment env;
 
-    public ResponseEntity runVideoProlog(String title,long accountId) {
+    public ResponseEntity runVideoProlog(String title, long accountId) {
 
         String StreamKey;
         ObjectNode responseBodyJson = Json.buildObjectNode();
@@ -53,30 +52,30 @@ public class PrologVideo extends BaseController {
 
         System.out.println(accessToken);
 
-        Tuple.T2<Integer, ObjectNode> responseEntityCreate = youtubeService.createEvent(accessToken,title);
+        Tuple.T2<Integer, ObjectNode> responseEntityCreate = youtubeService.createEvent(accessToken, title);
 
-        if(responseEntityCreate._1 == 401){
+        if (responseEntityCreate._1 == 401) {
             System.out.println("UNAUTHORIZED");
             //get access token by Refresh token
-            accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken,clientId,clientSecret,accountId);
+            accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, accountId);
             System.out.println("masuk CREATE");
-            responseEntityCreate = youtubeService.createEvent(accessToken,title);
+            responseEntityCreate = youtubeService.createEvent(accessToken, title);
 
-        }else if(responseEntityCreate._1 != 200 && responseEntityCreate._1 != 401){
+        } else if (responseEntityCreate._1 != 200 && responseEntityCreate._1 != 401) {
             System.out.println("ERROR CREATE EVENT");
-            return okJsonFailed(responseEntityCreate._1,responseEntityCreate._2.toString());
+            return okJsonFailed(responseEntityCreate._1, responseEntityCreate._2.toString());
         }
 
-        System.out.println("RESPONSE CREATE : "+responseEntityCreate);
-        if(responseEntityCreate._2.get("data")!= null){
+        System.out.println("RESPONSE CREATE : " + responseEntityCreate);
+        if (responseEntityCreate._2.get("data") != null) {
             StreamKey = responseEntityCreate._2.get("data").get("stream_key").textValue();
-        }else{
-            return okJsonFailed(-3,"forbidden to create event");
+        } else {
+            return okJsonFailed(-3, "forbidden to create event");
         }
 
         try {
 //            proc = Runtime.getRuntime().exec(env.getProperty("ffmpeg.prolog")+" -re -stream_loop -1 -i "+env.getProperty("ffmpeg.prolog.source")+" -tune zerolatency -vcodec libx264 -t 12:00:00 -pix_fmt + -c:v copy -c:a aac -strict experimental -f flv rtmp://a.rtmp.youtube.com/live2/"+StreamKey);
-            proc = Runtime.getRuntime().exec(env.getProperty("ffmpeg.prolog")+" -re -stream_loop -1 -i "+env.getProperty("ffmpeg.prolog.source")+" -vcodec libx264 -preset veryfast -maxrate 3000k -bufsize 6000k -pix_fmt yuv420p -g 50 -c:a aac -b:a 160k -ac 2 -ar 44100 -f flv rtmp://a.rtmp.youtube.com/live2/"+StreamKey);
+            proc = Runtime.getRuntime().exec(env.getProperty("ffmpeg.prolog") + " -re -stream_loop -1 -i " + env.getProperty("ffmpeg.prolog.source") + " -vcodec libx264 -preset veryfast -maxrate 3000k -bufsize 6000k -pix_fmt yuv420p -g 50 -c:a aac -b:a 160k -ac 2 -ar 44100 -f flv rtmp://a.rtmp.youtube.com/live2/" + StreamKey);
 
             // any error message?
             StreamGobbler errorGobbler = new StreamGobbler(proc.getErrorStream(), "ERROR");
@@ -90,48 +89,48 @@ public class PrologVideo extends BaseController {
 
             String broadcastID = "", streamID = "";
 
-            try{
+            try {
                 broadcastID = responseEntityCreate._2.get("data").get("broadcast_id").textValue();
                 streamID = responseEntityCreate._2.get("data").get("stream_id").textValue();
-            }catch (NullPointerException e){
-                System.out.println("error : "+e.getMessage());
+            } catch (NullPointerException e) {
+                System.out.println("error : " + e.getMessage());
             }
 
             //TRANSITION TESTING -> LIVE
             String state = "testing";
-            responseEntityTransitionStart = youtubeService.transitionEventStart(accessToken,broadcastID,streamID,state);
+            responseEntityTransitionStart = youtubeService.transitionEventStart(accessToken, broadcastID, streamID, state);
 
-            if(responseEntityTransitionStart._1 == 401){
+            if (responseEntityTransitionStart._1 == 401) {
                 System.out.println("UNAUTHORIZED");
                 //get access token by Refresh token
-                accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken,clientId,clientSecret,accountId);
-                responseEntityTransitionStart = youtubeService.transitionEventStart(accessToken,broadcastID,streamID,state);
-            }else if(responseEntityTransitionStart._1 == 400 || responseEntityTransitionStart._1 == 403 || responseEntityTransitionStart._1 == 404){
-                return okJsonFailed(responseEntityTransitionStart._1,responseEntityTransitionStart._2.toString());
+                accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, accountId);
+                responseEntityTransitionStart = youtubeService.transitionEventStart(accessToken, broadcastID, streamID, state);
+            } else if (responseEntityTransitionStart._1 == 400 || responseEntityTransitionStart._1 == 403 || responseEntityTransitionStart._1 == 404) {
+                return okJsonFailed(responseEntityTransitionStart._1, responseEntityTransitionStart._2.toString());
             }
 
             //MQTT MESSAGE IF NO DATA
             String statusNodata = responseEntityTransitionStart._2.get("data").get("stream_status").textValue();
-            if(statusNodata.equalsIgnoreCase("noData")){
+            if (statusNodata.equalsIgnoreCase("noData")) {
 
-                while(statusNodata.equalsIgnoreCase("noData")){
+                while (statusNodata.equalsIgnoreCase("noData")) {
 
-                    responseEntityTransitionStart = youtubeService.transitionEventStart(accessToken,broadcastID,streamID,state);
-                    try{
-                        if(responseEntityTransitionStart._2.get("data").get("stream_status")!=null){
+                    responseEntityTransitionStart = youtubeService.transitionEventStart(accessToken, broadcastID, streamID, state);
+                    try {
+                        if (responseEntityTransitionStart._2.get("data").get("stream_status") != null) {
 //                            System.out.println(responseEntityTransitionStart._2.get("data").get("stream_status"));
                             statusNodata = responseEntityTransitionStart._2.get("data").get("stream_status").textValue();
                         }
 
-                    }catch (NullPointerException e){
+                    } catch (NullPointerException e) {
                         e.printStackTrace();
-                        return okJsonFailed(-13,"Null Pointer Exception");
+                        return okJsonFailed(-13, "Null Pointer Exception");
                     }
-                    if(!statusNodata.equalsIgnoreCase("noData")){
+                    if (!statusNodata.equalsIgnoreCase("noData")) {
                         break;
                     }
                 }
-                if(responseEntityTransitionStart._2.get("data").get("stream_status")!=null){
+                if (responseEntityTransitionStart._2.get("data").get("stream_status") != null) {
                     System.out.println(responseEntityTransitionStart._2.get("data").get("stream_status"));
                 }
 
@@ -141,21 +140,21 @@ public class PrologVideo extends BaseController {
 //            int exitVal = proc.waitFor();
 //            System.out.println("ExitValue: " + exitVal);
 
-        }catch (Throwable e){
+        } catch (Throwable e) {
             e.printStackTrace();
         }
 
-        responseBodyJson.set("stream_status",responseEntityTransitionStart._2);
-        responseBodyJson.set("stream_data",responseEntityCreate._2);
+        responseBodyJson.set("stream_status", responseEntityTransitionStart._2);
+        responseBodyJson.set("stream_data", responseEntityCreate._2);
 
         return okJson(responseBodyJson);
     }
 
-    public void stopVideoProlog(){
+    public void stopVideoProlog() {
 
-        try{
+        try {
             proc.destroy();
-        }catch (Throwable e){
+        } catch (Throwable e) {
             System.out.println(e.getMessage());
         }
 
@@ -163,28 +162,23 @@ public class PrologVideo extends BaseController {
 
 }
 
-class StreamGobbler extends Thread
-{
+class StreamGobbler extends Thread {
     InputStream is = null;
     String type = "";
     BufferedReader br = null;
-    String line= "";
+    String line = "";
 
-    StreamGobbler(InputStream is, String type)
-    {
+    StreamGobbler(InputStream is, String type) {
         this.is = is;
         this.type = type;
     }
 
-    public void run()
-    {
-        try
-        {
+    public void run() {
+        try {
             br = new BufferedReader(new InputStreamReader(is));
-            while ( (line = br.readLine()) != null)
+            while ((line = br.readLine()) != null)
                 System.out.println(type + ">" + line);
-        } catch (IOException ioe)
-        {
+        } catch (IOException ioe) {
             ioe.printStackTrace();
         }
 

@@ -2,22 +2,19 @@ package io.iotera.emma.smarthome.model.device;
 
 import io.iotera.emma.model.device.EDevice;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import javax.persistence.Transient;
 
 @Entity
-@Table(name = "device_tbl")
+@Table(name = ESDevice.NAME)
 public class ESDevice extends EDevice {
+
+    public static final String NAME = "v2_device_tbl";
 
     @Column(name = "__parent__", nullable = false)
     protected String parent;
-
-    ////////////
-    // Column //
-    ////////////
-
-    @ManyToOne
-    @JoinColumn(name = "room_id", nullable = false)
-    protected ESRoom room;
 
     /////////////////
     // Constructor //
@@ -27,30 +24,28 @@ public class ESDevice extends EDevice {
     }
 
     public ESDevice(String label, int category, int type, String uid, String address, String info,
-                    boolean on, int state, ESRoom room,
+                    boolean on, String state,
                     String roomId, long accountId) {
         super(label, category, type, uid, address, info, on, state);
-        this.room = room;
         this.parent = parent(null, roomId, accountId);
     }
 
-    public ESDevice(String parent, ESRoom room) {
+    public ESDevice(String parent) {
         this.parent = parent;
-        this.room = room;
     }
 
-    public ESDevice(String label, int category, int type, String uid, String address, String info, boolean on, int state, String parent, ESRoom room) {
+    public ESDevice(String label, int category, int type, String uid, String address, String info,
+                    boolean on, String state, String parent) {
         super(label, category, type, uid, address, info, on, state);
         this.parent = parent;
-        this.room = room;
     }
 
     ///////////////
     // Appliance //
-    public static ESDevice buildAppliance(String label, int category, int type, String uid, String address,
-                                          String info, boolean on, int state,
-                                          ESRoom room, String remoteId, String roomId, long accountId) {
-        ESDevice appliance = new ESDevice(label, category, type, uid, address, info, on, state, room, roomId, accountId);
+    public static ESDevice buildAppliance(String label, int category, int type, String uid, String address, String info,
+                                          boolean on, String state,
+                                          String remoteId, String roomId, long accountId) {
+        ESDevice appliance = new ESDevice(label, category, type, uid, address, info, on, state, roomId, accountId);
         appliance.parent = parent(remoteId, roomId, accountId);
         return appliance;
     }
@@ -88,14 +83,6 @@ public class ESDevice extends EDevice {
 
     public void setParent(String parent) {
         this.parent = parent;
-    }
-
-    public ESRoom getRoom() {
-        return room;
-    }
-
-    public void setRoom(ESRoom room) {
-        this.room = room;
     }
 
     ////////////

@@ -2,7 +2,8 @@ package io.iotera.emma.smarthome.camera;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
-import io.iotera.emma.smarthome.repository.ESAccountCameraRepository;
+import io.iotera.emma.smarthome.preference.CommandPref;
+import io.iotera.emma.smarthome.repository.ESAccountCameraRepo;
 import io.iotera.emma.smarthome.youtube.YoutubeService;
 import io.iotera.util.Json;
 import io.iotera.util.Tuple;
@@ -24,7 +25,7 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
     YoutubeService youtubeService;
 
     @Autowired
-    ESAccountCameraRepository accountCameraRepository;
+    ESAccountCameraRepo accountCameraRepo;
 
     private long accountId;
     private String cameraId;
@@ -66,7 +67,7 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
         // YOUTUBE COMPLETE
         // MQTT
 
-        ResponseEntity responseYoutubeKey = accountCameraRepository.YoutubeKey(accountId);
+        ResponseEntity responseYoutubeKey = accountCameraRepo.YoutubeKey(accountId);
         objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
         System.out.println("OBJECT KEY : " + objectKey);
 
@@ -97,7 +98,7 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
                 .build();
 
         if (applicationEventPublisher != null && message != null) {
-            applicationEventPublisher.publishEvent(new MqttPublishEvent(this, this.message));
+            applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_STOP, this.message));
         } else {
             System.out.println("MQTT NULL");
         }

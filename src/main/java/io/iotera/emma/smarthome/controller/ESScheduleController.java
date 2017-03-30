@@ -4,10 +4,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.routine.ESRoutine;
 import io.iotera.emma.smarthome.preference.RoutinePref;
-import io.iotera.emma.smarthome.repository.ESRoutineRepository;
+import io.iotera.emma.smarthome.repository.ESRoutineRepo;
 import io.iotera.emma.smarthome.routine.RoutineManager;
-import io.iotera.emma.smarthome.routine.RoutineManagerYoutube;
-import io.iotera.emma.smarthome.utility.RoutineUtility;
+import io.iotera.emma.smarthome.util.RoutineUtility;
 import io.iotera.util.Json;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,13 +17,10 @@ public class ESScheduleController extends ESRoutineController {
     RoutineManager routineManager;
 
     @Autowired
-    RoutineManagerYoutube routineManagerYoutube;
+    ESRoutineRepo routineRepo;
 
     @Autowired
-    ESRoutineRepository routineRepository;
-
-    @Autowired
-    ESRoutineRepository.ESRoutineJpaRepository routineJpaRepository;
+    ESRoutineRepo.ESRoutineJRepo routineJRepo;
 
     protected ResponseEntity create(ObjectNode body, long accountId) {
 
@@ -47,14 +43,14 @@ public class ESScheduleController extends ESRoutineController {
         }
         commandsString = Json.toStringIgnoreNull(newCommands);
 
-        if (!routineRepository.findByName(name, accountId).isEmpty()) {
+        if (!routineRepo.findByName(name, accountId).isEmpty()) {
             return okJsonFailed(-2, "routine_name_not_available");
         }
 
         ESRoutine routine = new ESRoutine(name, RoutinePref.CAT_SCHEDULE,
                 trigger, daysString, null, commandsString, null, accountId);
 
-        routineJpaRepository.saveAndFlush(routine);
+        routineJRepo.saveAndFlush(routine);
 
         if (routine.isActive()) {
             routineManager.updateSchedule(accountId, routine, cronExpression);
@@ -62,6 +58,17 @@ public class ESScheduleController extends ESRoutineController {
 
         response.put("id", routine.getId());
         response.put("name", routine.getName());
+        response.put("category", routine.getCategory());
+        response.put("trigger", routine.getTrigger());
+        response.set("days_of_week", Json.parseToArrayNode(routine.getDaysOfWeek()));
+        response.put("info", routine.getInfo());
+        response.set("commands", Json.parseToObjectNode(routine.getCommands()));
+        response.set("clients", Json.parseToArrayNode(routine.getClients()));
+        response.put("active", routine.isActive());
+        response.put("last_executed", formatDate(routine.getLastExecuted()));
+        response.set("last_executed_commands", Json.parseToObjectNode(routine.getLastExecutedCommands()));
+        response.put("last_succeeded", formatDate(routine.getLastSucceeded()));
+        response.put("parent", routine.getParent());
         response.put("status_code", 0);
         response.put("status", "success");
 
@@ -78,7 +85,7 @@ public class ESScheduleController extends ESRoutineController {
         boolean edit = false;
         String routineId = rget(body, "esroutine");
 
-        ESRoutine routine = routineRepository.findByRoutineId(routineId, accountId);
+        ESRoutine routine = routineRepo.findByRoutineId(routineId, accountId);
         if (routine == null) {
             return okJsonFailed(-1, "routine_not_found");
         }
@@ -90,7 +97,7 @@ public class ESScheduleController extends ESRoutineController {
             String name = get(body, "esname");
             // Check room name
             if (!routine.getName().equals(name)) {
-                if (!routineRepository.findByName(name, accountId).isEmpty()) {
+                if (!routineRepo.findByName(name, accountId).isEmpty()) {
                     return okJsonFailed(-2, "routine_name_not_available");
                 }
                 routine.setName(name);
@@ -160,7 +167,7 @@ public class ESScheduleController extends ESRoutineController {
         }
 
         if (edit) {
-            routineJpaRepository.saveAndFlush(routine);
+            routineJRepo.saveAndFlush(routine);
 
             if (routine.isActive()) {
                 String cronExpression = RoutineUtility.getCronExpression(routine.getDaysOfWeek(),
@@ -179,36 +186,6 @@ public class ESScheduleController extends ESRoutineController {
 
         // Result
         return okJson(response);
-    }
-
-    protected ResponseEntity scheduleYoutube(ObjectNode body, long accountId, String accessToken) {
-
-        System.out.println("masuk SCHEDULING");
-        ObjectNode response = Json.buildObjectNode();
-
-        String title = rget(body, "broadcast_title");
-
-//        Runnable runnable = new Runnable() {
-//            public void run() {
-//                // task to run goes here
-//                System.out.println("Hello !!");
-//            }
-//        };
-//        ScheduledExecutorService service = Executors
-//                .newSingleThreadScheduledExecutor();
-//        service.scheduleAtFixedRate(runnable, 0, 1, TimeUnit.SECONDS);
-
-//        routineManagerYoutube.updateSchedule(accountId, accessToken, title);
-
-        ObjectNode responseBodyJson = Json.buildObjectNode();
-        responseBodyJson.put("status", "Initializing schedule");
-
-        response.set("data", responseBodyJson);
-        response.put("status_code", 0);
-        response.put("status", "success");
-
-        return okJson(response);
-
     }
 
 }

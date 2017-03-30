@@ -1,14 +1,25 @@
 package io.iotera.emma.smarthome.model.access;
 
+import io.iotera.emma.smarthome.model.account.ESAccount;
 import io.iotera.util.Encrypt;
+import io.iotera.util.Random;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.util.Date;
 
 @Entity
-@Table(name = "access_tbl")
+@Table(name = ESAccess.NAME)
+@SqlResultSetMapping(
+        name = "v2_AccessByAccount",
+        entities = {
+                @EntityResult(entityClass = ESAccount.class),
+                @EntityResult(entityClass = ESAccess.class)
+        }
+)
 public class ESAccess {
+
+    public static final String NAME = "v2_access_tbl";
 
     @Id
     @GeneratedValue(generator = "uuid")
@@ -16,8 +27,8 @@ public class ESAccess {
     @Column(unique = true, nullable = false)
     protected String id;
 
-    @Column(name = "account_id", nullable = false)
-    protected long accountId;
+    @Column(name = "hub_id", nullable = false)
+    protected long hubId;
 
     @Column(name = "client_id", nullable = false)
     protected long clientId;
@@ -51,22 +62,55 @@ public class ESAccess {
     protected ESAccess() {
     }
 
-    public ESAccess(long accountId, long clientId) {
-        this.accountId = accountId;
+    public ESAccess(long hubId, long clientId, String permission) {
+        this.hubId = hubId;
         this.clientId = clientId;
-        accessToken();
+        this.permission = permission;
+        generateAccessToken();
 
         this.addedTime = new Date();
         this.order = 0;
         this.deleted = false;
     }
 
+    public ESAccess(long hubId, long clientId) {
+        this(hubId, clientId, "[]");
+    }
+
+    protected ESAccess(long clientId, String accessToken, String permission, Date addedTime) {
+        this.hubId = clientId;
+        this.clientId = clientId;
+        this.permission = permission;
+        this.accessToken = accessToken;
+
+        this.addedTime = addedTime;
+        this.order = 0;
+        this.deleted = false;
+    }
+
+    public static ESAccess buildDefaultAccess(long accountId, Date hubActiveTime) {
+        ESAccess access = new ESAccess(accountId, defaultAccessToken(accountId), "[admin]",
+                hubActiveTime);
+        return access;
+    }
+
     ////////////
     // Method //
     ////////////
 
-    public void accessToken() {
-        this.accessToken = Encrypt.SHA256("Emma" + (new Date().getTime()));
+    public static String defaultAccessToken(long clientId) {
+        String clientIdString = String.valueOf(clientId);
+        int prefc = (64 - clientIdString.length()) / 2;
+        int sufc = 64 - prefc - clientIdString.length();
+        return Random.alphaNumeric(prefc) + clientId + Random.alphaNumeric(sufc);
+    }
+
+    public static boolean isDefaultAccess(String accessToken, long clientId) {
+        return accessToken.contains(String.valueOf(clientId));
+    }
+
+    public void generateAccessToken() {
+        this.accessToken = Encrypt.SHA256("Emma-" + (new Date().getTime()));
     }
 
     /////////////////////
@@ -77,20 +121,12 @@ public class ESAccess {
         return id;
     }
 
-    public long getAccountId() {
-        return accountId;
-    }
-
-    public void setAccountId(long accountId) {
-        this.accountId = accountId;
+    public long getHubId() {
+        return hubId;
     }
 
     public long getClientId() {
         return clientId;
-    }
-
-    public void setClientId(long clientId) {
-        this.clientId = clientId;
     }
 
     public String getPermission() {
@@ -131,6 +167,10 @@ public class ESAccess {
 
     public void setDeletedTime(Date deletedTime) {
         this.deletedTime = deletedTime;
+    }
+
+    public boolean isAdmin() {
+        return (hubId == clientId) || (permission != null && permission.contains("admin"));
     }
 
 }
