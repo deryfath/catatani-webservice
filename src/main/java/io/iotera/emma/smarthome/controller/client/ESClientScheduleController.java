@@ -3,6 +3,7 @@ package io.iotera.emma.smarthome.controller.client;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.controller.ESScheduleController;
 import io.iotera.emma.smarthome.model.account.ESAccount;
+import io.iotera.emma.smarthome.model.account.ESHub;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,12 +30,12 @@ public class ESClientScheduleController extends ESScheduleController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = accountAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return create(body, accountId);
+        return create(body, hubId);
     }
 
     @RequestMapping(value = "/get/{id}", method = RequestMethod.GET)
@@ -50,12 +51,12 @@ public class ESClientScheduleController extends ESScheduleController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = accountAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return read(routineId, accountId);
+        return read(routineId, hubId);
     }
 
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
@@ -73,12 +74,12 @@ public class ESClientScheduleController extends ESScheduleController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = accountAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return update(body, accountId);
+        return update(body, hubId);
     }
 
     @RequestMapping(value = "/remove", method = RequestMethod.POST)
@@ -96,12 +97,12 @@ public class ESClientScheduleController extends ESScheduleController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = accountAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return delete(body, accountId);
+        return delete(body, hubId);
     }
 
 }

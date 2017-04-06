@@ -37,13 +37,13 @@ public class MqttScheduleAckMessageHandler implements MessageHandler, Applicatio
                     return;
                 }
 
-                long accountId;
+                long hubId = -1;
                 try {
-                    accountId = Long.parseLong(token[2]);
+                    hubId = Long.parseLong(token[2]);
                 } catch (NumberFormatException e) {
+                    //e.printStackTrace();
                     return;
                 }
-
                 String routineId = token[4];
 
                 if (applicationEventPublisher != null) {

@@ -1,6 +1,6 @@
 package io.iotera.emma.smarthome.model.access;
 
-import io.iotera.emma.smarthome.model.account.ESAccount;
+import io.iotera.emma.smarthome.preference.PermissionPref;
 import io.iotera.util.Encrypt;
 import io.iotera.util.Random;
 import org.hibernate.annotations.GenericGenerator;
@@ -10,13 +10,6 @@ import java.util.Date;
 
 @Entity
 @Table(name = ESAccess.NAME)
-@SqlResultSetMapping(
-        name = "v2_AccessByAccount",
-        entities = {
-                @EntityResult(entityClass = ESAccount.class),
-                @EntityResult(entityClass = ESAccess.class)
-        }
-)
 public class ESAccess {
 
     public static final String NAME = "v2_access_tbl";
@@ -77,8 +70,8 @@ public class ESAccess {
         this(hubId, clientId, "[]");
     }
 
-    protected ESAccess(long clientId, String accessToken, String permission, Date addedTime) {
-        this.hubId = clientId;
+    protected ESAccess(long hubId, long clientId, String accessToken, String permission, Date addedTime) {
+        this.hubId = hubId;
         this.clientId = clientId;
         this.permission = permission;
         this.accessToken = accessToken;
@@ -88,8 +81,8 @@ public class ESAccess {
         this.deleted = false;
     }
 
-    public static ESAccess buildDefaultAccess(long accountId, Date hubActiveTime) {
-        ESAccess access = new ESAccess(accountId, defaultAccessToken(accountId), "[admin]",
+    public static ESAccess buildOwnerAccess(long hubId, long clientId, Date hubActiveTime) {
+        ESAccess access = new ESAccess(hubId, clientId, ownerAccessToken(hubId), "[owner]",
                 hubActiveTime);
         return access;
     }
@@ -98,15 +91,15 @@ public class ESAccess {
     // Method //
     ////////////
 
-    public static String defaultAccessToken(long clientId) {
-        String clientIdString = String.valueOf(clientId);
-        int prefc = (64 - clientIdString.length()) / 2;
-        int sufc = 64 - prefc - clientIdString.length();
-        return Random.alphaNumeric(prefc) + clientId + Random.alphaNumeric(sufc);
+    public static String ownerAccessToken(long hubId) {
+        String clientIdString = String.valueOf(hubId);
+        int prefc = (64 - clientIdString.length()) / 2 - 1;
+        int sufc = 64 - prefc - clientIdString.length() - 1;
+        return Random.alphaNumeric(prefc) + "/" + hubId + "/" + Random.alphaNumeric(sufc);
     }
 
-    public static boolean isDefaultAccess(String accessToken, long clientId) {
-        return accessToken.contains(String.valueOf(clientId));
+    public static boolean isOwnerAccess(String accessToken) {
+        return accessToken.contains("/");
     }
 
     public void generateAccessToken() {
@@ -169,8 +162,14 @@ public class ESAccess {
         this.deletedTime = deletedTime;
     }
 
-    public boolean isAdmin() {
-        return (hubId == clientId) || (permission != null && permission.contains("admin"));
+    public String permission() {
+        if (permission.contains("owner")) {
+            return PermissionPref.OWNER;
+        } else if (permission.contains("admin")) {
+            return PermissionPref.ADMIN;
+        } else {
+            return PermissionPref.MEMBER;
+        }
     }
 
 }

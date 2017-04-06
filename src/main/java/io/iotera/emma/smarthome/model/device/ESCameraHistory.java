@@ -50,9 +50,8 @@ public class ESCameraHistory {
     // Column //
     ////////////
 
-    @ManyToOne
-    @JoinColumn(name = "device_id", nullable = false)
-    protected ESDevice device;
+    @Column(name = "__parent__", nullable = false)
+    protected String parent;
 
     /////////////////
     // Constructor //
@@ -62,7 +61,7 @@ public class ESCameraHistory {
     }
 
     public ESCameraHistory(String youtubeTitle, String youtubeUrl, String youtubeBroadcastId, String youtubeStreamId,
-                           String youtubeStreamKey, Date historyTime, ESDevice device) {
+                           String youtubeStreamKey, Date historyTime, String parent) {
         this.youtubeTitle = youtubeTitle;
         this.youtubeUrl = youtubeUrl;
         this.youtubeBroadcastId = youtubeBroadcastId;
@@ -73,12 +72,35 @@ public class ESCameraHistory {
         this.order = 0;
         this.deleted = false;
 
-        this.device = device;
+        this.parent = parent;
     }
 
     /////////////////////
     // Getter & Setter //
     /////////////////////
+
+    public static String parent(String deviceId, String roomId, long hubId) {
+        StringBuilder pBuilder = new StringBuilder();
+        pBuilder.append(hubId);
+        pBuilder.append('/');
+        roomId = (roomId != null) ? roomId : "%";
+        pBuilder.append(roomId);
+        if (roomId.equals("%")) {
+            if (deviceId != null) {
+                pBuilder.append('/');
+            }
+        } else {
+            pBuilder.append('/');
+        }
+        if (deviceId != null) {
+            pBuilder.append(deviceId);
+            if (!deviceId.equals("%")) {
+                pBuilder.append('/');
+            }
+        }
+
+        return pBuilder.toString();
+    }
 
     public String getId() {
         return id;
@@ -156,7 +178,11 @@ public class ESCameraHistory {
         this.deletedTime = deletedTime;
     }
 
-    public ESDevice getDevice() {
-        return device;
+    public String getParent() {
+        return parent;
+    }
+
+    public void setParent(String parent) {
+        this.parent = parent;
     }
 }

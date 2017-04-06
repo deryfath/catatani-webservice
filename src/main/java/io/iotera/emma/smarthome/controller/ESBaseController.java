@@ -3,9 +3,12 @@ package io.iotera.emma.smarthome.controller;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.access.ESAccess;
 import io.iotera.emma.smarthome.model.account.ESAccount;
+import io.iotera.emma.smarthome.model.account.ESHub;
+import io.iotera.emma.smarthome.preference.PermissionPref;
 import io.iotera.emma.smarthome.repository.ESAccessRepo;
 import io.iotera.emma.smarthome.repository.ESAccountRepo;
 import io.iotera.emma.smarthome.repository.ESAdminRepo;
+import io.iotera.emma.smarthome.repository.ESHubRepo;
 import io.iotera.util.Json;
 import io.iotera.util.Tuple;
 import io.iotera.web.spring.controller.BaseController;
@@ -18,6 +21,9 @@ public class ESBaseController extends BaseController {
 
     @Autowired
     ESAccountRepo.ESAccountJRepo accountJRepo;
+
+    @Autowired
+    ESHubRepo.ESHubJRepo hubJRepo;
 
     @Autowired
     ESAdminRepo.ESAdminJRepo adminJRepo;
@@ -134,53 +140,67 @@ public class ESBaseController extends BaseController {
     // Account //
     /////////////
 
-    protected ESAccount accountHub(String hubToken) {
-        ESAccount account = accountJRepo.findByHubTokenAndDeactivateFalse(hubToken);
-        if (account == null) {
+    protected ESHub accountHub(String hubToken) {
+        ESHub hub = hubJRepo.findByHubTokenAndHubActiveTrueAndDeactivateFalse(hubToken);
+        if (hub == null) {
             returnUnauthorized("invalid hub token");
         }
-        return account;
+        return hub;
     }
 
-    protected ESAccount accountWithPayment(String hubToken) {
-        ESAccount account = accountJRepo.findByHubTokenAndDeactivateFalse(hubToken);
-        if (account == null) {
+    protected ESHub accountWithPayment(String hubToken) {
+        ESHub hub = hubJRepo.findByHubTokenAndHubActiveTrueAndDeactivateFalse(hubToken);
+        if (hub == null) {
             returnUnauthorized("invalid hub token");
         }
 
-        if (!account.isPaymentActive()) {
+        if (!hub.isPaymentActive()) {
             returnPaymentRequired("payment required for hub");
         }
-        return account;
+        return hub;
     }
 
-    protected ESAccount accountAccess(String accessToken, long clientId) {
-        if (ESAccess.isDefaultAccess(accessToken, clientId)) {
-            return accountJRepo.findByIdAndDeactivateFalse(clientId);
+    protected ESHub accountAccess(String accessToken, long clientId) {
+        if (ESAccess.isOwnerAccess(accessToken)) {
+            String[] t = accessToken.split("/");
+            long hubId = -1;
+            try {
+                hubId = Long.parseLong(t[1]);
+            } catch (NumberFormatException e) {
+                returnUnauthorized("invalid access token");
+            }
+            return hubJRepo.findByIdAndDeactivateFalse(hubId);
         }
 
-        ESAccount account = accessRepo.findHubByAccessToken(accessToken, clientId);
-        if (account == null) {
+        ESHub hub = accessRepo.findHubByAccessTokenAndClientId(accessToken, clientId);
+        if (hub == null) {
             returnUnauthorized("invalid access token");
         }
 
-        return account;
+        return hub;
     }
 
-    protected ESAccount adminAccess(String accessToken, long clientId) {
-        if (ESAccess.isDefaultAccess(accessToken, clientId)) {
-            return accountJRepo.findByIdAndDeactivateFalse(clientId);
+    protected ESHub adminAccess(String accessToken, long clientId) {
+        if (ESAccess.isOwnerAccess(accessToken)) {
+            String[] t = accessToken.split("/");
+            long hubId = -1;
+            try {
+                hubId = Long.parseLong(t[1]);
+            } catch (NumberFormatException e) {
+                returnUnauthorized("invalid access token");
+            }
+            return hubJRepo.findByIdAndDeactivateFalse(hubId);
         }
 
-        Tuple.T2<ESAccount, Boolean> accountAdmin = accessRepo.findHubByAccessTokenAdmin(accessToken, clientId);
-        if (accountAdmin._1 == null) {
+        Tuple.T2<ESHub, String> hub = accessRepo.findHubByAccessTokenAdmin(accessToken, clientId);
+        if (hub._1 == null) {
             returnUnauthorized("invalid access token");
         }
-        if (!accountAdmin._2) {
+        if (!PermissionPref.isOwnerOrAdmin(hub._2)) {
             returnForbidden("need administration access");
         }
 
-        return accountAdmin._1;
+        return hub._1;
     }
 
     ////////////

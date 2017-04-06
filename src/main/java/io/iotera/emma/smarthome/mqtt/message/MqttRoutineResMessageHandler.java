@@ -39,14 +39,15 @@ public class MqttRoutineResMessageHandler implements MessageHandler, Application
                     return;
                 }
 
-                long accountId;
+                long hubId = -1;
                 try {
-                    accountId = Long.parseLong(token[2]);
+                    hubId = Long.parseLong(token[2]);
                 } catch (NumberFormatException e) {
+                    //e.printStackTrace();
                     return;
                 }
-
                 String routineId = token[4];
+
                 String payloadString = (String) message.getPayload();
                 ObjectNode payload = Json.parseToObjectNode(payloadString);
                 if (payload == null) {
@@ -55,7 +56,7 @@ public class MqttRoutineResMessageHandler implements MessageHandler, Application
 
                 if (applicationEventPublisher != null) {
                     applicationEventPublisher.publishEvent(new RoutineResEvent(
-                            MqttRoutineResMessageHandler.this, accountId, routineId, payload));
+                            MqttRoutineResMessageHandler.this, hubId, routineId, payload));
                 }
 
             }

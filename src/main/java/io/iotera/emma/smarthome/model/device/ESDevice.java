@@ -25,9 +25,9 @@ public class ESDevice extends EDevice {
 
     public ESDevice(String label, int category, int type, String uid, String address, String info,
                     boolean on, String state,
-                    String roomId, long accountId) {
+                    String roomId, long hubId) {
         super(label, category, type, uid, address, info, on, state);
-        this.parent = parent(null, roomId, accountId);
+        this.parent = parent(null, roomId, hubId);
     }
 
     public ESDevice(String parent) {
@@ -44,9 +44,9 @@ public class ESDevice extends EDevice {
     // Appliance //
     public static ESDevice buildAppliance(String label, int category, int type, String uid, String address, String info,
                                           boolean on, String state,
-                                          String remoteId, String roomId, long accountId) {
-        ESDevice appliance = new ESDevice(label, category, type, uid, address, info, on, state, roomId, accountId);
-        appliance.parent = parent(remoteId, roomId, accountId);
+                                          String remoteId, String roomId, long hubId) {
+        ESDevice appliance = new ESDevice(label, category, type, uid, address, info, on, state, roomId, hubId);
+        appliance.parent = parent(remoteId, roomId, hubId);
         return appliance;
     }
 
@@ -54,9 +54,9 @@ public class ESDevice extends EDevice {
     // Getter & Setter //
     /////////////////////
 
-    public static String parent(String deviceId, String roomId, long accountId) {
+    public static String parent(String deviceId, String roomId, long hubId) {
         StringBuilder pBuilder = new StringBuilder();
-        pBuilder.append(accountId);
+        pBuilder.append(hubId);
         pBuilder.append('/');
         roomId = (roomId != null) ? roomId : "%";
         pBuilder.append(roomId);

@@ -42,13 +42,13 @@ public class MqttMessageHandler implements MessageHandler, ApplicationEventPubli
             return;
         }
 
-        long accountId;
+        long hubId = -1;
         try {
-            accountId = Long.parseLong(token[1]);
+            hubId = Long.parseLong(token[1]);
         } catch (NumberFormatException e) {
+            //e.printStackTrace();
             return;
         }
-
         String type = token[2];
 
         ObjectNode payload = Json.parseToObjectNode(payloadString);
@@ -101,7 +101,7 @@ public class MqttMessageHandler implements MessageHandler, ApplicationEventPubli
                     for (int i = 0; i < 10; ++i) {
                         try {
                             RestTemplate restTemplate = new RestTemplate();
-                            ESHubAccountCameraController<String> response = restTemplate.postForEntity(
+                            ESHubHubCameraController<String> response = restTemplate.postForEntity(
                                     env.getProperty("fcm.url"), request, String.class);
 
                             if (response.getStatusCode() == HttpStatus.OK) {
@@ -115,7 +115,7 @@ public class MqttMessageHandler implements MessageHandler, ApplicationEventPubli
 
             Message<String> sendMessage = MessageBuilder
                     .withPayload(Json.toStringIgnoreNull(dataResult))
-                    .setHeader(MqttHeaders.TOPIC, PublishUtility.topic("hub", accountId, CommandPref.CONTROL))
+                    .setHeader(MqttHeaders.TOPIC, PublishUtility.topic("hub", hubId, CommandPref.CONTROL))
                     .build();
 
             if (applicationEventPublisher != null) {

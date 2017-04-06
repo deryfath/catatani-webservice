@@ -36,7 +36,7 @@ public class ESAdminAccountController extends ESBaseController {
         // Request Body
         ObjectNode body = payloadObject(entity);
 
-        // Account
+        // Client
         ESAccount account = accountJRepo.findByIdAndDeactivateFalse(rget(body, "esaccount", Long.class));
         long accountId = account.getId();
 
@@ -49,7 +49,6 @@ public class ESAdminAccountController extends ESBaseController {
         String newHashedpass = PasswordUtility.hashPassword(newPasswordBytes, newParuruBytes);
 
         account.setPassword(newHashedpass);
-        account.generateHubToken();
         accountParuru.setParuru(newParuru);
 
         accountJRepo.saveAndFlush(account);

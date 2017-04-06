@@ -1,7 +1,7 @@
 package io.iotera.emma.smarthome.controller.hub;
 
 import io.iotera.emma.smarthome.controller.ESApiController;
-import io.iotera.emma.smarthome.model.account.ESAccount;
+import io.iotera.emma.smarthome.model.account.ESHub;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,9 +19,9 @@ public class ESHubApiController extends ESApiController {
         //authenticateToken(entity);
         String hubToken = hubToken(entity);
 
-        // Account
-        ESAccount account = accountHub(hubToken);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountHub(hubToken);
+        long hubId = hub.getId();
 
         return mqtt();
     }

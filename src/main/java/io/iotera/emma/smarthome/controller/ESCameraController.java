@@ -15,13 +15,14 @@ public class ESCameraController extends ESBaseController {
     @Autowired
     ESCameraHistoryRepo cameraHistoryRepository;
 
-    protected ResponseEntity listHistoryByDeviceId(String deviceId) {
+    protected ResponseEntity listHistoryByDeviceId(String deviceId, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
 
         ArrayNode cameraArray = Json.buildArrayNode();
-        List<ESCameraHistory> cameraHistories = cameraHistoryRepository.listCameraHistoryByDeviceId(deviceId);
+        List<ESCameraHistory> cameraHistories =
+                cameraHistoryRepository.listCameraHistoryByDeviceId(deviceId, hubId);
         for (ESCameraHistory cameraHistory : cameraHistories) {
             ObjectNode cameraObject = Json.buildObjectNode();
 

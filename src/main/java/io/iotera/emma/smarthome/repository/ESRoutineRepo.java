@@ -20,7 +20,7 @@ public class ESRoutineRepo {
     @PersistenceContext
     EntityManager entityManager;
 
-    public List<ESRoutine> listByAccountId(long accountId) {
+    public List<ESRoutine> listByHubId(long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -31,14 +31,14 @@ public class ESRoutineRepo {
         queryBuilder.append("WHERE ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
-        queryBuilder.append("__parent__ LIKE :accountId ");
+        queryBuilder.append("__parent__ LIKE :parent ");
         queryBuilder.append("ORDER BY ");
         queryBuilder.append("__order__ ASC, category ASC, routine_trigger ASC, __added__ ASC");
 
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESRoutine.class);
-        query.setParameter("accountId", ESRoutine.parent(accountId));
+        query.setParameter("parent", ESRoutine.parent(hubId));
 
         return query.getResultList();
     }
@@ -68,7 +68,7 @@ public class ESRoutineRepo {
         return query.getResultList();
     }
 
-    public ESRoutine findByRoutineId(String routineId, long accountId) {
+    public ESRoutine findByRoutineId(String routineId, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -81,18 +81,18 @@ public class ESRoutineRepo {
         queryBuilder.append("AND ");
         queryBuilder.append("id = :id ");
         queryBuilder.append("AND ");
-        queryBuilder.append("__parent__ LIKE :accountId");
+        queryBuilder.append("__parent__ LIKE :parent");
 
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESRoutine.class);
         query.setParameter("id", routineId);
-        query.setParameter("accountId", ESRoutine.parent(accountId));
+        query.setParameter("parent", ESRoutine.parent(hubId));
 
         return (ESRoutine) DataAccessUtils.singleResult(query.getResultList());
     }
 
-    public List<ESRoutine> findByName(String name, long accountId) {
+    public List<ESRoutine> findByName(String name, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -105,19 +105,19 @@ public class ESRoutineRepo {
         queryBuilder.append("AND ");
         queryBuilder.append("name = :name ");
         queryBuilder.append("AND ");
-        queryBuilder.append("__parent__ LIKE :accountId");
+        queryBuilder.append("__parent__ LIKE :parent");
 
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESRoutine.class);
         query.setParameter("name", name);
-        query.setParameter("accountId", ESRoutine.parent(accountId));
+        query.setParameter("parent", ESRoutine.parent(hubId));
 
         return query.getResultList();
     }
 
     @Transactional
-    public int updateExecuted(String routineId, long accountId) {
+    public int updateExecuted(String routineId, long hubId) {
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -133,20 +133,20 @@ public class ESRoutineRepo {
         queryBuilder.append("AND ");
         queryBuilder.append("id = :id ");
         queryBuilder.append("AND ");
-        queryBuilder.append("__parent__ LIKE :accountId");
+        queryBuilder.append("__parent__ LIKE :parent");
 
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString);
         query.setParameter("now", sdf.format(new Date()));
         query.setParameter("id", routineId);
-        query.setParameter("accountId", ESRoutine.parent(accountId));
+        query.setParameter("parent", ESRoutine.parent(hubId));
 
         return query.executeUpdate();
     }
 
     @Transactional
-    public int updateSuccess(String routineId, boolean success, String commands, long accountId) {
+    public int updateSuccess(String routineId, boolean success, String commands, long hubId) {
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -167,7 +167,7 @@ public class ESRoutineRepo {
         queryBuilder.append("AND ");
         queryBuilder.append("id = :id ");
         queryBuilder.append("AND ");
-        queryBuilder.append("__parent__ LIKE :accountId");
+        queryBuilder.append("__parent__ LIKE :parent");
 
         // Execute Query
         String queryString = queryBuilder.toString();
@@ -175,7 +175,7 @@ public class ESRoutineRepo {
         query.setParameter("commands", commands);
         query.setParameter("now", sdf.format(new Date()));
         query.setParameter("id", routineId);
-        query.setParameter("accountId", ESRoutine.parent(accountId));
+        query.setParameter("parent", ESRoutine.parent(hubId));
 
         return query.executeUpdate();
     }

@@ -1,51 +1,30 @@
 package io.iotera.emma.smarthome.controller.hub;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.iotera.emma.smarthome.controller.ESAccountController;
-import io.iotera.emma.smarthome.model.account.ESAccount;
-import io.iotera.emma.smarthome.repository.ESAccountRepo;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
+import io.iotera.emma.smarthome.controller.ESHubController;
+import io.iotera.emma.smarthome.model.account.ESHub;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
-import java.util.List;
-
 @RestController
 @RequestMapping("/hub/account")
-public class ESHubAccountController extends ESAccountController implements ApplicationEventPublisherAware {
+public class ESHubAccountController extends ESHubController {
 
-    ApplicationEventPublisher applicationEventPublisher;
-    @Autowired
-    ESAccountRepo.ESAccountJRepo accountJRepo;
-    @Autowired
-    ESAccountRepo.ESAccountHubJRepo accountHubJRepo;
-
-    @Override
-    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-        this.applicationEventPublisher = applicationEventPublisher;
-    }
-
-    @RequestMapping(value = "/get/{attr}", method = RequestMethod.GET)
-    public ResponseEntity read(@PathVariable String[] attr, HttpEntity<String> entity) {
+    @RequestMapping(value = "/get", method = RequestMethod.GET)
+    public ResponseEntity read(HttpEntity<String> entity) {
 
         // Request Header
         //authenticateToken(entity);
         String hubToken = hubToken(entity);
 
-        // Account
-        ESAccount account = accountHub(hubToken);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountHub(hubToken);
+        long hubId = hub.getId();
 
-        List<String> attrList = Arrays.asList(attr);
-
-        return read(attrList, account);
+        return read(hub);
     }
 
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
@@ -55,14 +34,14 @@ public class ESHubAccountController extends ESAccountController implements Appli
         //authenticateToken(entity);
         String hubToken = hubToken(entity);
 
-        // Account
-        ESAccount account = accountHub(hubToken);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountHub(hubToken);
+        long hubId = hub.getId();
 
         // Request Body
         ObjectNode body = payloadObject(entity);
 
-        return update(body, false, account, accountId);
+        return update(body, hub, hubId);
     }
 
 }

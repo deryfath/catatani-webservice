@@ -22,7 +22,7 @@ public class ESRoomRepo {
     @PersistenceContext
     EntityManager entityManager;
 
-    public List<ESRoom> listByAccountId(long accountId) {
+    public List<ESRoom> listByHubId(long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -33,19 +33,19 @@ public class ESRoomRepo {
         queryBuilder.append("WHERE ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
-        queryBuilder.append("__parent__ LIKE :accountId ");
+        queryBuilder.append("__parent__ LIKE :parent ");
         queryBuilder.append("ORDER BY ");
         queryBuilder.append("__order__ ASC, __added__ ASC");
 
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESRoom.class);
-        query.setParameter("accountId", ESRoom.parent(accountId));
+        query.setParameter("parent", ESRoom.parent(hubId));
 
         return query.getResultList();
     }
 
-    public ESRoom findByRoomId(String roomId, long accountId) {
+    public ESRoom findByRoomId(String roomId, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -58,18 +58,18 @@ public class ESRoomRepo {
         queryBuilder.append("AND ");
         queryBuilder.append("id = :id ");
         queryBuilder.append("AND ");
-        queryBuilder.append("__parent__ LIKE :accountId");
+        queryBuilder.append("__parent__ LIKE :parent");
 
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESRoom.class);
         query.setParameter("id", roomId);
-        query.setParameter("accountId", ESRoom.parent(accountId));
+        query.setParameter("parent", ESRoom.parent(hubId));
 
         return (ESRoom) DataAccessUtils.singleResult(query.getResultList());
     }
 
-    public List<ESRoom> findByName(String name, long accountId) {
+    public List<ESRoom> findByName(String name, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -82,18 +82,18 @@ public class ESRoomRepo {
         queryBuilder.append("AND ");
         queryBuilder.append("name = :name ");
         queryBuilder.append("AND ");
-        queryBuilder.append("__parent__ LIKE :accountId");
+        queryBuilder.append("__parent__ LIKE :parent");
 
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESRoom.class);
         query.setParameter("name", name);
-        query.setParameter("accountId", ESRoom.parent(accountId));
+        query.setParameter("parent", ESRoom.parent(hubId));
 
         return query.getResultList();
     }
 
-    public Map<String, String> listRoomName(long accountId) {
+    public Map<String, String> listRoomName(long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -104,14 +104,14 @@ public class ESRoomRepo {
         queryBuilder.append("WHERE ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
-        queryBuilder.append("__parent__ LIKE :accountId ");
+        queryBuilder.append("__parent__ LIKE :parent ");
         queryBuilder.append("ORDER BY ");
         queryBuilder.append("__order__ ASC, __added__ ASC");
 
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString);
-        query.setParameter("accountId", ESRoom.parent(accountId));
+        query.setParameter("parent", ESRoom.parent(hubId));
 
         Map<String, String> result = new LinkedHashMap<String, String>();
         List<Object[]> qrList = query.getResultList();
@@ -125,7 +125,7 @@ public class ESRoomRepo {
     }
 
     @Transactional
-    public int deleteChild(Date deletedTime, String roomId, long accountId) {
+    public int deleteChild(Date deletedTime, String roomId, long hubId) {
 
         int result = 0;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -146,7 +146,7 @@ public class ESRoomRepo {
         String deviceQueryString = deviceQueryBuilder.toString();
         Query deviceQuery = entityManager.createNativeQuery(deviceQueryString);
         deviceQuery.setParameter("dtime", deletedTimeString);
-        deviceQuery.setParameter("parent", ESDevice.parent("%", roomId, accountId));
+        deviceQuery.setParameter("parent", ESDevice.parent("%", roomId, hubId));
 
         result += deviceQuery.executeUpdate();
 

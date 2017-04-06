@@ -29,7 +29,7 @@ public class ScheduleTask implements Runnable, ApplicationEventPublisherAware {
     @Autowired
     ESRoutineRepo routineRepo;
 
-    private long accountId;
+    private long hubId;
     private String routineId;
     private Message<String> message;
 
@@ -40,9 +40,9 @@ public class ScheduleTask implements Runnable, ApplicationEventPublisherAware {
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
-    public void initTask(long accountId,
+    public void initTask(long hubId,
                          String routineId, int routineCategory, String commands, String clients) {
-        this.accountId = accountId;
+        this.hubId = hubId;
         this.routineId = routineId;
 
         ObjectNode routineObject = Json.buildObjectNode();
@@ -56,7 +56,7 @@ public class ScheduleTask implements Runnable, ApplicationEventPublisherAware {
             this.message = MessageBuilder
                     .withPayload(Json.toStringIgnoreNull(routineObject))
                     .setHeader(MqttHeaders.TOPIC,
-                            PublishUtility.topicHub(accountId, CommandPref.SCHEDULE, routineId))
+                            PublishUtility.topicHub(hubId, CommandPref.SCHEDULE, routineId))
                     .setHeader(MqttHeaders.QOS, 2)
                     .build();
         }
@@ -93,7 +93,7 @@ public class ScheduleTask implements Runnable, ApplicationEventPublisherAware {
         }
 
         if (sent) {
-            routineRepo.updateExecuted(this.routineId, this.accountId);
+            routineRepo.updateExecuted(this.routineId, this.hubId);
         }
 
     }

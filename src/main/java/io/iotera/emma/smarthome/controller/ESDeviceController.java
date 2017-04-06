@@ -7,9 +7,9 @@ import io.iotera.emma.smarthome.camera.CameraStartTask;
 import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.emma.smarthome.model.device.ESRoom;
 import io.iotera.emma.smarthome.preference.DevicePref;
-import io.iotera.emma.smarthome.repository.ESAccountCameraRepo;
 import io.iotera.emma.smarthome.repository.ESApplicationInfoRepo;
 import io.iotera.emma.smarthome.repository.ESDeviceRepo;
+import io.iotera.emma.smarthome.repository.ESHubCameraRepo;
 import io.iotera.emma.smarthome.repository.ESRoomRepo;
 import io.iotera.emma.smarthome.youtube.PrologVideo;
 import io.iotera.emma.smarthome.youtube.YoutubeService;
@@ -30,7 +30,7 @@ public class ESDeviceController extends ESBaseController {
     ESDeviceRepo deviceRepo;
 
     @Autowired
-    ESAccountCameraRepo accountCameraRepo;
+    ESHubCameraRepo hubCameraRepo;
 
     @Autowired
     ESApplicationInfoRepo applicationInfoRepo;
@@ -52,14 +52,14 @@ public class ESDeviceController extends ESBaseController {
     @Autowired
     CameraStartTask cameraStartTask;
 
-    protected ResponseEntity listAll(long accountId) {
+    protected ResponseEntity listAll(long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
 
         ArrayNode deviceArray = Json.buildArrayNode();
-        Map<String, String> rooms = roomRepo.listRoomName(accountId);
-        List<ESDevice> devices = deviceRepo.listByAccountId(accountId);
+        Map<String, String> rooms = roomRepo.listRoomName(hubId);
+        List<ESDevice> devices = deviceRepo.listByHubId(hubId);
 
         for (String roomId : rooms.keySet()) {
             for (ESDevice device : devices) {
@@ -94,14 +94,14 @@ public class ESDeviceController extends ESBaseController {
         return okJson(response);
     }
 
-    protected ResponseEntity listRoom(String roomId, long accountId) {
+    protected ResponseEntity listRoom(String roomId, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
 
         ArrayNode deviceArray = Json.buildArrayNode();
-        Map<String, String> rooms = roomRepo.listRoomName(accountId);
-        List<ESDevice> devices = deviceRepo.listByRoomId(roomId, accountId);
+        Map<String, String> rooms = roomRepo.listRoomName(hubId);
+        List<ESDevice> devices = deviceRepo.listByRoomId(roomId, hubId);
         for (ESDevice device : devices) {
             ObjectNode deviceObject = Json.buildObjectNode();
 
@@ -130,14 +130,14 @@ public class ESDeviceController extends ESBaseController {
         return okJson(response);
     }
 
-    protected ResponseEntity listCategory(int category, long accountId) {
+    protected ResponseEntity listCategory(int category, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
 
         ArrayNode deviceArray = Json.buildArrayNode();
-        Map<String, String> rooms = roomRepo.listRoomName(accountId);
-        List<ESDevice> devices = deviceRepo.listByCategory(category, accountId);
+        Map<String, String> rooms = roomRepo.listRoomName(hubId);
+        List<ESDevice> devices = deviceRepo.listByCategory(category, hubId);
         for (ESDevice device : devices) {
             ObjectNode deviceObject = Json.buildObjectNode();
 
@@ -166,7 +166,7 @@ public class ESDeviceController extends ESBaseController {
         return okJson(response);
     }
 
-    protected ResponseEntity create(ObjectNode body, long accountId) {
+    protected ResponseEntity create(ObjectNode body, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
@@ -183,13 +183,13 @@ public class ESDeviceController extends ESBaseController {
         String info = get(body, "esinfo");
 
         // Check room
-        ESRoom room = roomRepo.findByRoomId(roomId, accountId);
+        ESRoom room = roomRepo.findByRoomId(roomId, hubId);
         if (room == null) {
             return okJsonFailed(-1, "room_not_found");
         }
 
         // Check device label
-        if (!deviceRepo.findByLabel(label, accountId).isEmpty()) {
+        if (!deviceRepo.findByLabel(label, hubId).isEmpty()) {
             return okJsonFailed(-2, "device_label_not_available");
         }
 
@@ -199,24 +199,24 @@ public class ESDeviceController extends ESBaseController {
             String uid = rget(body, "esuid");
             String address = rget(body, "esaddress");
 
-            if (!deviceRepo.findByUid(uid, accountId).isEmpty()) {
+            if (!deviceRepo.findByUid(uid, hubId).isEmpty()) {
                 return okJsonFailed(-3, "device_uid_not_available");
             }
 
             if (category == DevicePref.CAT_REMOTE) {
 
                 device = new ESDevice(label, category, type, uid, address, info, false, state,
-                        roomId, accountId);
+                        roomId, hubId);
 
                 deviceJRepo.saveAndFlush(device);
 
             } else if (category == DevicePref.CAT_CAMERA) {
 
-                if (!deviceRepo.findByAddress(address, accountId).isEmpty()) {
+                if (!deviceRepo.findByAddress(address, hubId).isEmpty()) {
                     return okJsonFailed(-4, "device_address_not_available");
                 }
 
-                Tuple.T2<String, String> token = accountCameraRepo.getAccessTokenAndRefreshToken(accountId);
+                Tuple.T2<String, String> token = hubCameraRepo.getAccessTokenAndRefreshToken(hubId);
                 if (token == null) {
                     return okJsonFailed(-20, "youtube_api_not_available");
                 }
@@ -232,7 +232,7 @@ public class ESDeviceController extends ESBaseController {
                 String clientSecret = youtubeClientApi._2;
 
                 device = new ESDevice(label, category, type, uid, address, info, false, null,
-                        roomId, accountId);
+                        roomId, hubId);
                 deviceJRepo.save(device);
 
                 DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -242,7 +242,7 @@ public class ESDeviceController extends ESBaseController {
                 //round time for prolog
                 Date dateHoursRound = cameraStartTask.toNearestWholeHour(date);
                 System.out.println(dateFormat.format(dateHoursRound).toString());
-                ResponseEntity responseEntityStream = prologVideo.runVideoProlog(label + " " + dateFormat.format(dateHoursRound).toString(), accountId);
+                ResponseEntity responseEntityStream = prologVideo.runVideoProlog(label + " " + dateFormat.format(dateHoursRound).toString(), hubId);
                 ObjectNode objectEntityStream = Json.parseToObjectNode(responseEntityStream.getBody().toString());
 
                 System.out.println(objectEntityStream);
@@ -252,16 +252,16 @@ public class ESDeviceController extends ESBaseController {
                     }
                 }
 
-                cameraManager.putSchedule(accountId, device, label, objectEntityStream);
+                cameraManager.putSchedule(hubId, device, label, objectEntityStream);
 
-//                routineManagerYoutube.updateSchedule(device, accountId, objectKey, label);
+//                routineManagerYoutube.updateSchedule(device, hubId, objectKey, label);
 
                 deviceJRepo.flush();
 
             } else {
 
                 device = new ESDevice(label, category, type, uid, address, info, false, state,
-                        roomId, accountId);
+                        roomId, hubId);
 
                 deviceJRepo.saveAndFlush(device);
 
@@ -272,18 +272,18 @@ public class ESDeviceController extends ESBaseController {
             String remoteId = rget(body, "esremote");
 
             // Check remote
-            ESDevice remote = deviceRepo.findByDeviceId(remoteId, accountId);
+            ESDevice remote = deviceRepo.findByDeviceId(remoteId, hubId);
             if (remote == null || remote.getCategory() != DevicePref.CAT_REMOTE) {
                 return okJsonFailed(-11, "remote_not_found");
             }
 
             // Check type
-            if (!deviceRepo.findByType(type, remoteId, accountId).isEmpty()) {
+            if (!deviceRepo.findByType(type, remoteId, hubId).isEmpty()) {
                 return okJsonFailed(-12, "type_not_available");
             }
 
             device = ESDevice.buildAppliance(label, category, type, "", "", info, false, state,
-                    remoteId, roomId, accountId);
+                    remoteId, roomId, hubId);
 
             deviceJRepo.saveAndFlush(device);
         }
@@ -305,12 +305,12 @@ public class ESDeviceController extends ESBaseController {
         return okJson(response);
     }
 
-    protected ResponseEntity read(String deviceId, long accountId) {
+    protected ResponseEntity read(String deviceId, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
 
-        ESDevice device = deviceRepo.findByDeviceId(deviceId, accountId);
+        ESDevice device = deviceRepo.findByDeviceId(deviceId, hubId);
         if (device == null) {
             return notFound("device (" + deviceId + ") not found");
         }
@@ -332,7 +332,7 @@ public class ESDeviceController extends ESBaseController {
         return okJson(response);
     }
 
-    protected ResponseEntity update(ObjectNode body, long accountId) {
+    protected ResponseEntity update(ObjectNode body, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
@@ -341,7 +341,7 @@ public class ESDeviceController extends ESBaseController {
         boolean edit = false;
         String deviceId = rget(body, "esdevice");
 
-        ESDevice device = deviceRepo.findByDeviceId(deviceId, accountId);
+        ESDevice device = deviceRepo.findByDeviceId(deviceId, hubId);
         if (device == null) {
             return okJsonFailed(-1, "device_not_found");
         }
@@ -354,7 +354,7 @@ public class ESDeviceController extends ESBaseController {
 
             if (!device.getRoomId().equals(roomId)) {
                 // Check room
-                ESRoom room = roomRepo.findByRoomId(roomId, accountId);
+                ESRoom room = roomRepo.findByRoomId(roomId, hubId);
                 if (room == null) {
                     return okJsonFailed(-2, "room_not_found");
                 }
@@ -364,7 +364,7 @@ public class ESDeviceController extends ESBaseController {
                     remoteId = device.getParent().split("/")[2];
                 }
 
-                device.setParent(ESDevice.parent(remoteId, roomId, accountId));
+                device.setParent(ESDevice.parent(remoteId, roomId, hubId));
                 edit = true;
 
                 response.put("room_name", room.getName());
@@ -376,13 +376,13 @@ public class ESDeviceController extends ESBaseController {
 
             // Check device label
             if (!device.getLabel().equals(label)) {
-                if (!deviceRepo.findByLabel(label, accountId).isEmpty()) {
+                if (!deviceRepo.findByLabel(label, hubId).isEmpty()) {
                     return okJsonFailed(-3, "device_label_not_available");
                 }
                 device.setLabel(label);
                 edit = true;
             }
-            response.put("label", label);
+            response.put("label", device.getLabel());
         }
 
         if (has(body, "esaddress")) {
@@ -391,7 +391,7 @@ public class ESDeviceController extends ESBaseController {
                 device.setAddress(address);
                 edit = true;
             }
-            response.put("address", address);
+            response.put("address", device.getAddress());
         }
 
         if (has(body, "esinfo")) {
@@ -400,7 +400,7 @@ public class ESDeviceController extends ESBaseController {
                 device.setInfo(info);
                 edit = true;
             }
-            response.put("info", info);
+            response.put("info", device.getInfo());
         }
 
         if (edit) {
@@ -414,7 +414,7 @@ public class ESDeviceController extends ESBaseController {
         return okJson(response);
     }
 
-    protected ResponseEntity delete(ObjectNode body, long accountId) {
+    protected ResponseEntity delete(ObjectNode body, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
@@ -422,7 +422,7 @@ public class ESDeviceController extends ESBaseController {
         // DELETE
         String deviceId = rget(body, "esdevice");
 
-        ESDevice device = deviceRepo.findByDeviceId(deviceId, accountId);
+        ESDevice device = deviceRepo.findByDeviceId(deviceId, hubId);
         if (device == null) {
             return okJsonFailed(-1, "device_not_found");
         }
@@ -432,14 +432,14 @@ public class ESDeviceController extends ESBaseController {
 
         Date now = new Date();
         if (device.getCategory() == DevicePref.CAT_REMOTE || device.getCategory() == DevicePref.CAT_CAMERA) {
-            deviceRepo.deleteChild(now, deviceId, accountId);
+            deviceRepo.deleteChild(now, deviceId, hubId);
 
         } else if (device.getCategory() == DevicePref.CAT_CAMERA) {
             // TODO Stop Camera
             // Get old and current broadcastID and make it complete
             ObjectNode info = Json.parseToObjectNode(device.getInfo());
 
-            cameraManager.removeSchedule(accountId, deviceId);
+            cameraManager.removeSchedule(hubId, deviceId);
 
         }
 

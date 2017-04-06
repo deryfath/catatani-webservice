@@ -23,7 +23,7 @@ public class ESCameraHistoryRepo extends BaseController {
     EntityManager entityManager;
 
     @Transactional
-    public List<ESCameraHistory> listCameraHistoryByDeviceId(String deviceId) {
+    public List<ESCameraHistory> listCameraHistoryByDeviceId(String deviceId, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -32,20 +32,20 @@ public class ESCameraHistoryRepo extends BaseController {
         queryBuilder.append("FROM ");
         queryBuilder.append(ESCameraHistory.NAME).append(" ");
         queryBuilder.append("WHERE ");
-        queryBuilder.append("device_id = :device_id ");
+        queryBuilder.append("parent = :parent ");
         queryBuilder.append("ORDER BY ");
         queryBuilder.append("history_time DESC");
 
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESCameraHistory.class);
-        query.setParameter("device_id", deviceId);
+        query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
 
         return query.getResultList();
     }
 
     @Transactional
-    public ResponseEntity countRowHistoryCamera(String deviceId) {
+    public ResponseEntity countRowHistoryCamera(String deviceId, long hubId) {
 
         List<ESCameraHistory> listHistoryId = null;
         ObjectNode deviceObject = Json.buildObjectNode();
@@ -60,12 +60,12 @@ public class ESCameraHistoryRepo extends BaseController {
         queryBuilder.append("WHERE ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
-        queryBuilder.append("device_id = :device_id ");
+        queryBuilder.append("parent = :parent ");
         queryBuilder.append("ORDER BY history_time ASC LIMIT 1 ");
 
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESCameraHistory.class);
-        query.setParameter("device_id", deviceId);
+        query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
         listHistoryId = query.getResultList();
 
         if (listHistoryId.size() != 0) {
@@ -77,13 +77,13 @@ public class ESCameraHistoryRepo extends BaseController {
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
         queryBuilder.append(ESCameraHistory.NAME).append(" ");
-        queryBuilder.append("WHERE device_id = :device_id ");
+        queryBuilder.append("WHERE parent = :parent ");
         queryBuilder.append("AND ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
 
         queryString = queryBuilder.toString();
         query = entityManager.createNativeQuery(queryString, ESCameraHistory.class);
-        query.setParameter("device_id", deviceId);
+        query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
         listCountRow = query.getResultList();
 
         if (listCountRow.size() != 0) {
@@ -96,7 +96,7 @@ public class ESCameraHistoryRepo extends BaseController {
     }
 
     @Transactional
-    public int deleteFirstRowByDeviceId(String deviceId) {
+    public int deleteFirstRowByDeviceId(String deviceId, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -104,19 +104,19 @@ public class ESCameraHistoryRepo extends BaseController {
         queryBuilder.append("FROM ");
         queryBuilder.append(ESCameraHistory.NAME).append(" ");
         queryBuilder.append("WHERE ");
-        queryBuilder.append("device_id = :device_id ");
+        queryBuilder.append("parent = :parent ");
         queryBuilder.append("ORDER BY history_time ASC limit 1 ");
 
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString);
-        query.setParameter("device_id", deviceId);
+        query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
 
         return query.executeUpdate();
     }
 
     @Transactional
-    public int updateDeleteStatus(String deviceId) {
+    public int updateDeleteStatus(String deviceId, long hubId) {
 
         int result = 0;
         Date now = new Date();
@@ -132,13 +132,13 @@ public class ESCameraHistoryRepo extends BaseController {
         applianceBuilder.append("__deleted_flag__ = TRUE, ");
         applianceBuilder.append("__deleted_time__ = :dtime ");
         applianceBuilder.append("WHERE ");
-        applianceBuilder.append("device_id = :device_id");
+        applianceBuilder.append("parent = :parent");
 
         // Execute Query
         String applianceBuilderString = applianceBuilder.toString();
         Query applianceQuery = entityManager.createNativeQuery(applianceBuilderString);
         applianceQuery.setParameter("dtime", deletedTimeString);
-        applianceQuery.setParameter("device_id", deviceId);
+        applianceQuery.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
 
         result += applianceQuery.executeUpdate();
 
@@ -146,7 +146,7 @@ public class ESCameraHistoryRepo extends BaseController {
     }
 
     @Transactional
-    public interface ESCameraHistoryJRepo extends JpaRepository<ESCameraHistory, Long> {
+    public interface ESCameraHistoryJRepo extends JpaRepository<ESCameraHistory, String> {
     }
 
 }

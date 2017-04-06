@@ -24,12 +24,12 @@ public class ESRoutineController extends ESBaseController {
     @Autowired
     ESRoutineRepo.ESRoutineJRepo routineJpaRepository;
 
-    protected ResponseEntity listAll(long accountId) {
+    protected ResponseEntity listAll(long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
         ArrayNode routineArray = Json.buildArrayNode();
-        List<ESRoutine> routines = routineRepository.listByAccountId(accountId);
+        List<ESRoutine> routines = routineRepository.listByHubId(hubId);
         for (ESRoutine routine : routines) {
             ObjectNode routineObject = Json.buildObjectNode();
             routineObject.put("id", routine.getId());
@@ -56,7 +56,7 @@ public class ESRoutineController extends ESBaseController {
         return okJson(response);
     }
 
-    protected ResponseEntity activate(ObjectNode body, long accountId) {
+    protected ResponseEntity activate(ObjectNode body, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
@@ -64,7 +64,7 @@ public class ESRoutineController extends ESBaseController {
         // UPDATE
         String routineId = rget(body, "esroutine");
 
-        ESRoutine routine = routineRepository.findByRoutineId(routineId, accountId);
+        ESRoutine routine = routineRepository.findByRoutineId(routineId, hubId);
         if (routine == null) {
             return okJsonFailed(-1, "routine_not_found");
         }
@@ -80,10 +80,10 @@ public class ESRoutineController extends ESBaseController {
                     routine.getTrigger());
             boolean valid = RoutineUtility.getValidCommands(routine.getCommands()) != null;
             if (cronExpression != null && valid) {
-                routineManager.updateSchedule(accountId, routine, cronExpression);
+                routineManager.updateSchedule(hubId, routine, cronExpression);
             }
         } else {
-            routineManager.removeSchedule(accountId, routine.getId());
+            routineManager.removeSchedule(hubId, routine.getId());
         }
 
         response.put("active", routine.isActive());
@@ -94,11 +94,11 @@ public class ESRoutineController extends ESBaseController {
         return okJson(response);
     }
 
-    protected ResponseEntity read(String routineId, long accountId) {
+    protected ResponseEntity read(String routineId, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
-        ESRoutine routine = routineRepository.findByRoutineId(routineId, accountId);
+        ESRoutine routine = routineRepository.findByRoutineId(routineId, hubId);
         if (routine == null) {
             return notFound("routine (" + routineId + ") not found");
         }
@@ -123,7 +123,7 @@ public class ESRoutineController extends ESBaseController {
         return okJson(response);
     }
 
-    protected ResponseEntity delete(ObjectNode body, long accountId) {
+    protected ResponseEntity delete(ObjectNode body, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
@@ -131,7 +131,7 @@ public class ESRoutineController extends ESBaseController {
         // DELETE
         String routineId = rget(body, "esroutine");
 
-        ESRoutine routine = routineRepository.findByRoutineId(routineId, accountId);
+        ESRoutine routine = routineRepository.findByRoutineId(routineId, hubId);
         if (routine == null) {
             return okJsonFailed(-1, "routine_not_found");
         }
@@ -145,7 +145,7 @@ public class ESRoutineController extends ESBaseController {
         routine.setDeleted(true);
         routine.setDeletedTime(now);
         routine.setActive(false);
-        routineManager.removeSchedule(accountId, routineId);
+        routineManager.removeSchedule(hubId, routineId);
 
         routineJpaRepository.saveAndFlush(routine);
 

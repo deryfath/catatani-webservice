@@ -21,7 +21,7 @@ public class ESClientApiController extends ESApiController {
 
         // Client
         ESAccount client = accountClient(clientToken);
-        long accountId = client.getId();
+        long hubId = client.getId();
 
         return mqtt();
     }

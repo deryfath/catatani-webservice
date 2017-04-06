@@ -17,7 +17,7 @@ import java.util.concurrent.Future;
 public class RoutineControlSchedule implements ApplicationContextAware {
 
     private ApplicationContext applicationContext;
-    private long accountId;
+    private long hubId;
     private ThreadPoolTaskScheduler taskScheduler;
     private ConcurrentHashMap<String, Future> futures;
 
@@ -26,8 +26,8 @@ public class RoutineControlSchedule implements ApplicationContextAware {
         this.applicationContext = applicationContext;
     }
 
-    void initSchedule(long accountId) {
-        this.accountId = accountId;
+    void initSchedule(long hubId) {
+        this.hubId = hubId;
         this.futures = new ConcurrentHashMap<String, Future>();
     }
 
@@ -38,7 +38,7 @@ public class RoutineControlSchedule implements ApplicationContextAware {
 
         if (!this.futures.containsKey(routine.getId())) {
             ScheduleTask task = applicationContext.getBean(ScheduleTask.class);
-            task.initTask(this.accountId, routine.getId(), routine.getCategory(),
+            task.initTask(this.hubId, routine.getId(), routine.getCategory(),
                     routine.getCommands(), routine.getClients());
 
             Future future = this.taskScheduler.schedule(

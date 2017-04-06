@@ -79,7 +79,7 @@ public class ESRoutine {
     }
 
     public ESRoutine(String name, int category, String trigger, String daysOfWeek, String info, String commands,
-                     String clients, long accountId) {
+                     String clients, long hubId) {
 
         this.name = name;
         this.category = category;
@@ -90,7 +90,7 @@ public class ESRoutine {
 
         this.clients = clients;
         this.active = true;
-        this.parent = parent(accountId);
+        this.parent = parent(hubId);
 
         this.addedTime = new Date();
         this.order = 0;
@@ -101,8 +101,8 @@ public class ESRoutine {
     // Getter & Setter //
     /////////////////////
 
-    public static String parent(long accountId) {
-        return accountId + "/";
+    public static String parent(long hubId) {
+        return hubId + "/";
     }
 
     public String getId() {
@@ -238,11 +238,10 @@ public class ESRoutine {
     }
 
     @Transient
-    public long getAccountId() {
-
+    public long getHubId() {
+        long hubId;
         try {
-            return Long.parseLong(parent.split("/")[0]);
-
+            hubId = Long.parseLong(parent.split("/")[0]);
         } catch (NumberFormatException e) {
             //e.printStackTrace();
         }

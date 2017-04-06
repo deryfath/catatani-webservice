@@ -3,7 +3,7 @@ package io.iotera.emma.smarthome.camera;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
-import io.iotera.emma.smarthome.repository.ESAccountCameraRepo;
+import io.iotera.emma.smarthome.repository.ESHubCameraRepo;
 import io.iotera.emma.smarthome.youtube.YoutubeService;
 import io.iotera.util.Json;
 import io.iotera.util.Tuple;
@@ -25,9 +25,9 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
     YoutubeService youtubeService;
 
     @Autowired
-    ESAccountCameraRepo accountCameraRepo;
+    ESHubCameraRepo hubCameraRepo;
 
-    private long accountId;
+    private long hubId;
     private String cameraId;
     private String broadcastId, streamID, clientId, clientSecret, accessToken, state, refreshToken;
     private boolean fromSchedule;
@@ -41,8 +41,8 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
-    public void initTask(long accountId, String cameraId, String broadcastId, boolean fromSchedule, String streamID) {
-        this.accountId = accountId;
+    public void initTask(long hubId, String cameraId, String broadcastId, boolean fromSchedule, String streamID) {
+        this.hubId = hubId;
         this.cameraId = cameraId;
         this.broadcastId = broadcastId;
         this.fromSchedule = fromSchedule;
@@ -53,7 +53,7 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
     public void run() {
 
         System.out.println("MASUK STOP");
-        System.out.println(accountId);
+        System.out.println(hubId);
         System.out.println(cameraId);
         System.out.println(broadcastId);
         System.out.println(fromSchedule);
@@ -67,7 +67,7 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
         // YOUTUBE COMPLETE
         // MQTT
 
-        ResponseEntity responseYoutubeKey = accountCameraRepo.YoutubeKey(accountId);
+        ResponseEntity responseYoutubeKey = hubCameraRepo.YoutubeKey(hubId);
         objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
         System.out.println("OBJECT KEY : " + objectKey);
 
@@ -83,7 +83,7 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
             System.out.println("UNAUTHORIZED");
             //get access token by Refresh token
             System.out.println("CLIENT ID STOP : " + clientId);
-            accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, accountId);
+            accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, hubId);
             System.out.println("stop access token : " + accessToken);
             responseTransitionStop = youtubeService.transitionEventComplete(accessToken, broadcastId, streamID, state);
 

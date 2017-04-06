@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CameraSchedule implements ApplicationContextAware {
 
     private ApplicationContext applicationContext;
-    private long accountId;
+    private long hubId;
     private ConcurrentHashMap<String, CameraItemSchedule> cameraItemSchedules;
 
     @Override
@@ -24,8 +24,8 @@ public class CameraSchedule implements ApplicationContextAware {
         this.applicationContext = applicationContext;
     }
 
-    void initSchedule(long accountId) {
-        this.accountId = accountId;
+    void initSchedule(long hubId) {
+        this.hubId = hubId;
         this.cameraItemSchedules = new ConcurrentHashMap<String, CameraItemSchedule>();
     }
 
@@ -33,7 +33,7 @@ public class CameraSchedule implements ApplicationContextAware {
 
         if (!this.cameraItemSchedules.containsKey(device.getId())) {
             CameraItemSchedule schedule = applicationContext.getBean(CameraItemSchedule.class);
-            schedule.initSchedule(device, accountId, label, createObject);
+            schedule.initSchedule(device, hubId, label, createObject);
             this.cameraItemSchedules.put(device.getId(), schedule);
             return schedule.updateCameraStartSchedule();
         }

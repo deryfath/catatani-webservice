@@ -25,7 +25,7 @@ public class RoutineResListener implements ApplicationListener<RoutineResEvent> 
     @Override
     public void onApplicationEvent(RoutineResEvent event) {
 
-        long accountId = event.getAccountId();
+        long hubId = event.getHubId();
         String routineId = event.getRoutineId();
         ObjectNode payload = event.getPayload();
 
@@ -75,7 +75,7 @@ public class RoutineResListener implements ApplicationListener<RoutineResEvent> 
                         break;
                     } else {
                         String c = cso.textValue().trim();
-                        deviceRepo.updateStatus(key, c, accountId);
+                        deviceRepo.updateStatus(key, c, hubId);
                     }
                 }
 
@@ -93,7 +93,7 @@ public class RoutineResListener implements ApplicationListener<RoutineResEvent> 
 
         if (!newCommandsObject.isEmpty(null)) {
             routineRepo.updateSuccess(routineId, success,
-                    Json.toStringIgnoreNull(succeededCommands), accountId);
+                    Json.toStringIgnoreNull(succeededCommands), hubId);
         }
     }
 

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.api.client.util.DateTime;
 import io.iotera.emma.smarthome.controller.ESBaseController;
-import io.iotera.emma.smarthome.repository.ESAccountCameraRepo;
+import io.iotera.emma.smarthome.repository.ESHubCameraRepo;
 import io.iotera.util.Json;
 import io.iotera.util.Tuple;
 import org.json.simple.JSONObject;
@@ -26,7 +26,7 @@ import java.util.Locale;
 public class YoutubeService extends ESBaseController {
 
     @Autowired
-    ESAccountCameraRepo accountCameraRepository;
+    ESHubCameraRepo hubCameraRepository;
     private int counter = 1;
     private HttpHeaders headersTransition;
 
@@ -684,7 +684,7 @@ public class YoutubeService extends ESBaseController {
 
     ////////////////////////////////////////////KEY TOKEN///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public String getAccessTokenByRefreshToken(String refreshToken, String clientId, String clientSecret, long accountId) {
+    public String getAccessTokenByRefreshToken(String refreshToken, String clientId, String clientSecret, long hubId) {
 
         System.out.println("GET REFRESH TOKEN");
 
@@ -719,7 +719,7 @@ public class YoutubeService extends ESBaseController {
 
         System.out.println("ACCESS TOKEN NEW : " + accessTokenNew);
 
-        accountCameraRepository.updateAccessTokenByAccountId(accessTokenNew, accountId);
+        hubCameraRepository.updateAccessTokenByHubId(accessTokenNew, hubId);
 
         return accessTokenNew;
 

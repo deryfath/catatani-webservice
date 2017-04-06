@@ -2,6 +2,7 @@ package io.iotera.emma.smarthome.repository;
 
 import io.iotera.emma.smarthome.model.access.ESAccess;
 import io.iotera.emma.smarthome.model.account.ESAccount;
+import io.iotera.emma.smarthome.model.account.ESHub;
 import io.iotera.util.Tuple;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -31,6 +32,8 @@ public class ESAccessRepo {
         queryBuilder.append(ESAccess.NAME).append(" AS access ");
         queryBuilder.append("ON client.id = access.client_id ");
         queryBuilder.append("WHERE ");
+        queryBuilder.append("client.__deactivate_flag__ = FALSE ");
+        queryBuilder.append("AND ");
         queryBuilder.append("access.__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
         queryBuilder.append("access.hub_id = :hub ");
@@ -39,7 +42,7 @@ public class ESAccessRepo {
 
         // Execute Query
         String queryString = queryBuilder.toString();
-        Query query = entityManager.createNativeQuery(queryString, "v2_AccessByAccount");
+        Query query = entityManager.createNativeQuery(queryString, ESAccount.ACCESS_BY_ACCOUNT_NAME);
         query.setParameter("hub", hubId);
 
         return query.getResultList();
@@ -52,12 +55,14 @@ public class ESAccessRepo {
         queryBuilder.append("SELECT ");
         queryBuilder.append("hub.*, access.* ");
         queryBuilder.append("FROM ");
-        queryBuilder.append(ESAccount.NAME).append(" AS hub ");
+        queryBuilder.append(ESHub.NAME).append(" AS hub ");
         queryBuilder.append("JOIN ");
         queryBuilder.append(ESAccess.NAME).append(" AS access ");
         queryBuilder.append("ON hub.id = access.hub_id ");
         queryBuilder.append("WHERE ");
         queryBuilder.append("hub.hactive = TRUE ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("hub.__deactivate_flag__ = FALSE ");
         queryBuilder.append("AND ");
         queryBuilder.append("access.__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
@@ -67,17 +72,17 @@ public class ESAccessRepo {
 
         // Execute Query
         String queryString = queryBuilder.toString();
-        Query query = entityManager.createNativeQuery(queryString, "v2_AccessByAccount");
+        Query query = entityManager.createNativeQuery(queryString, ESHub.ACCESS_BY_HUB_NAME);
         query.setParameter("client", clientId);
 
         return query.getResultList();
     }
 
-    public ESAccess findAccessByClientIdHubId(ESAccount client, long clientId, long hubId) {
+    public ESAccess findAccessByHubAndClient(ESHub hub, long hubId, ESAccount client, long clientId) {
 
-        if (clientId == hubId) {
-            if (client.isHubActive()) {
-                return ESAccess.buildDefaultAccess(clientId, client.getHubActiveTime());
+        if (hub.getClient().getId() == clientId) {
+            if (hub.isHubActive()) {
+                return ESAccess.buildOwnerAccess(hubId, clientId, hub.getHubActiveTime());
             } else {
                 return null;
             }
@@ -92,32 +97,34 @@ public class ESAccessRepo {
         queryBuilder.append("WHERE ");
         queryBuilder.append("access.__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
-        queryBuilder.append("access.client_id = :client ");
-        queryBuilder.append("AND ");
         queryBuilder.append("access.hub_id = :hub");
+        queryBuilder.append("AND ");
+        queryBuilder.append("access.client_id = :client ");
 
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESAccess.class);
-        query.setParameter("client", clientId);
         query.setParameter("hub", hubId);
+        query.setParameter("client", clientId);
 
         return (ESAccess) DataAccessUtils.singleResult(query.getResultList());
     }
 
-    public ESAccount findHubByAccessToken(String accessToken, long clientId) {
+    public ESHub findHubByAccessTokenAndClientId(String accessToken, long clientId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("SELECT ");
         queryBuilder.append("hub.* ");
         queryBuilder.append("FROM ");
-        queryBuilder.append(ESAccount.NAME).append(" AS hub ");
+        queryBuilder.append(ESHub.NAME).append(" AS hub ");
         queryBuilder.append("JOIN ");
         queryBuilder.append(ESAccess.NAME).append(" AS access ");
         queryBuilder.append("ON hub.id = access.hub_id ");
         queryBuilder.append("WHERE ");
         queryBuilder.append("hub.hactive = TRUE ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("hub.__deactivate_flag__ = FALSE ");
         queryBuilder.append("AND ");
         queryBuilder.append("access.__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
@@ -127,26 +134,28 @@ public class ESAccessRepo {
 
         // Execute Query
         String queryString = queryBuilder.toString();
-        Query query = entityManager.createNativeQuery(queryString, ESAccount.class);
-        query.setParameter("client", clientId);
+        Query query = entityManager.createNativeQuery(queryString, ESHub.class);
         query.setParameter("token", accessToken);
+        query.setParameter("client", clientId);
 
-        return (ESAccount) DataAccessUtils.singleResult(query.getResultList());
+        return (ESHub) DataAccessUtils.singleResult(query.getResultList());
     }
 
-    public Tuple.T2<ESAccount, Boolean> findHubByAccessTokenAdmin(String accessToken, long clientId) {
+    public Tuple.T2<ESHub, String> findHubByAccessTokenAdmin(String accessToken, long clientId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("SELECT ");
         queryBuilder.append("hub.*, access.* ");
         queryBuilder.append("FROM ");
-        queryBuilder.append(ESAccount.NAME).append(" AS hub ");
+        queryBuilder.append(ESHub.NAME).append(" AS hub ");
         queryBuilder.append("JOIN ");
         queryBuilder.append(ESAccess.NAME).append(" AS access ");
         queryBuilder.append("ON hub.id = access.hub_id ");
         queryBuilder.append("WHERE ");
         queryBuilder.append("hub.hactive = TRUE ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("hub.__deactivate_flag__ = FALSE ");
         queryBuilder.append("AND ");
         queryBuilder.append("access.__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
@@ -156,17 +165,17 @@ public class ESAccessRepo {
 
         // Execute Query
         String queryString = queryBuilder.toString();
-        Query query = entityManager.createNativeQuery(queryString, "v2_AccessByAccount");
-        query.setParameter("client", clientId);
+        Query query = entityManager.createNativeQuery(queryString, ESHub.ACCESS_BY_HUB_NAME);
         query.setParameter("token", accessToken);
+        query.setParameter("client", clientId);
 
         Object[] result = (Object[]) DataAccessUtils.singleResult(query.getResultList());
         if (result != null) {
-            ESAccount account = (ESAccount) result[0];
+            ESHub hub = (ESHub) result[0];
             ESAccess access = (ESAccess) result[1];
-            return new Tuple.T2<ESAccount, Boolean>(account, access.isAdmin());
+            return new Tuple.T2<ESHub, String>(hub, access.permission());
         }
-        return new Tuple.T2<ESAccount, Boolean>(null, false);
+        return new Tuple.T2<ESHub, String>(null, null);
 
     }
 

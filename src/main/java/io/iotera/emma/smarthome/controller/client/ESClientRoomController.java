@@ -3,6 +3,7 @@ package io.iotera.emma.smarthome.controller.client;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.controller.ESRoomController;
 import io.iotera.emma.smarthome.model.account.ESAccount;
+import io.iotera.emma.smarthome.model.account.ESHub;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,12 +27,12 @@ public class ESClientRoomController extends ESRoomController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = accountAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return listAll(accountId);
+        return listAll(hubId);
     }
 
     @RequestMapping(value = "/add", method = RequestMethod.POST)
@@ -49,12 +50,12 @@ public class ESClientRoomController extends ESRoomController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = adminAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = adminAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return create(body, account, accountId);
+        return create(body, hub, hubId);
     }
 
     @RequestMapping(value = "/get/{id}", method = RequestMethod.GET)
@@ -70,12 +71,12 @@ public class ESClientRoomController extends ESRoomController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = accountAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return read(roomId, accountId);
+        return read(roomId, hubId);
     }
 
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
@@ -93,12 +94,12 @@ public class ESClientRoomController extends ESRoomController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = adminAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = adminAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return update(body, account, accountId);
+        return update(body, hub, hubId);
     }
 
     @RequestMapping(value = "/remove", method = RequestMethod.POST)
@@ -116,12 +117,12 @@ public class ESClientRoomController extends ESRoomController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = adminAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = adminAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return delete(body, account, accountId);
+        return delete(body, hub, hubId);
     }
 
 }

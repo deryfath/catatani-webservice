@@ -5,10 +5,10 @@ import io.iotera.emma.smarthome.model.device.ESCameraHistory;
 import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
-import io.iotera.emma.smarthome.repository.ESAccountCameraRepo;
 import io.iotera.emma.smarthome.repository.ESApplicationInfoRepo;
 import io.iotera.emma.smarthome.repository.ESCameraHistoryRepo;
 import io.iotera.emma.smarthome.repository.ESDeviceRepo;
+import io.iotera.emma.smarthome.repository.ESHubCameraRepo;
 import io.iotera.emma.smarthome.youtube.PrologVideo;
 import io.iotera.emma.smarthome.youtube.YoutubeService;
 import io.iotera.util.Json;
@@ -35,7 +35,7 @@ import java.util.GregorianCalendar;
 public class CameraStartTask implements Runnable, ApplicationEventPublisherAware {
 
     @Autowired
-    ESAccountCameraRepo accountCameraRepo;
+    ESHubCameraRepo hubCameraRepo;
 
     @Autowired
     ESApplicationInfoRepo applicationInfoRepo;
@@ -53,12 +53,12 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
     ESCameraHistoryRepo historyCameraRepo;
 
     @Autowired
-    ESCameraHistoryRepo.ESCameraHistoryJRepo deviceCameraHistoryJRepo;
+    ESCameraHistoryRepo.ESCameraHistoryJRepo cameraHistoryJRepo;
 
     @Autowired
     ESDeviceRepo deviceRepository;
 
-    private long accountId;
+    private long hubId;
     private ESDevice device;
     private boolean fromSchedule;
     private ObjectNode objectKey;
@@ -89,8 +89,8 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
-    public void initTask(long accountId, ESDevice device, boolean fromSchedule, String title, ObjectNode objectEntityStream) {
-        this.accountId = accountId;
+    public void initTask(long hubId, ESDevice device, boolean fromSchedule, String title, ObjectNode objectEntityStream) {
+        this.hubId = hubId;
         this.device = device;
         this.fromSchedule = fromSchedule;
         this.title = title;
@@ -137,20 +137,20 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
             String clientId = youtubeClientApi._1;
             String clientSecret = youtubeClientApi._2;
 
-            Tuple.T2<String, String> token = accountCameraRepo.getAccessTokenAndRefreshToken(accountId);
+            Tuple.T2<String, String> token = hubCameraRepo.getAccessTokenAndRefreshToken(hubId);
             if (token == null) {
                 //TODO Token not found
                 return;
             }
 
-            ResponseEntity responseYoutubeKey = accountCameraRepo.YoutubeKey(accountId);
+            ResponseEntity responseYoutubeKey = hubCameraRepo.YoutubeKey(hubId);
             objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
             System.out.println("OBJECT KEY : " + objectKey);
 
             mqttTime = newTimePlusFive;
             newTitle = title + " " + mqttTime;
 
-            responseEntityStream = prologVideo.runVideoProlog(newTitle, accountId);
+            responseEntityStream = prologVideo.runVideoProlog(newTitle, hubId);
             objectEntityStream = Json.parseToObjectNode(responseEntityStream.getBody().toString());
 
         } else {
@@ -163,7 +163,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
             calendar.set(Calendar.MINUTE, 5);
             stopTime = calendar.getTime();
 
-            ResponseEntity responseYoutubeKey = accountCameraRepo.YoutubeKey(accountId);
+            ResponseEntity responseYoutubeKey = hubCameraRepo.YoutubeKey(hubId);
             objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
             System.out.println("OBJECT KEY : " + objectKey);
 
@@ -183,7 +183,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
             System.out.println("OBJECT ENTITY STREAM : " + objectEntityStream);
 
             //DELETE OLD YOUTUBE LINK
-            ResponseEntity cameraHistoryCount = historyCameraRepo.countRowHistoryCamera(device.getId());
+            ResponseEntity cameraHistoryCount = historyCameraRepo.countRowHistoryCamera(device.getId(), hubId);
             ObjectNode responseCamera = Json.parseToObjectNode(cameraHistoryCount.getBody().toString());
             System.out.println("responseCamera : " + responseCamera);
             if (responseCamera.size() != 0) {
@@ -191,7 +191,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
                 if (Integer.parseInt(responseCamera.get("count").toString()) > maxqueue) {
 
                     //DELETE FIRST ROW HISTORY CAMERA
-                    historyCameraRepo.deleteFirstRowByDeviceId(device.getId());
+                    historyCameraRepo.deleteFirstRowByDeviceId(device.getId(), hubId);
 
                     //DELETE ON YOUTUBE API
                     ResponseEntity responseEntityDelete = youtubeService.deleteEventById(accessToken, responseCamera.get("youtube_id").toString());
@@ -202,7 +202,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
                     if (responseBodyDelete.get("status_code") != null && statusCode == 401) {
                         System.out.println("UNAUTHORIZED");
                         //get access token by Refresh token
-                        accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, accountId);
+                        accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, hubId);
                         responseEntityDelete = youtubeService.deleteEventById(accessToken, responseCamera.get("youtube_id").toString());
                         responseBodyDelete = Json.parseToObjectNode(responseEntityDelete.getBody().toString());
                         System.out.println("RESPONSE DELETE : " + responseBodyDelete);
@@ -230,9 +230,10 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
 
             try {
                 ESCameraHistory cameraHistory = new ESCameraHistory(youtube_title, youtube_url, broadcastID, streamID,
-                        ingestionAddress + "/" + streamKey, dateFormat.parse(mqttTime), device);
+                        ingestionAddress + "/" + streamKey, dateFormat.parse(mqttTime),
+                        ESCameraHistory.parent(device.getId(), device.getRoomId(), hubId));
 
-                deviceCameraHistoryJRepo.saveAndFlush(cameraHistory);
+                cameraHistoryJRepo.saveAndFlush(cameraHistory);
             } catch (ParseException e) {
                 e.printStackTrace();
             }
@@ -240,7 +241,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
         }
 
         //get old broadcast id
-        ESDevice deviceList = deviceRepository.findByDeviceId(device.getId(), accountId);
+        ESDevice deviceList = deviceRepository.findByDeviceId(device.getId(), hubId);
         String info = deviceList.getInfo();
         ObjectNode objectInfo = Json.parseToObjectNode(info);
 
@@ -261,7 +262,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
         this.message = MessageBuilder
                 .withPayload(responseMqttJson.toString())
                 .setHeader(MqttHeaders.TOPIC,
-                        "command/" + accountId + "/stream/" + device.getId())
+                        "command/" + hubId + "/stream/" + device.getId())
                 .setHeader(MqttHeaders.RETAINED, true)
                 .setHeader(MqttHeaders.QOS, 2)
                 .build();
@@ -292,6 +293,6 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
 //        Calendar calendar1 = Calendar.getInstance();
 //        calendar1.add(Calendar.MINUTE,1);
 //        stopTime = calendar1.getTime();
-        cameraManager.updateStopSchedule(accountId, device.getId(), broadcastID, stopTime, streamID);
+        cameraManager.updateStopSchedule(hubId, device.getId(), broadcastID, stopTime, streamID);
     }
 }

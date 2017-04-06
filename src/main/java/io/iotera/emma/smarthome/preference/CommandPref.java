@@ -14,4 +14,7 @@ public class CommandPref {
 
     public static final String SCHEDULE_ACK = "schedule_ack";
     public static final String ROUTINE_RES = "routine_res";
+
+    public static final String LOGIN = "login";
+
 }

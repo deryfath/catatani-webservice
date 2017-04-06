@@ -26,13 +26,13 @@ public class ApplicationReadyListener implements ApplicationListener<Application
         // Add Schedule
         List<ESRoutine> routines = routineRepo.listActiveSchedule();
         for (ESRoutine routine : routines) {
-            long accountId = routine.getAccountId();
+            long hubId = routine.getHubId();
             String cronExpression = RoutineUtility.getCronExpression(routine.getDaysOfWeek(),
                     routine.getTrigger());
             boolean valid = RoutineUtility.getValidCommands(routine.getCommands()) != null;
 
-            if (accountId != -1 && cronExpression != null && valid) {
-                routineManager.putSchedule(accountId, routine, cronExpression);
+            if (hubId != -1 && cronExpression != null && valid) {
+                routineManager.putSchedule(hubId, routine, cronExpression);
             }
         }
 

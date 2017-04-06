@@ -57,35 +57,35 @@ public class RoutineManager implements ApplicationContextAware {
         return true;
     }
 
-    private RoutineControlSchedule getSchedule(long accountId) {
-        if (schedules.containsKey(accountId)) {
-            return schedules.get(accountId);
+    private RoutineControlSchedule getSchedule(long hubId) {
+        if (schedules.containsKey(hubId)) {
+            return schedules.get(hubId);
         }
 
         RoutineControlSchedule schedule = applicationContext.getBean(RoutineControlSchedule.class);
-        schedule.initSchedule(accountId);
-        schedules.put(accountId, schedule);
+        schedule.initSchedule(hubId);
+        schedules.put(hubId, schedule);
 
         return schedule;
     }
 
-    public int getActiveScheduleCount(long accountId) {
-        RoutineControlSchedule schedule = getSchedule(accountId);
+    public int getActiveScheduleCount(long hubId) {
+        RoutineControlSchedule schedule = getSchedule(hubId);
         return schedule.getActiveScheduleCount();
     }
 
-    public boolean putSchedule(long accountId, ESRoutine routine, String cronExpression) {
-        RoutineControlSchedule schedule = getSchedule(accountId);
+    public boolean putSchedule(long hubId, ESRoutine routine, String cronExpression) {
+        RoutineControlSchedule schedule = getSchedule(hubId);
         return schedule.putSchedule(routine, cronExpression);
     }
 
-    public boolean removeSchedule(long accountId, String routineId) {
-        RoutineControlSchedule schedule = getSchedule(accountId);
+    public boolean removeSchedule(long hubId, String routineId) {
+        RoutineControlSchedule schedule = getSchedule(hubId);
         return schedule.removeSchedule(routineId);
     }
 
-    public boolean updateSchedule(long accountId, ESRoutine routine, String cronExpression) {
-        RoutineControlSchedule schedule = getSchedule(accountId);
+    public boolean updateSchedule(long hubId, ESRoutine routine, String cronExpression) {
+        RoutineControlSchedule schedule = getSchedule(hubId);
         return schedule.updateSchedule(routine, cronExpression);
     }
 

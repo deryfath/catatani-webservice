@@ -1,6 +1,8 @@
 package io.iotera.emma.smarthome.repository;
 
-import io.iotera.emma.smarthome.model.account.*;
+import io.iotera.emma.smarthome.model.account.ESAccount;
+import io.iotera.emma.smarthome.model.account.ESAccountForgotPassword;
+import io.iotera.emma.smarthome.model.account.ESAccountParuru;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,8 +20,6 @@ public class ESAccountRepo {
 
         ESAccount findByPhoneNumberAndDeactivateFalse(String phoneNumber);
 
-        ESAccount findByHubTokenAndDeactivateFalse(String token);
-
         ESAccount findByClientTokenAndDeactivateFalse(String token);
 
         ESAccount findByGoogleIdAndDeactivateFalse(String googleId);
@@ -29,14 +29,6 @@ public class ESAccountRepo {
 
     @Transactional
     public interface ESAccountParuruJRepo extends JpaRepository<ESAccountParuru, Long> {
-    }
-
-    @Transactional
-    public interface ESAccountClientJRepo extends JpaRepository<ESAccountClient, Long> {
-    }
-
-    @Transactional
-    public interface ESAccountHubJRepo extends JpaRepository<ESAccountHub, Long> {
     }
 
     @Transactional

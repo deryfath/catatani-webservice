@@ -2,7 +2,7 @@ package io.iotera.emma.smarthome.controller.hub;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.controller.ESScheduleController;
-import io.iotera.emma.smarthome.model.account.ESAccount;
+import io.iotera.emma.smarthome.model.account.ESHub;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.http.HttpEntity;
@@ -30,14 +30,14 @@ public class ESHubScheduleController extends ESScheduleController implements App
         //authenticateToken(entity);
         String hubToken = hubToken(entity);
 
-        // Account
-        ESAccount account = accountHub(hubToken);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountHub(hubToken);
+        long hubId = hub.getId();
 
         // Request Body
         ObjectNode body = payloadObject(entity);
 
-        return create(body, accountId);
+        return create(body, hubId);
     }
 
     @RequestMapping(value = "/get/{id}", method = RequestMethod.GET)
@@ -48,12 +48,12 @@ public class ESHubScheduleController extends ESScheduleController implements App
         //authenticateToken(entity);
         String hubToken = hubToken(entity);
 
-        // Account
-        ESAccount account = accountHub(hubToken);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountHub(hubToken);
+        long hubId = hub.getId();
 
         // Result
-        return read(routineId, accountId);
+        return read(routineId, hubId);
     }
 
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
@@ -63,14 +63,14 @@ public class ESHubScheduleController extends ESScheduleController implements App
         //authenticateToken(entity);
         String hubToken = hubToken(entity);
 
-        // Account
-        ESAccount account = accountHub(hubToken);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountHub(hubToken);
+        long hubId = hub.getId();
 
         // Request Body
         ObjectNode body = payloadObject(entity);
 
-        return update(body, accountId);
+        return update(body, hubId);
     }
 
     @RequestMapping(value = "/remove", method = RequestMethod.POST)
@@ -80,14 +80,14 @@ public class ESHubScheduleController extends ESScheduleController implements App
         //authenticateToken(entity);
         String hubToken = hubToken(entity);
 
-        // Account
-        ESAccount account = accountHub(hubToken);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountHub(hubToken);
+        long hubId = hub.getId();
 
         // Request Body
         ObjectNode body = payloadObject(entity);
 
-        return delete(body, accountId);
+        return delete(body, hubId);
     }
 
 }

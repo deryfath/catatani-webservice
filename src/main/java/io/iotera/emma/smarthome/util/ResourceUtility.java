@@ -65,16 +65,16 @@ public class ResourceUtility {
         return token[token.length - 1];
     }
 
-    public static String hubPath(long accountId, String type, String itemId) {
-        String path = "hub/" + accountId + '/' + type;
+    public static String hubPath(long hubId, String type, String itemId) {
+        String path = "hub/" + hubId + '/' + type;
         if (itemId != null) {
             path += '/' + itemId;
         }
         return path;
     }
 
-    public static String hubPath(long accountId, String type) {
-        return hubPath(accountId, type, null);
+    public static String hubPath(long hubId, String type) {
+        return hubPath(hubId, type, null);
     }
 
     public static String clientPath(long clientId, String type, String itemId) {
@@ -85,8 +85,8 @@ public class ResourceUtility {
         return path;
     }
 
-    public static String clientPath(long accountId, String type) {
-        return clientPath(accountId, type, null);
+    public static String clientPath(long clientId, String type) {
+        return clientPath(clientId, type, null);
     }
 
 }

@@ -23,9 +23,9 @@ public class ESRoom extends ERoom {
     protected ESRoom() {
     }
 
-    public ESRoom(String name, int category, String info, long accountId) {
+    public ESRoom(String name, int category, String info, long hubId) {
         super(name, category, info);
-        this.parent = parent(accountId);
+        this.parent = parent(hubId);
 
     }
 
@@ -33,8 +33,8 @@ public class ESRoom extends ERoom {
     // Getter & Setter //
     /////////////////////
 
-    public static String parent(long accountId) {
-        return accountId + "/";
+    public static String parent(long hubId) {
+        return hubId + "/";
     }
 
     public String getParent() {

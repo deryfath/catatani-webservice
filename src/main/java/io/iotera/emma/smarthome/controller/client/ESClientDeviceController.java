@@ -3,6 +3,7 @@ package io.iotera.emma.smarthome.controller.client;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.controller.ESDeviceController;
 import io.iotera.emma.smarthome.model.account.ESAccount;
+import io.iotera.emma.smarthome.model.account.ESHub;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,12 +27,12 @@ public class ESClientDeviceController extends ESDeviceController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = accountAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return listAll(accountId);
+        return listAll(hubId);
     }
 
     @RequestMapping(value = "/listcategory/{category}", method = RequestMethod.GET)
@@ -47,12 +48,12 @@ public class ESClientDeviceController extends ESDeviceController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = accountAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return listCategory(category, accountId);
+        return listCategory(category, hubId);
     }
 
     @RequestMapping(value = "/listroom/{roomId}", method = RequestMethod.GET)
@@ -68,12 +69,12 @@ public class ESClientDeviceController extends ESDeviceController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = accountAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return listRoom(roomId, accountId);
+        return listRoom(roomId, hubId);
     }
 
     @RequestMapping(value = "/add", method = RequestMethod.POST)
@@ -91,12 +92,12 @@ public class ESClientDeviceController extends ESDeviceController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = adminAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = adminAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return create(body, accountId);
+        return create(body, hubId);
     }
 
     @RequestMapping(value = "/get/{id}", method = RequestMethod.GET)
@@ -112,12 +113,12 @@ public class ESClientDeviceController extends ESDeviceController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = accountAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return read(deviceId, accountId);
+        return read(deviceId, hubId);
     }
 
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
@@ -135,12 +136,12 @@ public class ESClientDeviceController extends ESDeviceController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = adminAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = adminAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return update(body, accountId);
+        return update(body, hubId);
     }
 
     @RequestMapping(value = "/remove", method = RequestMethod.POST)
@@ -158,12 +159,12 @@ public class ESClientDeviceController extends ESDeviceController {
         ESAccount client = accountClient(clientToken);
         long clientId = client.getId();
 
-        // Account
-        ESAccount account = adminAccess(accessToken, clientId);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = adminAccess(accessToken, clientId);
+        long hubId = hub.getId();
 
         // Result
-        return delete(body, accountId);
+        return delete(body, hubId);
     }
 
 }

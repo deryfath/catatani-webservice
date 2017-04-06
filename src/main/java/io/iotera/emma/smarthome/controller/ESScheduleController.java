@@ -22,7 +22,7 @@ public class ESScheduleController extends ESRoutineController {
     @Autowired
     ESRoutineRepo.ESRoutineJRepo routineJRepo;
 
-    protected ResponseEntity create(ObjectNode body, long accountId) {
+    protected ResponseEntity create(ObjectNode body, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
@@ -43,17 +43,17 @@ public class ESScheduleController extends ESRoutineController {
         }
         commandsString = Json.toStringIgnoreNull(newCommands);
 
-        if (!routineRepo.findByName(name, accountId).isEmpty()) {
+        if (!routineRepo.findByName(name, hubId).isEmpty()) {
             return okJsonFailed(-2, "routine_name_not_available");
         }
 
         ESRoutine routine = new ESRoutine(name, RoutinePref.CAT_SCHEDULE,
-                trigger, daysString, null, commandsString, null, accountId);
+                trigger, daysString, null, commandsString, null, hubId);
 
         routineJRepo.saveAndFlush(routine);
 
         if (routine.isActive()) {
-            routineManager.updateSchedule(accountId, routine, cronExpression);
+            routineManager.updateSchedule(hubId, routine, cronExpression);
         }
 
         response.put("id", routine.getId());
@@ -76,7 +76,7 @@ public class ESScheduleController extends ESRoutineController {
         return okJson(response);
     }
 
-    protected ResponseEntity update(ObjectNode body, long accountId) {
+    protected ResponseEntity update(ObjectNode body, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
@@ -85,7 +85,7 @@ public class ESScheduleController extends ESRoutineController {
         boolean edit = false;
         String routineId = rget(body, "esroutine");
 
-        ESRoutine routine = routineRepo.findByRoutineId(routineId, accountId);
+        ESRoutine routine = routineRepo.findByRoutineId(routineId, hubId);
         if (routine == null) {
             return okJsonFailed(-1, "routine_not_found");
         }
@@ -97,13 +97,13 @@ public class ESScheduleController extends ESRoutineController {
             String name = get(body, "esname");
             // Check room name
             if (!routine.getName().equals(name)) {
-                if (!routineRepo.findByName(name, accountId).isEmpty()) {
+                if (!routineRepo.findByName(name, hubId).isEmpty()) {
                     return okJsonFailed(-2, "routine_name_not_available");
                 }
                 routine.setName(name);
                 edit = true;
             }
-            response.put("name", name);
+            response.put("name", routine.getName());
         }
 
         if (has(body, "estrigger")) {
@@ -116,7 +116,7 @@ public class ESScheduleController extends ESRoutineController {
                 routine.setTrigger(trigger);
                 edit = true;
             }
-            response.put("trigger", trigger);
+            response.put("trigger", routine.getTrigger());
         }
 
         if (has(body, "esdays")) {
@@ -130,7 +130,7 @@ public class ESScheduleController extends ESRoutineController {
                 routine.setDaysOfWeek(daysString);
                 edit = true;
             }
-            response.put("days_of_week", daysString);
+            response.put("days_of_week", routine.getDaysOfWeek());
         }
 
         if (has(body, "esinfo")) {
@@ -139,7 +139,7 @@ public class ESScheduleController extends ESRoutineController {
                 routine.setInfo(info);
                 edit = true;
             }
-            response.put("info", info);
+            response.put("info", routine.getInfo());
         }
 
         if (has(body, "escommands")) {
@@ -154,7 +154,7 @@ public class ESScheduleController extends ESRoutineController {
                 routine.setCommands(commandsString);
                 edit = true;
             }
-            response.put("commands", commandsString);
+            response.put("commands", routine.getCommands());
         }
 
         if (has(body, "esactive")) {
@@ -163,7 +163,7 @@ public class ESScheduleController extends ESRoutineController {
                 routine.setActive(active);
                 edit = true;
             }
-            response.put("active", active);
+            response.put("active", routine.isActive());
         }
 
         if (edit) {
@@ -174,10 +174,10 @@ public class ESScheduleController extends ESRoutineController {
                         routine.getTrigger());
                 boolean valid = RoutineUtility.getValidCommands(routine.getCommands()) != null;
                 if (cronExpression != null && valid) {
-                    routineManager.updateSchedule(accountId, routine, cronExpression);
+                    routineManager.updateSchedule(hubId, routine, cronExpression);
                 }
             } else {
-                routineManager.removeSchedule(accountId, routine.getId());
+                routineManager.removeSchedule(hubId, routine.getId());
             }
         }
 

@@ -7,19 +7,19 @@ public class RoutineResEvent extends ApplicationEvent {
 
     private static final long serialVersionUID = 1L;
 
-    private long accountId;
+    private long hubId;
     private String routineId;
     private ObjectNode payload;
 
-    public RoutineResEvent(Object source, long accountId, String routineId, ObjectNode payload) {
+    public RoutineResEvent(Object source, long hubId, String routineId, ObjectNode payload) {
         super(source);
-        this.accountId = accountId;
+        this.hubId = hubId;
         this.routineId = routineId;
         this.payload = payload;
     }
 
-    public long getAccountId() {
-        return accountId;
+    public long getHubId() {
+        return hubId;
     }
 
     public String getRoutineId() {

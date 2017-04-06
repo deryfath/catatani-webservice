@@ -2,7 +2,7 @@ package io.iotera.emma.smarthome.controller;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.iotera.emma.smarthome.model.account.ESAccount;
+import io.iotera.emma.smarthome.model.account.ESHub;
 import io.iotera.emma.smarthome.model.device.ESRoom;
 import io.iotera.emma.smarthome.repository.ESRoomRepo;
 import io.iotera.emma.smarthome.util.ResourceUtility;
@@ -23,12 +23,12 @@ public class ESRoomController extends ESBaseController {
     @Autowired
     ESRoomRepo.ESRoomJRepo roomJRepo;
 
-    protected ResponseEntity listAll(long accountId) {
+    protected ResponseEntity listAll(long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
         ArrayNode roomArray = Json.buildArrayNode();
-        List<ESRoom> rooms = roomRepo.listByAccountId(accountId);
+        List<ESRoom> rooms = roomRepo.listByHubId(hubId);
         for (ESRoom room : rooms) {
             ObjectNode roomObject = Json.buildObjectNode();
             roomObject.put("id", room.getId());
@@ -51,7 +51,7 @@ public class ESRoomController extends ESBaseController {
         return okJson(response);
     }
 
-    protected ResponseEntity create(ObjectNode body, ESAccount account, long accountId) {
+    protected ResponseEntity create(ObjectNode body, ESHub hub, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
@@ -62,16 +62,16 @@ public class ESRoomController extends ESBaseController {
         String info = get(body, "esinfo");
 
         // Check room name
-        if (!roomRepo.findByName(name, accountId).isEmpty()) {
+        if (!roomRepo.findByName(name, hubId).isEmpty()) {
             return okJsonFailed(-2, "room_name_not_available");
         }
 
-        ESRoom room = new ESRoom(name, category, info, accountId);
+        ESRoom room = new ESRoom(name, category, info, hubId);
         roomJRepo.save(room);
 
         if (has(body, "espic")) {
             String picture = get(body, "espic");
-            String path = ResourceUtility.hubPath(accountId, "room", room.getId());
+            String path = ResourceUtility.hubPath(hubId, "room", room.getId());
             String attachment = getProperty("attachment.path");
 
             byte[] data = Base64.decodeBase64(picture);
@@ -97,12 +97,12 @@ public class ESRoomController extends ESBaseController {
         return okJson(response);
     }
 
-    protected ResponseEntity read(String roomId, long accountId) {
+    protected ResponseEntity read(String roomId, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
 
-        ESRoom room = roomRepo.findByRoomId(roomId, accountId);
+        ESRoom room = roomRepo.findByRoomId(roomId, hubId);
         if (room == null) {
             return notFound("room (" + roomId + ") not found");
         }
@@ -122,7 +122,7 @@ public class ESRoomController extends ESBaseController {
         return okJson(response);
     }
 
-    protected ResponseEntity update(ObjectNode body, ESAccount account, long accountId) {
+    protected ResponseEntity update(ObjectNode body, ESHub hub, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
@@ -131,7 +131,7 @@ public class ESRoomController extends ESBaseController {
         boolean edit = false;
         String roomId = rget(body, "esroom");
 
-        ESRoom room = roomRepo.findByRoomId(roomId, accountId);
+        ESRoom room = roomRepo.findByRoomId(roomId, hubId);
         if (room == null) {
             return okJsonFailed(-1, "room_not_found");
         }
@@ -143,13 +143,13 @@ public class ESRoomController extends ESBaseController {
             String name = get(body, "esname");
             // Check room name
             if (!room.getName().equals(name)) {
-                if (!roomRepo.findByName(name, accountId).isEmpty()) {
+                if (!roomRepo.findByName(name, hubId).isEmpty()) {
                     return okJsonFailed(-2, "room_name_not_available");
                 }
                 room.setName(name);
                 edit = true;
             }
-            response.put("name", name);
+            response.put("name", room.getName());
         }
 
         if (has(body, "escat")) {
@@ -158,7 +158,7 @@ public class ESRoomController extends ESBaseController {
                 room.setCategory(category);
                 edit = true;
             }
-            response.put("category", category);
+            response.put("category", room.getCategory());
         }
 
         if (has(body, "esinfo")) {
@@ -167,12 +167,12 @@ public class ESRoomController extends ESBaseController {
                 room.setInfo(info);
                 edit = true;
             }
-            response.put("info", info);
+            response.put("info", room.getInfo());
         }
 
         if (has(body, "espic")) {
             String picture = get(body, "espic");
-            String path = ResourceUtility.hubPath(accountId, "room", room.getId());
+            String path = ResourceUtility.hubPath(hubId, "room", room.getId());
             String attachment = getProperty("attachment.path");
 
             // Delete current picture
@@ -208,7 +208,7 @@ public class ESRoomController extends ESBaseController {
         return okJson(response);
     }
 
-    protected ResponseEntity delete(ObjectNode body, ESAccount account, long accountId) {
+    protected ResponseEntity delete(ObjectNode body, ESHub hub, long hubId) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
@@ -216,7 +216,7 @@ public class ESRoomController extends ESBaseController {
         // DELETE
         String roomId = rget(body, "esroom");
 
-        ESRoom room = roomRepo.findByRoomId(roomId, accountId);
+        ESRoom room = roomRepo.findByRoomId(roomId, hubId);
         if (room == null) {
             return okJsonFailed(-1, "room_not_found");
         }
@@ -226,11 +226,11 @@ public class ESRoomController extends ESBaseController {
 
         // Delete child
         Date now = new Date();
-        roomRepo.deleteChild(now, roomId, accountId);
+        roomRepo.deleteChild(now, roomId, hubId);
 
         // Delete picture
         String attachment = getProperty("attachment.path");
-        String path = ResourceUtility.hubPath(accountId, "room", room.getId());
+        String path = ResourceUtility.hubPath(hubId, "room", room.getId());
         String filename = room.getId();
         ResourceUtility.delete(attachment, path, filename);
         room.setPicture(null);

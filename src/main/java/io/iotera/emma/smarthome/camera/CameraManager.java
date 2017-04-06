@@ -23,30 +23,30 @@ public class CameraManager implements ApplicationContextAware {
         this.applicationContext = applicationContext;
     }
 
-    private CameraSchedule getSchedule(long accountId) {
-        if (schedulers.containsKey(accountId)) {
-            return schedulers.get(accountId);
+    private CameraSchedule getSchedule(long hubId) {
+        if (schedulers.containsKey(hubId)) {
+            return schedulers.get(hubId);
         }
 
         CameraSchedule schedule = applicationContext.getBean(CameraSchedule.class);
-        schedule.initSchedule(accountId);
-        schedulers.put(accountId, schedule);
+        schedule.initSchedule(hubId);
+        schedulers.put(hubId, schedule);
 
         return schedule;
     }
 
-    public boolean putSchedule(long accountId, ESDevice device, String label, ObjectNode createObject) {
-        CameraSchedule schedule = getSchedule(accountId);
+    public boolean putSchedule(long hubId, ESDevice device, String label, ObjectNode createObject) {
+        CameraSchedule schedule = getSchedule(hubId);
         return schedule.putSchedule(device, label, createObject);
     }
 
-    public boolean updateStopSchedule(long accountId, String cameraId, String broadcastId, Date time, String streamId) {
-        CameraSchedule schedule = getSchedule(accountId);
+    public boolean updateStopSchedule(long hubId, String cameraId, String broadcastId, Date time, String streamId) {
+        CameraSchedule schedule = getSchedule(hubId);
         return schedule.updateStopSchedule(cameraId, broadcastId, time, streamId);
     }
 
-    public boolean removeSchedule(long accountId, String cameraId) {
-        CameraSchedule schedule = getSchedule(accountId);
+    public boolean removeSchedule(long hubId, String cameraId) {
+        CameraSchedule schedule = getSchedule(hubId);
         return schedule.removeSchedule(cameraId);
     }
 

@@ -2,7 +2,7 @@ package io.iotera.emma.smarthome.youtube;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.controller.ESBaseController;
-import io.iotera.emma.smarthome.repository.ESAccountCameraRepo;
+import io.iotera.emma.smarthome.repository.ESHubCameraRepo;
 import io.iotera.util.Json;
 import io.iotera.util.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,7 @@ public class PrologVideo extends ESBaseController {
     String refreshToken = "";
 
     @Autowired
-    ESAccountCameraRepo accountYoutubeCameraRepository;
+    ESHubCameraRepo accountYoutubeCameraRepository;
 
     @Autowired
     YoutubeService youtubeService;
@@ -36,14 +36,14 @@ public class PrologVideo extends ESBaseController {
     @Autowired
     Environment env;
 
-    public ResponseEntity runVideoProlog(String title, long accountId) {
+    public ResponseEntity runVideoProlog(String title, long hubId) {
 
         String StreamKey;
         ObjectNode responseBodyJson = Json.buildObjectNode();
         ObjectNode responseBodyTransitionStart = null;
         Tuple.T2<Integer, ObjectNode> responseEntityTransitionStart = null;
 
-        ResponseEntity responseYoutubeKey = accountYoutubeCameraRepository.YoutubeKey(accountId);
+        ResponseEntity responseYoutubeKey = accountYoutubeCameraRepository.YoutubeKey(hubId);
         ObjectNode objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
         accessToken = objectKey.get("access_token").textValue();
         clientId = objectKey.get("client_id").textValue();
@@ -57,7 +57,7 @@ public class PrologVideo extends ESBaseController {
         if (responseEntityCreate._1 == 401) {
             System.out.println("UNAUTHORIZED");
             //get access token by Refresh token
-            accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, accountId);
+            accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, hubId);
             System.out.println("masuk CREATE");
             responseEntityCreate = youtubeService.createEvent(accessToken, title);
 
@@ -103,7 +103,7 @@ public class PrologVideo extends ESBaseController {
             if (responseEntityTransitionStart._1 == 401) {
                 System.out.println("UNAUTHORIZED");
                 //get access token by Refresh token
-                accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, accountId);
+                accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, hubId);
                 responseEntityTransitionStart = youtubeService.transitionEventStart(accessToken, broadcastID, streamID, state);
             } else if (responseEntityTransitionStart._1 == 400 || responseEntityTransitionStart._1 == 403 || responseEntityTransitionStart._1 == 404) {
                 return okJsonFailed(responseEntityTransitionStart._1, responseEntityTransitionStart._2.toString());

@@ -2,9 +2,7 @@ package io.iotera.emma.smarthome.controller.hub;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.controller.ESRoutineController;
-import io.iotera.emma.smarthome.model.account.ESAccount;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
+import io.iotera.emma.smarthome.model.account.ESHub;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,14 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/hub/routine")
-public class ESHubRoutineController extends ESRoutineController implements ApplicationEventPublisherAware {
-
-    ApplicationEventPublisher applicationEventPublisher;
-
-    @Override
-    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-        this.applicationEventPublisher = applicationEventPublisher;
-    }
+public class ESHubRoutineController extends ESRoutineController {
 
     @RequestMapping(value = "/listall", method = RequestMethod.GET)
     public ResponseEntity listAll(HttpEntity<String> entity) {
@@ -29,12 +20,12 @@ public class ESHubRoutineController extends ESRoutineController implements Appli
         //authenticateToken(entity);
         String hubToken = hubToken(entity);
 
-        // Account
-        ESAccount account = accountHub(hubToken);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountHub(hubToken);
+        long hubId = hub.getId();
 
         // Result
-        return listAll(accountId);
+        return listAll(hubId);
     }
 
     @RequestMapping(value = "/activate", method = RequestMethod.POST)
@@ -44,14 +35,14 @@ public class ESHubRoutineController extends ESRoutineController implements Appli
         //authenticateToken(entity);
         String hubToken = hubToken(entity);
 
-        // Account
-        ESAccount account = accountHub(hubToken);
-        long accountId = account.getId();
+        // Hub
+        ESHub hub = accountHub(hubToken);
+        long hubId = hub.getId();
 
         // Request Body
         ObjectNode body = payloadObject(entity);
 
-        return activate(body, accountId);
+        return activate(body, hubId);
     }
 
 }

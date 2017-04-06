@@ -3,8 +3,7 @@ package io.iotera.emma.smarthome.controller.client;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.controller.ESAccessController;
 import io.iotera.emma.smarthome.model.account.ESAccount;
-import io.iotera.emma.smarthome.repository.ESAccessRepo;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.iotera.emma.smarthome.model.account.ESHub;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,8 +14,22 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/client/access")
 public class ESClientAccessController extends ESAccessController {
 
-    @Autowired
-    ESAccessRepo accessRepo;
+    @RequestMapping(value = "/home/connect", method = RequestMethod.POST)
+    public ResponseEntity connect(HttpEntity<String> entity) {
+
+        // Request Header
+        //authenticateToken(entity);
+        String clientToken = clientToken(entity);
+
+        // Client
+        ESAccount client = accountClient(clientToken);
+        long clientId = client.getId();
+
+        // Request Body
+        ObjectNode body = payloadObject(entity);
+
+        return connect(body, client, clientId);
+    }
 
     @RequestMapping(value = "/home/list", method = RequestMethod.GET)
     public ResponseEntity listHome(HttpEntity<String> entity) {
@@ -45,10 +58,10 @@ public class ESClientAccessController extends ESAccessController {
         long clientId = client.getId();
 
         // Hub
-        ESAccount hub = accountAccess(accessToken, clientId);
+        ESHub hub = accountAccess(accessToken, clientId);
         long hubId = hub.getId();
 
-        return getAccess(client, clientId, hubId);
+        return getAccess(client, clientId, hub, hubId);
     }
 
     @RequestMapping(value = "/home/member/list", method = RequestMethod.GET)
@@ -64,7 +77,7 @@ public class ESClientAccessController extends ESAccessController {
         long clientId = client.getId();
 
         // Hub
-        ESAccount hub = accountAccess(accessToken, clientId);
+        ESHub hub = accountAccess(accessToken, clientId);
         long hubId = hub.getId();
 
         return listMember(hub, hubId);
@@ -83,13 +96,13 @@ public class ESClientAccessController extends ESAccessController {
         long clientId = client.getId();
 
         // Hub
-        ESAccount hub = adminAccess(accessToken, clientId);
+        ESHub hub = adminAccess(accessToken, clientId);
         long hubId = hub.getId();
 
         // Request Body
         ObjectNode body = payloadObject(entity);
 
-        return createMember(body, hubId);
+        return createMember(body, hub, hubId);
     }
 
     @RequestMapping(value = "/home/member/admin", method = RequestMethod.POST)
@@ -105,13 +118,13 @@ public class ESClientAccessController extends ESAccessController {
         long clientId = client.getId();
 
         // Hub
-        ESAccount hub = adminAccess(accessToken, clientId);
+        ESHub hub = adminAccess(accessToken, clientId);
         long hubId = hub.getId();
 
         // Request Body
         ObjectNode body = payloadObject(entity);
 
-        return updateAdmin(body, hubId);
+        return updateAdmin(body, hub, hubId);
     }
 
     @RequestMapping(value = "/home/member/remove", method = RequestMethod.POST)
@@ -127,13 +140,14 @@ public class ESClientAccessController extends ESAccessController {
         long clientId = client.getId();
 
         // Hub
-        ESAccount hub = adminAccess(accessToken, clientId);
+        ESHub hub = adminAccess(accessToken, clientId);
         long hubId = hub.getId();
 
         // Request Body
         ObjectNode body = payloadObject(entity);
 
-        return deleteMember(body, hubId);
+        return deleteMember(body, hub, hubId);
     }
+
 
 }

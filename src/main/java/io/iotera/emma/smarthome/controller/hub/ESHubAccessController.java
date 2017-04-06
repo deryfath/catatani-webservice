@@ -2,7 +2,7 @@ package io.iotera.emma.smarthome.controller.hub;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.controller.ESAccessController;
-import io.iotera.emma.smarthome.model.account.ESAccount;
+import io.iotera.emma.smarthome.model.account.ESHub;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.http.HttpEntity;
@@ -30,10 +30,10 @@ public class ESHubAccessController extends ESAccessController implements Applica
         String hubToken = hubToken(entity);
 
         // Hub
-        ESAccount hub = accountHub(hubToken);
-        long accountId = hub.getId();
+        ESHub hub = accountHub(hubToken);
+        long hubId = hub.getId();
 
-        return listMember(hub, accountId);
+        return listMember(hub, hubId);
     }
 
     @RequestMapping(value = "/member/add", method = RequestMethod.POST)
@@ -44,13 +44,13 @@ public class ESHubAccessController extends ESAccessController implements Applica
         String hubToken = hubToken(entity);
 
         // Hub
-        ESAccount hub = accountHub(hubToken);
+        ESHub hub = accountHub(hubToken);
         long hubId = hub.getId();
 
         // Request Body
         ObjectNode body = payloadObject(entity);
 
-        return createMember(body, hubId);
+        return createMember(body, hub, hubId);
     }
 
     @RequestMapping(value = "/member/admin", method = RequestMethod.POST)
@@ -61,13 +61,13 @@ public class ESHubAccessController extends ESAccessController implements Applica
         String hubToken = hubToken(entity);
 
         // Hub
-        ESAccount hub = accountHub(hubToken);
+        ESHub hub = accountHub(hubToken);
         long hubId = hub.getId();
 
         // Request Body
         ObjectNode body = payloadObject(entity);
 
-        return updateAdmin(body, hubId);
+        return updateAdmin(body, hub, hubId);
     }
 
     @RequestMapping(value = "/member/remove", method = RequestMethod.POST)
@@ -78,13 +78,13 @@ public class ESHubAccessController extends ESAccessController implements Applica
         String hubToken = hubToken(entity);
 
         // Hub
-        ESAccount hub = accountHub(hubToken);
+        ESHub hub = accountHub(hubToken);
         long hubId = hub.getId();
 
         // Request Body
         ObjectNode body = payloadObject(entity);
 
-        return deleteMember(body, hubId);
+        return deleteMember(body, hub, hubId);
     }
 
 

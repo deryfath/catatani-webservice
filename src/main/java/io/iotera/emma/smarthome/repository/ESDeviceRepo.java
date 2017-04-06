@@ -25,7 +25,7 @@ public class ESDeviceRepo {
     @PersistenceContext
     EntityManager entityManager;
 
-    public List<ESDevice> listByAccountId(long accountId) {
+    public List<ESDevice> listByHubId(long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -43,12 +43,12 @@ public class ESDeviceRepo {
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESDevice.class);
-        query.setParameter("parent", ESDevice.parent(null, "%", accountId));
+        query.setParameter("parent", ESDevice.parent(null, "%", hubId));
 
         return query.getResultList();
     }
 
-    public List<ESDevice> listByRoomId(String roomId, long accountId) {
+    public List<ESDevice> listByRoomId(String roomId, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -66,12 +66,12 @@ public class ESDeviceRepo {
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESDevice.class);
-        query.setParameter("parent", ESDevice.parent("%", roomId, accountId));
+        query.setParameter("parent", ESDevice.parent("%", roomId, hubId));
 
         return query.getResultList();
     }
 
-    public List<ESDevice> listByCategory(int category, long accountId) {
+    public List<ESDevice> listByCategory(int category, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -92,12 +92,12 @@ public class ESDeviceRepo {
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESDevice.class);
         query.setParameter("category", category);
-        query.setParameter("parent", ESDevice.parent(null, "%", accountId));
+        query.setParameter("parent", ESDevice.parent(null, "%", hubId));
 
         return query.getResultList();
     }
 
-    public ESDevice findByDeviceId(String deviceId, long accountId) {
+    public ESDevice findByDeviceId(String deviceId, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -116,12 +116,12 @@ public class ESDeviceRepo {
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESDevice.class);
         query.setParameter("id", deviceId);
-        query.setParameter("parent", ESDevice.parent("%", "%", accountId));
+        query.setParameter("parent", ESDevice.parent("%", "%", hubId));
 
         return (ESDevice) DataAccessUtils.singleResult(query.getResultList());
     }
 
-    public List<ESDevice> findByLabel(String label, long accountId) {
+    public List<ESDevice> findByLabel(String label, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -140,12 +140,12 @@ public class ESDeviceRepo {
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESDevice.class);
         query.setParameter("label", label);
-        query.setParameter("parent", ESDevice.parent("%", "%", accountId));
+        query.setParameter("parent", ESDevice.parent("%", "%", hubId));
 
         return query.getResultList();
     }
 
-    public List<ESDevice> findByUid(String uid, long accountId) {
+    public List<ESDevice> findByUid(String uid, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -164,12 +164,12 @@ public class ESDeviceRepo {
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESDevice.class);
         query.setParameter("uid", uid);
-        query.setParameter("parent", ESDevice.parent("%", "%", accountId));
+        query.setParameter("parent", ESDevice.parent("%", "%", hubId));
 
         return query.getResultList();
     }
 
-    public List<ESDevice> findByAddress(String address, long accountId) {
+    public List<ESDevice> findByAddress(String address, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -188,12 +188,12 @@ public class ESDeviceRepo {
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESDevice.class);
         query.setParameter("address", address);
-        query.setParameter("parent", ESDevice.parent("%", "%", accountId));
+        query.setParameter("parent", ESDevice.parent("%", "%", hubId));
 
         return query.getResultList();
     }
 
-    public List<ESDevice> findByType(int type, String remoteId, long accountId) {
+    public List<ESDevice> findByType(int type, String remoteId, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -212,13 +212,13 @@ public class ESDeviceRepo {
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESDevice.class);
         query.setParameter("type", type);
-        query.setParameter("parent", ESDevice.parent(remoteId, "%", accountId));
+        query.setParameter("parent", ESDevice.parent(remoteId, "%", hubId));
 
         return query.getResultList();
     }
 
     @Transactional
-    public int deleteChild(Date deletedTime, String deviceId, long accountId) {
+    public int deleteChild(Date deletedTime, String deviceId, long hubId) {
 
         int result = 0;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -239,7 +239,7 @@ public class ESDeviceRepo {
         String applianceBuilderString = applianceBuilder.toString();
         Query applianceQuery = entityManager.createNativeQuery(applianceBuilderString);
         applianceQuery.setParameter("dtime", deletedTimeString);
-        applianceQuery.setParameter("parent", ESDevice.parent(deviceId, "%", accountId));
+        applianceQuery.setParameter("parent", ESDevice.parent(deviceId, "%", hubId));
 
         result += applianceQuery.executeUpdate();
 
@@ -247,7 +247,7 @@ public class ESDeviceRepo {
     }
 
     @Transactional
-    public int updateAddress(String address, String uid, long accountId) {
+    public int updateAddress(String address, String uid, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -267,15 +267,15 @@ public class ESDeviceRepo {
         Query query = entityManager.createNativeQuery(queryString);
         query.setParameter("address", address);
         query.setParameter("uid", uid);
-        query.setParameter("parent", ESDevice.parent(null, "%", accountId));
+        query.setParameter("parent", ESDevice.parent(null, "%", hubId));
 
         return query.executeUpdate();
     }
 
     @Transactional
-    public int updateStatus(String deviceId, String control, long accountId) {
+    public int updateStatus(String deviceId, String control, long hubId) {
 
-        ESDevice device = findByDeviceId(deviceId, accountId);
+        ESDevice device = findByDeviceId(deviceId, hubId);
         if (device == null) {
             return 0;
         }

@@ -2,8 +2,8 @@ package io.iotera.emma.smarthome.repository;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.controller.ESBaseController;
-import io.iotera.emma.smarthome.model.account.ESAccount;
-import io.iotera.emma.smarthome.model.account.ESAccountCamera;
+import io.iotera.emma.smarthome.model.account.ESHub;
+import io.iotera.emma.smarthome.model.account.ESHubCamera;
 import io.iotera.emma.smarthome.model.application.ESApplicationInfo;
 import io.iotera.util.Json;
 import io.iotera.util.Tuple;
@@ -20,128 +20,128 @@ import javax.persistence.Query;
 import java.util.List;
 
 @Repository
-public class ESAccountCameraRepo extends ESBaseController {
+public class ESHubCameraRepo extends ESBaseController {
 
     @PersistenceContext
     EntityManager entityManager;
 
     @Autowired
-    ESAccountCameraJRepo accountCameraJRepo;
+    ESHubCameraJRepo hubCameraJRepo;
 
-    public Tuple.T2<String, String> getAccessTokenAndRefreshToken(long accountId) {
+    public Tuple.T2<String, String> getAccessTokenAndRefreshToken(long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("SELECT ");
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
-        queryBuilder.append(ESAccountCamera.NAME).append(" ");
+        queryBuilder.append(ESHubCamera.NAME).append(" ");
         queryBuilder.append("WHERE ");
-        queryBuilder.append("account_id = :account_id");
+        queryBuilder.append("hub_id = :hub");
 
         // Execute Query
         String queryString = queryBuilder.toString();
-        Query query = entityManager.createNativeQuery(queryString, ESAccountCamera.class);
-        query.setParameter("account_id", accountId);
+        Query query = entityManager.createNativeQuery(queryString, ESHubCamera.class);
+        query.setParameter("hub", hubId);
 
         Object result = DataAccessUtils.singleResult(query.getResultList());
         if (result == null) {
             return null;
         }
 
-        ESAccountCamera resultObjects = (ESAccountCamera) result;
+        ESHubCamera resultObjects = (ESHubCamera) result;
 
         return new Tuple.T2<String, String>(resultObjects.getAccessToken(), resultObjects.getRefreshToken());
     }
 
-    public boolean isYoutubeIdAvailable(String youtubeId, long accountId) {
+    public boolean isYoutubeIdAvailable(String youtubeId, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("SELECT ");
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
-        queryBuilder.append(ESAccountCamera.NAME).append(" as camera ");
+        queryBuilder.append(ESHubCamera.NAME).append(" as camera ");
         queryBuilder.append("JOIN ");
-        queryBuilder.append(ESAccount.NAME).append(" as account ");
-        queryBuilder.append("ON camera.account_id = account.id ");
+        queryBuilder.append(ESHub.NAME).append(" as hub ");
+        queryBuilder.append("ON camera.hub_id = hub.id ");
         queryBuilder.append("WHERE ");
         queryBuilder.append("camera.youtube_id = :youtube_id ");
         queryBuilder.append("AND ");
-        queryBuilder.append("account.__deactivate_flag__ = FALSE ");
+        queryBuilder.append("hub.__deactivate_flag__ = FALSE ");
         queryBuilder.append("AND ");
-        queryBuilder.append("account.id != :account_id");
+        queryBuilder.append("hub.id != :hub_id");
 
         // Execute Query
         String queryString = queryBuilder.toString();
-        Query query = entityManager.createNativeQuery(queryString, ESAccountCamera.class);
+        Query query = entityManager.createNativeQuery(queryString, ESHubCamera.class);
         query.setParameter("youtube_id", youtubeId);
-        query.setParameter("account_id", accountId);
+        query.setParameter("hub_id", hubId);
 
         return query.getResultList().isEmpty();
     }
 
-    public ESAccountCamera findByAccountId(long accountId) {
+    public ESHubCamera findByHubId(long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("SELECT ");
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
-        queryBuilder.append(ESAccountCamera.NAME).append(" ");
+        queryBuilder.append(ESHubCamera.NAME).append(" ");
         queryBuilder.append("WHERE ");
-        queryBuilder.append("account_id = :account_id");
+        queryBuilder.append("hub_id = :hub_id");
 
         // Execute Query
         String queryString = queryBuilder.toString();
-        Query query = entityManager.createNativeQuery(queryString, ESAccountCamera.class);
-        query.setParameter("account_id", accountId);
+        Query query = entityManager.createNativeQuery(queryString, ESHubCamera.class);
+        query.setParameter("hub_id", hubId);
 
-        return (ESAccountCamera) DataAccessUtils.singleResult(query.getResultList());
+        return (ESHubCamera) DataAccessUtils.singleResult(query.getResultList());
     }
 
     @Transactional
-    public int updateAccessTokenByAccountId(String accessToken, long accountId) {
+    public int updateAccessTokenByHubId(String accessToken, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("UPDATE ");
-        queryBuilder.append(ESAccountCamera.NAME).append(" ");
+        queryBuilder.append(ESHubCamera.NAME).append(" ");
         queryBuilder.append("SET ");
         queryBuilder.append("access_token = :access_token ");
         queryBuilder.append("WHERE ");
-        queryBuilder.append("account_id = :account_id ");
+        queryBuilder.append("hub_id = :hub_id ");
 
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString);
         query.setParameter("access_token", accessToken);
-        query.setParameter("account_id", accountId);
+        query.setParameter("hub_id", hubId);
 
         return query.executeUpdate();
     }
 
     @Transactional
-    public ResponseEntity YoutubeKey(long accountId) {
+    public ResponseEntity YoutubeKey(long hubId) {
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("SELECT ");
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
-        queryBuilder.append(ESAccountCamera.NAME).append(" ");
+        queryBuilder.append(ESHubCamera.NAME).append(" ");
         queryBuilder.append("WHERE ");
-        queryBuilder.append("account_id = :account_id ");
+        queryBuilder.append("hub_id = :hub_id ");
 
         // Execute Query
         String queryString = queryBuilder.toString();
-        Query query = entityManager.createNativeQuery(queryString, ESAccountCamera.class);
-        query.setParameter("account_id", accountId);
-        List<ESAccountCamera> listAccountCamera = query.getResultList();
+        Query query = entityManager.createNativeQuery(queryString, ESHubCamera.class);
+        query.setParameter("hub_id", hubId);
+        List<ESHubCamera> listHubCamera = query.getResultList();
 
         ObjectNode deviceObject = Json.buildObjectNode();
-        deviceObject.put("access_token", listAccountCamera.get(0).getAccessToken());
-        deviceObject.put("refresh_token", listAccountCamera.get(0).getRefreshToken());
-        deviceObject.put("max_history", listAccountCamera.get(0).getMaxHistory());
+        deviceObject.put("access_token", listHubCamera.get(0).getAccessToken());
+        deviceObject.put("refresh_token", listHubCamera.get(0).getRefreshToken());
+        deviceObject.put("max_history", listHubCamera.get(0).getMaxHistory());
 
         queryBuilder = new StringBuilder();
         queryBuilder.append("SELECT ");
@@ -161,8 +161,9 @@ public class ESAccountCameraRepo extends ESBaseController {
     }
 
     @Transactional
-    public interface ESAccountCameraJRepo extends JpaRepository<ESAccountCamera, Long> {
+    public interface ESHubCameraJRepo extends JpaRepository<ESHubCamera, Long> {
 
     }
+
 
 }
