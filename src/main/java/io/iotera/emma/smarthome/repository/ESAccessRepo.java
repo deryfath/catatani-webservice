@@ -97,7 +97,7 @@ public class ESAccessRepo {
         queryBuilder.append("WHERE ");
         queryBuilder.append("access.__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
-        queryBuilder.append("access.hub_id = :hub");
+        queryBuilder.append("access.hub_id = :hub ");
         queryBuilder.append("AND ");
         queryBuilder.append("access.client_id = :client ");
 
