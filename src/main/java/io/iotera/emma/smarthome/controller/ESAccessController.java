@@ -331,6 +331,7 @@ public class ESAccessController extends ESBaseController implements ApplicationE
         response.put("picture_last_updated", formatDate(client.getPictureLastUpdated()));
         response.put("permission", access.permission());
         response.put("added_time", formatDate(access.getAddedTime()));
+        response.put("account_id", access.getHubId());
         response.put("status_desc", "client_added");
         response.put("status_code", 0);
         response.put("status", "success");

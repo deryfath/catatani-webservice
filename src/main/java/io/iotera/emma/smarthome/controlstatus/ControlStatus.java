@@ -27,6 +27,8 @@ public abstract class ControlStatus {
     public static ControlStatus buildByCategory(String control, String oldState, int dc) {
         if (dc == DevicePref.CAT_AC) {
             return buildAC(control, oldState);
+        } else if (dc == DevicePref.CAT_TV) {
+            return buildOff(control, oldState);
         }
         return buildOnOff(control, oldState);
     }
@@ -34,6 +36,8 @@ public abstract class ControlStatus {
     public static ControlStatus buildByCategory(String oldState, int dc) {
         if (dc == DevicePref.CAT_AC) {
             return buildAC(oldState);
+        } else if (dc == DevicePref.CAT_TV) {
+            return buildOff(oldState);
         }
         return buildOnOff(oldState);
     }
@@ -44,6 +48,14 @@ public abstract class ControlStatus {
 
     public static ControlStatus buildOnOff(String oldState) {
         return new OnOffControlStatus(oldState);
+    }
+
+    public static ControlStatus buildOff(String control, String oldState) {
+        return new OffControlStatus(control, oldState);
+    }
+
+    public static ControlStatus buildOff(String oldState) {
+        return new OffControlStatus(oldState);
     }
 
     public static ControlStatus buildAC(String control, String oldState) {
