@@ -60,7 +60,7 @@ public class ESCameraHistoryRepo extends BaseController {
         queryBuilder.append("WHERE ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
-        queryBuilder.append("parent = :parent ");
+        queryBuilder.append("__parent__ = :parent ");
         queryBuilder.append("ORDER BY history_time ASC LIMIT 1 ");
 
         String queryString = queryBuilder.toString();
@@ -77,7 +77,7 @@ public class ESCameraHistoryRepo extends BaseController {
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
         queryBuilder.append(ESCameraHistory.NAME).append(" ");
-        queryBuilder.append("WHERE parent = :parent ");
+        queryBuilder.append("WHERE __parent__ = :parent ");
         queryBuilder.append("AND ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
 

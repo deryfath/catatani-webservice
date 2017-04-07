@@ -257,6 +257,8 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
         responseMqttJson.put("ysk", ingestionAddress + "/" + streamKey);
         responseMqttJson.put("ybid", broadcastID);
         responseMqttJson.put("yurl", youtube_url);
+        responseMqttJson.put("hubid", hubId);
+        responseMqttJson.put("devid", device.getId());
 
         //MQTT MESSAGE
         this.message = MessageBuilder
