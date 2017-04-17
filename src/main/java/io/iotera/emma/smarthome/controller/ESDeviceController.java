@@ -459,7 +459,7 @@ public class ESDeviceController extends ESBaseController implements ApplicationE
             // Get old and current broadcastID and make it complete
             ObjectNode info = Json.parseToObjectNode(device.getInfo());
 
-            cameraHistoryRepo.updateDeleteStatus(deviceId,hubId);
+            cameraHistoryRepo.updateDeleteStatus(deviceId, hubId);
             deviceRepo.deleteChild(now, deviceId, hubId);
 
             cameraManager.removeSchedule(hubId, deviceId);

@@ -32,7 +32,7 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
     private String cameraId;
     private String broadcastId, streamID, clientId, clientSecret, accessToken, state, refreshToken;
     private boolean fromSchedule;
-    private Message<String> message,message2;
+    private Message<String> message, message2;
     private ObjectNode objectKey;
 
     private volatile ApplicationEventPublisher applicationEventPublisher;

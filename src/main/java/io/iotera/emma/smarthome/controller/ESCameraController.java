@@ -91,10 +91,10 @@ public class ESCameraController extends ESBaseController {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
+        response.put("id", hubId);
         response.put("youtube_id", hubCamera.getYoutubeId());
         response.put("youtube_email", hubCamera.getYoutubeEmail());
         response.put("max_history", hubCamera.getMaxHistory());
-        response.put("account_id", hubId);
         response.put("status_desc", "success");
         response.put("status_code", 0);
 

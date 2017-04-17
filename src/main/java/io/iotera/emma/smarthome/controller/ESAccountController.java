@@ -104,9 +104,9 @@ public class ESAccountController extends ESBaseController {
             String phoneNumber = get(body, "esphone");
             // Check phone number
             if (!account.getPhoneNumber().equals(phoneNumber)) {
-                if (accountJRepo.findByPhoneNumberAndDeactivateFalse(phoneNumber) != null) {
+                /* if (accountJRepo.findByPhoneNumberAndDeactivateFalse(phoneNumber) != null) {
                     return okJsonFailed(-3, "phone_number_not_available");
-                }
+                } */
                 account.setPhoneNumber(phoneNumber);
                 edit = true;
             }
@@ -223,7 +223,7 @@ public class ESAccountController extends ESBaseController {
         return okJsonSuccess("edit_password_success");
     }
 
-    protected ResponseEntity getYoutubeKey(ObjectNode body, ESHub hub){
+    protected ResponseEntity getYoutubeKey(ObjectNode body, ESHub hub) {
 
         // Response
         ObjectNode response = Json.buildObjectNode();
@@ -243,30 +243,30 @@ public class ESAccountController extends ESBaseController {
         String clientSecret = youtubeClientApi._2;
 
         //get access token and refresh token initiate
-        ResponseEntity<String> responseAccountYoutube =  youtubeService.getAccessTokenAndRefreshtokenByAuthCode(auth_code,clientId,clientSecret);
+        ResponseEntity<String> responseAccountYoutube = youtubeService.getAccessTokenAndRefreshtokenByAuthCode(auth_code, clientId, clientSecret);
         System.out.println(responseAccountYoutube);
 
         try {
             ObjectNode responseYoutubeObject = Json.parseToObjectNode(responseAccountYoutube.getBody());
             int statusCode = Integer.parseInt(responseYoutubeObject.get("status_code").toString());
-            System.out.println("status code : "+statusCode);
-            if(statusCode == 200){
+            System.out.println("status code : " + statusCode);
+            if (statusCode == 200) {
                 String accessToken = responseYoutubeObject.get("access_token").toString().replaceAll("[^\\w\\s\\-_.]", "");
                 String refreshToken = responseYoutubeObject.get("refresh_token").toString().replaceAll("[^\\w\\s\\-_./]", "");
 
                 //check availability
-                boolean isAvailability = cameraRepo.isYoutubeIdAvailable(google_id,hub.getId());
+                boolean isAvailability = cameraRepo.isYoutubeIdAvailable(google_id, hub.getId());
 
-                System.out.println("AVAILABILITY : "+isAvailability);
+                System.out.println("AVAILABILITY : " + isAvailability);
 
-                System.out.println("HUB ID : "+hub.getId());
+                System.out.println("HUB ID : " + hub.getId());
 
-                if(isAvailability){
+                if (isAvailability) {
                     //save to hubCameraREpo
-                    hubCamera = new ESHubCamera(accessToken,refreshToken,google_id,google_email,24,hub,hub.getId());
+                    hubCamera = new ESHubCamera(accessToken, refreshToken, google_id, google_email, 24, hub, hub.getId());
                     hubCameraJRepo.saveAndFlush(hubCamera);
-                }else{
-                    cameraRepo.updateAccessTokenByHubId(accessToken,hub.getId());
+                } else {
+                    cameraRepo.updateAccessTokenByHubId(accessToken, hub.getId());
                 }
 
                 response.put("access_token", accessToken);
@@ -274,16 +274,16 @@ public class ESAccountController extends ESBaseController {
                 response.put("youtube_id", google_id);
                 response.put("youtube_email", google_email);
                 response.put("max_history", 24);
-                response.put("status_code",0);
+                response.put("status_code", 0);
 
-            }else{
-                response.put("status",400);
-                response.put("message","bad request");
+            } else {
+                response.put("status", 400);
+                response.put("message", "bad request");
 
             }
-        }catch (NullPointerException e){
-            response.put("status",400);
-            response.put("message","bad request");
+        } catch (NullPointerException e) {
+            response.put("status", 400);
+            response.put("message", "bad request");
         }
 
         // Result

@@ -6,11 +6,13 @@ import com.google.api.client.util.Base64;
 import io.iotera.emma.smarthome.model.access.ESAccess;
 import io.iotera.emma.smarthome.model.account.ESAccount;
 import io.iotera.emma.smarthome.model.account.ESHub;
+import io.iotera.emma.smarthome.model.account.ESHubCamera;
 import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
 import io.iotera.emma.smarthome.preference.PermissionPref;
 import io.iotera.emma.smarthome.repository.ESAccessRepo;
 import io.iotera.emma.smarthome.repository.ESAccountRepo;
+import io.iotera.emma.smarthome.repository.ESHubCameraRepo;
 import io.iotera.emma.smarthome.repository.ESHubRepo;
 import io.iotera.emma.smarthome.util.PublishUtility;
 import io.iotera.emma.smarthome.util.ResourceUtility;
@@ -39,6 +41,9 @@ public class ESAccessController extends ESBaseController implements ApplicationE
     ESAccessRepo.ESAccessJRepo accessJRepo;
 
     @Autowired
+    ESHubCameraRepo hubCameraRepo;
+
+    @Autowired
     ESHubRepo hubRepo;
 
     ApplicationEventPublisher applicationEventPublisher;
@@ -49,8 +54,6 @@ public class ESAccessController extends ESBaseController implements ApplicationE
     }
 
     protected ResponseEntity connect(ObjectNode body, ESAccount client, long clientId) {
-
-        System.out.println("MASUK HOME CONNECT");
 
         // Request Body
         String rtoken = rget(body, "esrtoken");
@@ -150,6 +153,7 @@ public class ESAccessController extends ESBaseController implements ApplicationE
         // Response
         ObjectNode response = Json.buildObjectNode();
 
+        long hubId;
         ESAccess access;
 
         ArrayNode hubArray = Json.buildArrayNode();
@@ -158,7 +162,7 @@ public class ESAccessController extends ESBaseController implements ApplicationE
         // Add default access
         List<ESHub> hubs = hubRepo.listHubByClientId(clientId);
         for (ESHub hub : hubs) {
-            long hubId = hub.getId();
+            hubId = hub.getId();
             access = ESAccess.buildOwnerAccess(hubId, clientId, hub.getHubActiveTime());
 
             hubObject = Json.buildObjectNode();
@@ -173,6 +177,12 @@ public class ESAccessController extends ESBaseController implements ApplicationE
             hubObject.put("atoken", access.getAccessToken());
             hubObject.put("permission", access.permission());
             hubObject.put("added_time", formatDate(access.getAddedTime()));
+            ESHubCamera hubCamera = hubCameraRepo.findByHubId(hubId);
+            if (hubCamera != null) {
+                hubObject.put("youtube_id", hubCamera.getYoutubeId());
+                hubObject.put("youtube_email", hubCamera.getYoutubeEmail());
+                hubObject.put("max_history", hubCamera.getMaxHistory());
+            }
             hubObject.put("client_id", clientId);
 
             hubArray.add(hubObject);
@@ -181,6 +191,7 @@ public class ESAccessController extends ESBaseController implements ApplicationE
         List<Object[]> accessList = accessRepo.listHubByClientId(clientId);
         for (Object[] objects : accessList) {
             ESHub hub = (ESHub) objects[0];
+            hubId = hub.getId();
             access = (ESAccess) objects[1];
 
             hubObject = Json.buildObjectNode();
@@ -195,6 +206,12 @@ public class ESAccessController extends ESBaseController implements ApplicationE
             hubObject.put("atoken", access.getAccessToken());
             hubObject.put("permission", access.permission());
             hubObject.put("added_time", formatDate(access.getAddedTime()));
+            ESHubCamera hubCamera = hubCameraRepo.findByHubId(hubId);
+            if (hubCamera != null) {
+                hubObject.put("youtube_id", hubCamera.getYoutubeId());
+                hubObject.put("youtube_email", hubCamera.getYoutubeEmail());
+                hubObject.put("max_history", hubCamera.getMaxHistory());
+            }
             hubObject.put("client_id", clientId);
 
             hubArray.add(hubObject);
@@ -216,9 +233,24 @@ public class ESAccessController extends ESBaseController implements ApplicationE
         }
 
         ObjectNode response = Json.buildObjectNode();
+        response.put("id", hub.getId());
+        response.put("name", hub.getName());
+        response.put("address", hub.getAddress());
+        response.put("picture", hub.picturePath(getProperty("host.path.remote")));
+        response.put("picture_last_updated", formatDate(hub.getPictureLastUpdated()));
+        response.put("latitude", hub.getLatitude());
+        response.put("longitude", hub.getLongitude());
         response.put("atoken", access.getAccessToken());
         response.put("permission", access.permission());
         response.put("added_time", formatDate(access.getAddedTime()));
+        ESHubCamera hubCamera = hubCameraRepo.findByHubId(hubId);
+        if (hubCamera != null) {
+            response.put("youtube_id", hubCamera.getYoutubeId());
+            response.put("youtube_email", hubCamera.getYoutubeEmail());
+            response.put("max_history", hubCamera.getMaxHistory());
+        }
+        response.put("client_id", clientId);
+
         response.put("status_code", 0);
         response.put("status", "success");
 

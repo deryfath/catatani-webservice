@@ -5,7 +5,6 @@ import io.iotera.emma.smarthome.model.device.ESCameraHistory;
 import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
-import io.iotera.emma.smarthome.preference.DevicePref;
 import io.iotera.emma.smarthome.repository.ESApplicationInfoRepo;
 import io.iotera.emma.smarthome.repository.ESCameraHistoryRepo;
 import io.iotera.emma.smarthome.repository.ESDeviceRepo;
@@ -259,8 +258,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
         responseMqttJson.put("ysk", ingestionAddress + "/" + streamKey);
         responseMqttJson.put("ybid", broadcastID);
         responseMqttJson.put("yurl", youtube_url);
-        responseMqttJson.put("hubid", hubId);
-        responseMqttJson.put("url", "hub/"+hubId+"/camera_start/"+device.getId());
+        responseMqttJson.put("url", "hub/" + hubId + "/camera_start/" + device.getId());
 
         //MQTT MESSAGE
         this.message = MessageBuilder
