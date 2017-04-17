@@ -6,17 +6,22 @@ import io.iotera.emma.smarthome.camera.CameraManager;
 import io.iotera.emma.smarthome.camera.CameraStartTask;
 import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.emma.smarthome.model.device.ESRoom;
+import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
+import io.iotera.emma.smarthome.preference.CommandPref;
 import io.iotera.emma.smarthome.preference.DevicePref;
-import io.iotera.emma.smarthome.repository.ESApplicationInfoRepo;
-import io.iotera.emma.smarthome.repository.ESDeviceRepo;
-import io.iotera.emma.smarthome.repository.ESHubCameraRepo;
-import io.iotera.emma.smarthome.repository.ESRoomRepo;
+import io.iotera.emma.smarthome.repository.*;
+import io.iotera.emma.smarthome.util.PublishUtility;
 import io.iotera.emma.smarthome.youtube.PrologVideo;
 import io.iotera.emma.smarthome.youtube.YoutubeService;
 import io.iotera.util.Json;
 import io.iotera.util.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.http.ResponseEntity;
+import org.springframework.integration.mqtt.support.MqttHeaders;
+import org.springframework.integration.support.MessageBuilder;
+import org.springframework.messaging.Message;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -24,7 +29,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-public class ESDeviceController extends ESBaseController {
+public class ESDeviceController extends ESBaseController implements ApplicationEventPublisherAware {
 
     @Autowired
     ESDeviceRepo deviceRepo;
@@ -51,6 +56,19 @@ public class ESDeviceController extends ESBaseController {
 
     @Autowired
     CameraStartTask cameraStartTask;
+
+    @Autowired
+    ESCameraHistoryRepo cameraHistoryRepo;
+
+    private volatile ApplicationEventPublisher applicationEventPublisher;
+
+
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+        System.out.println("MASUK APPLICATION EVENT");
+        this.applicationEventPublisher = applicationEventPublisher;
+
+    }
 
     protected ResponseEntity listAll(long hubId) {
 
@@ -416,6 +434,8 @@ public class ESDeviceController extends ESBaseController {
 
     protected ResponseEntity delete(ObjectNode body, long hubId) {
 
+        System.out.println("MASUK DELETE");
+
         // Response
         ObjectNode response = Json.buildObjectNode();
 
@@ -431,7 +451,7 @@ public class ESDeviceController extends ESBaseController {
         response.put("label", device.getLabel());
 
         Date now = new Date();
-        if (device.getCategory() == DevicePref.CAT_REMOTE || device.getCategory() == DevicePref.CAT_CAMERA) {
+        if (device.getCategory() == DevicePref.CAT_REMOTE) {
             deviceRepo.deleteChild(now, deviceId, hubId);
 
         } else if (device.getCategory() == DevicePref.CAT_CAMERA) {
@@ -439,7 +459,26 @@ public class ESDeviceController extends ESBaseController {
             // Get old and current broadcastID and make it complete
             ObjectNode info = Json.parseToObjectNode(device.getInfo());
 
+            cameraHistoryRepo.updateDeleteStatus(deviceId,hubId);
+            deviceRepo.deleteChild(now, deviceId, hubId);
+
             cameraManager.removeSchedule(hubId, deviceId);
+
+            Message<String> message2;
+
+
+            //MQTT SEND MESSAGE NULL CAMERA START
+            message2 = MessageBuilder
+                    .withPayload("")
+                    .setHeader(MqttHeaders.TOPIC,
+                            PublishUtility.topicHub(hubId, CommandPref.CAMERA_START, deviceId))
+                    .build();
+
+            if (applicationEventPublisher != null && message2 != null) {
+                applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_START, message2));
+            } else {
+                System.out.println("MQTT NULL");
+            }
 
         }
 
@@ -454,5 +493,6 @@ public class ESDeviceController extends ESBaseController {
         // Result
         return okJson(response);
     }
+
 
 }

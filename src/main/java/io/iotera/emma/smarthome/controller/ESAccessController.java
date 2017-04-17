@@ -50,8 +50,12 @@ public class ESAccessController extends ESBaseController implements ApplicationE
 
     protected ResponseEntity connect(ObjectNode body, ESAccount client, long clientId) {
 
+        System.out.println("MASUK HOME CONNECT");
+
         // Request Body
         String rtoken = rget(body, "esrtoken");
+
+        System.out.println(rtoken);
 
         ESHub hub = hubJRepo.findByRegistrationTokenAndHubActiveFalseAndDeactivateFalse(rtoken);
         if (hub == null) {

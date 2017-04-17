@@ -70,7 +70,7 @@ public class PrologVideo extends ESBaseController {
         if (responseEntityCreate._2.get("data") != null) {
             StreamKey = responseEntityCreate._2.get("data").get("stream_key").textValue();
         } else {
-            return okJsonFailed(-3, "forbidden to create event");
+            return okJsonFailed(403, "forbidden to create event");
         }
 
         try {
@@ -117,13 +117,14 @@ public class PrologVideo extends ESBaseController {
 
                     responseEntityTransitionStart = youtubeService.transitionEventStart(accessToken, broadcastID, streamID, state);
                     try {
-                        if (responseEntityTransitionStart._2.get("data").get("stream_status") != null) {
+                        if (responseEntityTransitionStart._2.get("data") != null) {
 //                            System.out.println(responseEntityTransitionStart._2.get("data").get("stream_status"));
                             statusNodata = responseEntityTransitionStart._2.get("data").get("stream_status").textValue();
                         }
 
                     } catch (NullPointerException e) {
                         e.printStackTrace();
+                        stopVideoProlog();
                         return okJsonFailed(-13, "Null Pointer Exception");
                     }
                     if (!statusNodata.equalsIgnoreCase("noData")) {

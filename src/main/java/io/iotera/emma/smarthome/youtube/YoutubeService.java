@@ -184,18 +184,18 @@ public class YoutubeService extends ESBaseController {
                     responseBodyJson.put("status", "success");
 
                 } else {
-                    responseFail.put("Message", resultBind._2);
+                    responseFail.put("Message Bind", resultBind._2);
                     return new Tuple.T2<Integer, ObjectNode>(resultBind._1, responseFail);
                 }
 
 
             } else {
-                responseFail.put("Message", resultStream._2);
+                responseFail.put("Message Stream", resultStream._2);
                 return new Tuple.T2<Integer, ObjectNode>(resultStream._1, responseFail);
             }
 
         } else {
-            responseFail.put("Message", resultBroadcast._2);
+            responseFail.put("Message Broadcast", resultBroadcast._2);
             return new Tuple.T2<Integer, ObjectNode>(resultBroadcast._1, responseFail);
         }
 
@@ -225,7 +225,7 @@ public class YoutubeService extends ESBaseController {
         status.putAll(privacyStatus);
 
         HashMap<String, Object> containDetailsData = new HashMap<String, Object>();
-        containDetailsData.put("enableEmbed", false);
+        containDetailsData.put("enableEmbed", true);
         containDetailsData.put("enableLowLatency", true);
 
         JSONObject contentDetails = new JSONObject();

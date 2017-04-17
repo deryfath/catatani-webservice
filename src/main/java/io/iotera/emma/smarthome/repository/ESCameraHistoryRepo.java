@@ -2,8 +2,10 @@ package io.iotera.emma.smarthome.repository;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.device.ESCameraHistory;
+import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.util.Json;
 import io.iotera.web.spring.controller.BaseController;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
@@ -21,6 +23,9 @@ public class ESCameraHistoryRepo extends BaseController {
 
     @PersistenceContext
     EntityManager entityManager;
+
+    @Autowired
+    ESDeviceRepo deviceRepo;
 
     @Transactional
     public List<ESCameraHistory> listCameraHistoryByDeviceId(String deviceId, long hubId) {
@@ -123,6 +128,8 @@ public class ESCameraHistoryRepo extends BaseController {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String deletedTimeString = sdf.format(now);
 
+        ESDevice device = deviceRepo.findByDeviceId(deviceId, hubId);
+
         // Appliance
         // Build Query
         StringBuilder applianceBuilder = new StringBuilder();
@@ -132,13 +139,13 @@ public class ESCameraHistoryRepo extends BaseController {
         applianceBuilder.append("__deleted_flag__ = TRUE, ");
         applianceBuilder.append("__deleted_time__ = :dtime ");
         applianceBuilder.append("WHERE ");
-        applianceBuilder.append("parent = :parent");
+        applianceBuilder.append("__parent__ = :parent");
 
         // Execute Query
         String applianceBuilderString = applianceBuilder.toString();
         Query applianceQuery = entityManager.createNativeQuery(applianceBuilderString);
         applianceQuery.setParameter("dtime", deletedTimeString);
-        applianceQuery.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
+        applianceQuery.setParameter("parent", ESCameraHistory.parent(device.getId(), device.getRoomId(), hubId));
 
         result += applianceQuery.executeUpdate();
 

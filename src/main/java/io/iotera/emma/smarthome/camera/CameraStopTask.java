@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
 import io.iotera.emma.smarthome.repository.ESHubCameraRepo;
+import io.iotera.emma.smarthome.util.PublishUtility;
 import io.iotera.emma.smarthome.youtube.YoutubeService;
 import io.iotera.util.Json;
 import io.iotera.util.Tuple;
@@ -31,7 +32,7 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
     private String cameraId;
     private String broadcastId, streamID, clientId, clientSecret, accessToken, state, refreshToken;
     private boolean fromSchedule;
-    private Message<String> message;
+    private Message<String> message,message2;
     private ObjectNode objectKey;
 
     private volatile ApplicationEventPublisher applicationEventPublisher;
@@ -94,11 +95,24 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
         this.message = MessageBuilder
                 .withPayload(responseTransitionStop._2.toString())
                 .setHeader(MqttHeaders.TOPIC,
-                        "stream/transition/stop")
+                        PublishUtility.topicHub(hubId, CommandPref.CAMERA_STOP, cameraId))
                 .build();
 
         if (applicationEventPublisher != null && message != null) {
             applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_STOP, this.message));
+        } else {
+            System.out.println("MQTT NULL");
+        }
+
+        //MQTT SEND MESSAGE NULL CAMERA START
+        this.message2 = MessageBuilder
+                .withPayload("")
+                .setHeader(MqttHeaders.TOPIC,
+                        PublishUtility.topicHub(hubId, CommandPref.CAMERA_START, cameraId))
+                .build();
+
+        if (applicationEventPublisher != null && message2 != null) {
+            applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_START, this.message2));
         } else {
             System.out.println("MQTT NULL");
         }
