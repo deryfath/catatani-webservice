@@ -22,8 +22,7 @@ public class ESCameraHistoryRepo extends BaseController {
     @PersistenceContext
     EntityManager entityManager;
 
-    @Transactional
-    public List<ESCameraHistory> listCameraHistoryByDeviceId(String deviceId, long hubId) {
+    public List<ESCameraHistory> listHistoryByCameraId(String deviceId, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -32,7 +31,7 @@ public class ESCameraHistoryRepo extends BaseController {
         queryBuilder.append("FROM ");
         queryBuilder.append(ESCameraHistory.NAME).append(" ");
         queryBuilder.append("WHERE ");
-        queryBuilder.append("parent = :parent ");
+        queryBuilder.append("parent LIKE :parent ");
         queryBuilder.append("ORDER BY ");
         queryBuilder.append("history_time DESC");
 
@@ -60,7 +59,7 @@ public class ESCameraHistoryRepo extends BaseController {
         queryBuilder.append("WHERE ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
         queryBuilder.append("AND ");
-        queryBuilder.append("__parent__ = :parent ");
+        queryBuilder.append("__parent__ LIKE :parent ");
         queryBuilder.append("ORDER BY history_time ASC LIMIT 1 ");
 
         String queryString = queryBuilder.toString();
@@ -104,7 +103,7 @@ public class ESCameraHistoryRepo extends BaseController {
         queryBuilder.append("FROM ");
         queryBuilder.append(ESCameraHistory.NAME).append(" ");
         queryBuilder.append("WHERE ");
-        queryBuilder.append("parent = :parent ");
+        queryBuilder.append("parent LIKE :parent ");
         queryBuilder.append("ORDER BY history_time ASC limit 1 ");
 
         // Execute Query
