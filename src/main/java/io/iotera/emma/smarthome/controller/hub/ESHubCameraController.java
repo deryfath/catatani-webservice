@@ -31,6 +31,34 @@ public class ESHubCameraController extends ESCameraController {
         return oauth(body, hub, hubId);
     }
 
+    @RequestMapping(value = "/oauth/delete", method = RequestMethod.POST)
+    public ResponseEntity deleteOauth(HttpEntity<String> entity) {
+
+        // Request Header
+        //authenticateToken(entity);
+        String hubToken = hubToken(entity);
+
+        // Hub
+        ESHub hub = accountHub(hubToken);
+        long hubId = hub.getId();
+
+        return deleteOauth(hub, hubId);
+    }
+
+    @RequestMapping(value = "/oauth/get", method = RequestMethod.GET)
+    public ResponseEntity getOauth(HttpEntity<String> entity) {
+
+        // Request Header
+        //authenticateToken(entity);
+        String hubToken = hubToken(entity);
+
+        // Hub
+        ESHub hub = accountHub(hubToken);
+        long hubId = hub.getId();
+
+        return getOauth(hub, hubId);
+    }
+
     @RequestMapping(value = "/history/{cameraId}", method = RequestMethod.GET)
     public ResponseEntity history(
             @PathVariable("cameraId") String cameraId, HttpEntity<String> entity) {

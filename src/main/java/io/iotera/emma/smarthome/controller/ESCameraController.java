@@ -101,6 +101,41 @@ public class ESCameraController extends ESBaseController {
         return okJson(response);
     }
 
+    protected ResponseEntity getOauth(ESHub hub, long hubId) {
+
+        ESHubCamera hubCamera = hubCameraRepo.findByHubId(hubId);
+        if (hubCamera == null) {
+            return okJsonFailed(-1, "hub_camera_not_found");
+        }
+
+        // Response
+        ObjectNode response = Json.buildObjectNode();
+        response.put("id", hubId);
+        response.put("youtube_id", hubCamera.getYoutubeId());
+        response.put("youtube_email", hubCamera.getYoutubeEmail());
+        response.put("max_history", hubCamera.getMaxHistory());
+        response.put("status_desc", "success");
+        response.put("status_code", 0);
+
+        return okJson(response);
+    }
+
+    protected ResponseEntity deleteOauth(ESHub hub, long hubId) {
+
+        ESHubCamera hubCamera = hubCameraRepo.findByHubId(hubId);
+        if (hubCamera == null) {
+            return okJsonFailed(-1, "hub_camera_not_found");
+        }
+        hubCameraJRepo.delete(hubCamera);
+
+        // Response
+        ObjectNode response = Json.buildObjectNode();
+        response.put("status_desc", "success");
+        response.put("status_code", 0);
+
+        return okJson(response);
+    }
+
     protected ResponseEntity history(String cameraId, long hubId) {
 
         // Response
@@ -119,12 +154,13 @@ public class ESCameraController extends ESBaseController {
             cameraObject.put("youtube_stream_id", cameraHistory.getYoutubeStreamId());
             cameraObject.put("youtube_stream_key", cameraHistory.getYoutubeStreamKey());
             cameraObject.put("history_time", formatDate(cameraHistory.getHistoryTime()));
+            cameraObject.put("parent", cameraHistory.getParent());
+            cameraObject.put("camera_id", cameraId);
 
             cameraArray.add(cameraObject);
         }
 
         response.set("cameras", cameraArray);
-        response.put("camera_id", cameraId);
         response.put("status_code", 0);
         response.put("status", "success");
 

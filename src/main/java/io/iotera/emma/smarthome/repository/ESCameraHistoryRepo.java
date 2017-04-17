@@ -110,7 +110,7 @@ public class ESCameraHistoryRepo extends BaseController {
         queryBuilder.append(ESCameraHistory.NAME).append(" ");
         queryBuilder.append("WHERE ");
         queryBuilder.append("__parent__ LIKE :parent ");
-        queryBuilder.append("ORDER BY history_time ASC limit 1 ");
+        queryBuilder.append("ORDER BY history_time ASC LIMIT 1 ");
 
         // Execute Query
         String queryString = queryBuilder.toString();
