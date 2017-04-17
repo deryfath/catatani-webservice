@@ -30,6 +30,7 @@ public class ESHubCameraRepo extends ESBaseController {
 
     public Tuple.T2<String, String> getAccessTokenAndRefreshToken(long hubId) {
 
+        System.out.println("HUB ID : "+hubId);
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("SELECT ");

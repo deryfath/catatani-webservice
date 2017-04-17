@@ -4,11 +4,17 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.api.client.util.Base64;
 import io.iotera.emma.smarthome.model.account.ESAccount;
 import io.iotera.emma.smarthome.model.account.ESAccountParuru;
+import io.iotera.emma.smarthome.model.account.ESHub;
+import io.iotera.emma.smarthome.model.account.ESHubCamera;
 import io.iotera.emma.smarthome.repository.ESAccountRepo;
+import io.iotera.emma.smarthome.repository.ESApplicationInfoRepo;
+import io.iotera.emma.smarthome.repository.ESHubCameraRepo;
 import io.iotera.emma.smarthome.util.PasswordUtility;
 import io.iotera.emma.smarthome.util.ResourceUtility;
+import io.iotera.emma.smarthome.youtube.YoutubeService;
 import io.iotera.util.Json;
 import io.iotera.util.Random;
+import io.iotera.util.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 
@@ -22,6 +28,18 @@ public class ESAccountController extends ESBaseController {
 
     @Autowired
     ESAccountRepo.ESAccountParuruJRepo accountParuruJRepo;
+
+    @Autowired
+    ESApplicationInfoRepo applicationInfoRepo;
+
+    @Autowired
+    YoutubeService youtubeService;
+
+    @Autowired
+    ESHubCameraRepo.ESHubCameraJRepo hubCameraJRepo;
+
+    @Autowired
+    ESHubCameraRepo cameraRepo;
 
     protected ResponseEntity read(ESAccount account) {
 
@@ -203,6 +221,74 @@ public class ESAccountController extends ESBaseController {
         accountParuruJRepo.saveAndFlush(accountParuru);
 
         return okJsonSuccess("edit_password_success");
+    }
+
+    protected ResponseEntity getYoutubeKey(ObjectNode body, ESHub hub){
+
+        // Response
+        ObjectNode response = Json.buildObjectNode();
+
+        ESHubCamera hubCamera = null;
+
+        String auth_code = rget(body, "esoauth");
+        String google_id = rget(body, "esyid");
+        String google_email = rget(body, "esyemail");
+
+        Tuple.T2<String, String> youtubeClientApi = applicationInfoRepo.getClientIdAndClientSecret();
+        if (youtubeClientApi == null) {
+            return internalServerError("internal_server_error");
+        }
+
+        String clientId = youtubeClientApi._1;
+        String clientSecret = youtubeClientApi._2;
+
+        //get access token and refresh token initiate
+        ResponseEntity<String> responseAccountYoutube =  youtubeService.getAccessTokenAndRefreshtokenByAuthCode(auth_code,clientId,clientSecret);
+        System.out.println(responseAccountYoutube);
+
+        try {
+            ObjectNode responseYoutubeObject = Json.parseToObjectNode(responseAccountYoutube.getBody());
+            int statusCode = Integer.parseInt(responseYoutubeObject.get("status_code").toString());
+            System.out.println("status code : "+statusCode);
+            if(statusCode == 200){
+                String accessToken = responseYoutubeObject.get("access_token").toString().replaceAll("[^\\w\\s\\-_.]", "");
+                String refreshToken = responseYoutubeObject.get("refresh_token").toString().replaceAll("[^\\w\\s\\-_./]", "");
+
+                //check availability
+                boolean isAvailability = cameraRepo.isYoutubeIdAvailable(google_id,hub.getId());
+
+                System.out.println("AVAILABILITY : "+isAvailability);
+
+                System.out.println("HUB ID : "+hub.getId());
+
+                if(isAvailability){
+                    //save to hubCameraREpo
+                    hubCamera = new ESHubCamera(accessToken,refreshToken,google_id,google_email,24,hub,hub.getId());
+                    hubCameraJRepo.saveAndFlush(hubCamera);
+                }else{
+                    cameraRepo.updateAccessTokenByHubId(accessToken,hub.getId());
+                }
+
+                response.put("access_token", accessToken);
+                response.put("refresh_token", refreshToken);
+                response.put("youtube_id", google_id);
+                response.put("youtube_email", google_email);
+                response.put("max_history", 24);
+                response.put("status_code",0);
+
+            }else{
+                response.put("status",400);
+                response.put("message","bad request");
+
+            }
+        }catch (NullPointerException e){
+            response.put("status",400);
+            response.put("message","bad request");
+        }
+
+        // Result
+        return okJson(response);
+
     }
 
 }

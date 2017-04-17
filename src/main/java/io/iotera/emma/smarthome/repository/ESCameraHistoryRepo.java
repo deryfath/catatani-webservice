@@ -2,8 +2,10 @@ package io.iotera.emma.smarthome.repository;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.device.ESCameraHistory;
+import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.util.Json;
 import io.iotera.web.spring.controller.BaseController;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
@@ -21,6 +23,10 @@ public class ESCameraHistoryRepo extends BaseController {
 
     @PersistenceContext
     EntityManager entityManager;
+
+    @Autowired
+    ESDeviceRepo deviceRepo;
+
 
     public List<ESCameraHistory> listHistoryByCameraId(String deviceId, long hubId) {
 
@@ -76,7 +82,7 @@ public class ESCameraHistoryRepo extends BaseController {
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
         queryBuilder.append(ESCameraHistory.NAME).append(" ");
-        queryBuilder.append("WHERE __parent__ = :parent ");
+        queryBuilder.append("WHERE __parent__ LIKE :parent ");
         queryBuilder.append("AND ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
 
@@ -103,7 +109,7 @@ public class ESCameraHistoryRepo extends BaseController {
         queryBuilder.append("FROM ");
         queryBuilder.append(ESCameraHistory.NAME).append(" ");
         queryBuilder.append("WHERE ");
-        queryBuilder.append("parent LIKE :parent ");
+        queryBuilder.append("__parent__ LIKE :parent ");
         queryBuilder.append("ORDER BY history_time ASC limit 1 ");
 
         // Execute Query
@@ -122,6 +128,8 @@ public class ESCameraHistoryRepo extends BaseController {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String deletedTimeString = sdf.format(now);
 
+        ESDevice device = deviceRepo.findByDeviceId(deviceId, hubId);
+
         // Appliance
         // Build Query
         StringBuilder applianceBuilder = new StringBuilder();
@@ -131,7 +139,7 @@ public class ESCameraHistoryRepo extends BaseController {
         applianceBuilder.append("__deleted_flag__ = TRUE, ");
         applianceBuilder.append("__deleted_time__ = :dtime ");
         applianceBuilder.append("WHERE ");
-        applianceBuilder.append("parent = :parent");
+        applianceBuilder.append("__parent__ LIKE :parent");
 
         // Execute Query
         String applianceBuilderString = applianceBuilder.toString();
