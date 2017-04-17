@@ -472,9 +472,15 @@ public class ESDeviceController extends ESBaseController implements ApplicationE
                     .withPayload("")
                     .setHeader(MqttHeaders.TOPIC,
                             PublishUtility.topicHub(hubId, CommandPref.CAMERA_START, deviceId))
+                    .setHeader(MqttHeaders.QOS, 2)
+                    .setHeader(MqttHeaders.RETAINED, true)
+
                     .build();
 
+
             if (applicationEventPublisher != null && message2 != null) {
+                System.out.println(PublishUtility.topicHub(hubId, CommandPref.CAMERA_START, deviceId));
+
                 applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_START, message2));
             } else {
                 System.out.println("MQTT NULL");
