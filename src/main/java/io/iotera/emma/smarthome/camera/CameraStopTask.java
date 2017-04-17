@@ -96,7 +96,6 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
                 .withPayload(responseTransitionStop._2.toString())
                 .setHeader(MqttHeaders.TOPIC,
                         PublishUtility.topicHub(hubId, CommandPref.CAMERA_STOP, cameraId))
-                .setHeader(MqttHeaders.RETAINED, true)
                 .setHeader(MqttHeaders.QOS, 2)
                 .build();
 

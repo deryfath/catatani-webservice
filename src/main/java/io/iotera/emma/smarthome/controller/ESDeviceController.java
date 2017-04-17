@@ -464,7 +464,25 @@ public class ESDeviceController extends ESBaseController implements ApplicationE
 
             cameraManager.removeSchedule(hubId, deviceId);
 
-            Message<String> message2;
+            Message<String> message,message2;
+
+            String time = info.get("tm").textValue();
+            ObjectNode responseMqttJson = Json.buildObjectNode();
+            responseMqttJson.put("tm", time);
+
+            //MQTT MESSAGE
+            message = MessageBuilder
+                    .withPayload(responseMqttJson.toString())
+                    .setHeader(MqttHeaders.TOPIC,
+                            PublishUtility.topicHub(hubId, CommandPref.CAMERA_STOP, deviceId))
+                    .setHeader(MqttHeaders.QOS, 2)
+                    .build();
+
+            if (applicationEventPublisher != null && message != null) {
+                applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_STOP, message));
+            } else {
+                System.out.println("MQTT NULL");
+            }
 
 
             //MQTT SEND MESSAGE NULL CAMERA START
