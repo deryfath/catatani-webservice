@@ -180,11 +180,15 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
         refreshToken = objectKey.get("refresh_token").textValue();
         maxqueue = objectKey.get("max_history").asInt();
 
+        System.out.println("MAX QUEUE : "+maxqueue);
+
+        ObjectNode stopParam = Json.buildObjectNode();
+
         if (objectEntityStream.get("stream_data") != null) {
             System.out.println("OBJECT ENTITY STREAM : " + objectEntityStream);
 
             //DELETE OLD YOUTUBE LINK
-            ResponseEntity cameraHistoryCount = historyCameraRepo.countRowHistoryCamera(device.getId(), hubId);
+            ResponseEntity cameraHistoryCount = historyCameraRepo.countRowHistoryCamera(device.getId(),device.getRoomId(), hubId);
             ObjectNode responseCamera = Json.parseToObjectNode(cameraHistoryCount.getBody().toString());
             System.out.println("responseCamera : " + responseCamera);
             if (responseCamera.size() != 0) {
@@ -192,7 +196,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
                 if (Integer.parseInt(responseCamera.get("count").toString()) > maxqueue) {
 
                     //DELETE FIRST ROW HISTORY CAMERA
-                    historyCameraRepo.deleteFirstRowByDeviceId(device.getId(), hubId);
+                    historyCameraRepo.deleteFirstRowByDeviceId(device.getId(),device.getRoomId(), hubId);
 
                     //DELETE ON YOUTUBE API
                     ResponseEntity responseEntityDelete = youtubeService.deleteEventById(accessToken, responseCamera.get("youtube_id").toString());
@@ -213,7 +217,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
                 }
             }
 
-            //INSERT INTO TABlE camera_history
+
             System.out.println("response success : " + objectEntityStream.get("stream_data"));
 
             String youtube_title = objectEntityStream.get("stream_data").get("data").get("title").textValue();
@@ -229,15 +233,26 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
 
             }
 
-            try {
-                ESCameraHistory cameraHistory = new ESCameraHistory(youtube_title, youtube_url, broadcastID, streamID,
-                        ingestionAddress + "/" + streamKey, dateFormat.parse(mqttTime),
-                        ESCameraHistory.parent(device.getId(), device.getRoomId(), hubId));
+            stopParam.put("title",youtube_title);
+            stopParam.put("url",youtube_url);
+            stopParam.put("broadcast_id",broadcastID);
+            stopParam.put("stream_id",streamID);
+            stopParam.put("ingestion",ingestionAddress);
+            stopParam.put("stream_key",streamKey);
+            stopParam.put("mqttTime",mqttTime);
+            stopParam.put("device_id",device.getId());
+            stopParam.put("room_id",device.getRoomId());
+            stopParam.put("hub_id",hubId);
 
-                cameraHistoryJRepo.saveAndFlush(cameraHistory);
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                ESCameraHistory cameraHistory = new ESCameraHistory(youtube_title, youtube_url, broadcastID, streamID,
+//                        ingestionAddress + "/" + streamKey, dateFormat.parse(mqttTime),
+//                        ESCameraHistory.parent(device.getId(), device.getRoomId(), hubId));
+//
+//                cameraHistoryJRepo.saveAndFlush(cameraHistory);
+//            } catch (ParseException e) {
+//                e.printStackTrace();
+//            }
 
         }
 
@@ -295,6 +310,6 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
 //        Calendar calendar1 = Calendar.getInstance();
 //        calendar1.add(Calendar.MINUTE,1);
 //        stopTime = calendar1.getTime();
-        cameraManager.updateStopSchedule(hubId, device.getId(), broadcastID, stopTime, streamID);
+        cameraManager.updateStopSchedule(stopParam, stopTime);
     }
 }

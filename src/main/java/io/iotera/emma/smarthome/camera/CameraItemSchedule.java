@@ -60,18 +60,18 @@ public class CameraItemSchedule implements ApplicationContextAware {
         return true;
     }
 
-    boolean updateCameraStopSchedule(String broadcastId, Date time, String streamId) {
+    boolean updateCameraStopSchedule(ObjectNode stopParam, Date time) {
 
         if (this.cameraStopSchedule1 == null || this.cameraStopSchedule1.isCancelled() || this.cameraStopSchedule1.isDone()) {
             CameraStopTask taskStop = applicationContext.getBean(CameraStopTask.class);
-            taskStop.initTask(hubId, this.device.getId(), broadcastId, true, streamId);
+            taskStop.initTask(hubId, this.device.getId(), stopParam, true);
             this.cameraStopSchedule1 = this.taskScheduler.schedule(taskStop, time);
             return true;
         }
 
         if (this.cameraStopSchedule2 == null || this.cameraStopSchedule2.isCancelled() || this.cameraStopSchedule2.isDone()) {
             CameraStopTask taskStop = applicationContext.getBean(CameraStopTask.class);
-            taskStop.initTask(hubId, this.device.getId(), broadcastId, true, streamId);
+            taskStop.initTask(hubId, this.device.getId(), stopParam, true);
             this.cameraStopSchedule2 = this.taskScheduler.schedule(taskStop, time);
             return true;
         }

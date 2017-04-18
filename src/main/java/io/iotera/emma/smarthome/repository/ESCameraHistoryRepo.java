@@ -37,7 +37,7 @@ public class ESCameraHistoryRepo extends BaseController {
         queryBuilder.append("FROM ");
         queryBuilder.append(ESCameraHistory.NAME).append(" ");
         queryBuilder.append("WHERE ");
-        queryBuilder.append("parent LIKE :parent ");
+        queryBuilder.append("__parent__ LIKE :parent ");
         queryBuilder.append("ORDER BY ");
         queryBuilder.append("history_time DESC");
 
@@ -50,7 +50,7 @@ public class ESCameraHistoryRepo extends BaseController {
     }
 
     @Transactional
-    public ResponseEntity countRowHistoryCamera(String deviceId, long hubId) {
+    public ResponseEntity countRowHistoryCamera(String deviceId,String roomId, long hubId) {
 
         List<ESCameraHistory> listHistoryId = null;
         ObjectNode deviceObject = Json.buildObjectNode();
@@ -70,7 +70,7 @@ public class ESCameraHistoryRepo extends BaseController {
 
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESCameraHistory.class);
-        query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
+        query.setParameter("parent", ESCameraHistory.parent(deviceId, roomId, hubId));
         listHistoryId = query.getResultList();
 
         if (listHistoryId.size() != 0) {
@@ -88,7 +88,7 @@ public class ESCameraHistoryRepo extends BaseController {
 
         queryString = queryBuilder.toString();
         query = entityManager.createNativeQuery(queryString, ESCameraHistory.class);
-        query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
+        query.setParameter("parent", ESCameraHistory.parent(deviceId, roomId, hubId));
         listCountRow = query.getResultList();
 
         if (listCountRow.size() != 0) {
@@ -101,7 +101,7 @@ public class ESCameraHistoryRepo extends BaseController {
     }
 
     @Transactional
-    public int deleteFirstRowByDeviceId(String deviceId, long hubId) {
+    public int deleteFirstRowByDeviceId(String deviceId,String roomId, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -115,7 +115,7 @@ public class ESCameraHistoryRepo extends BaseController {
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString);
-        query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
+        query.setParameter("parent", ESCameraHistory.parent(deviceId, roomId, hubId));
 
         return query.executeUpdate();
     }

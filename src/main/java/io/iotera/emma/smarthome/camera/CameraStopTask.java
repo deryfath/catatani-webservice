@@ -1,8 +1,10 @@
 package io.iotera.emma.smarthome.camera;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.iotera.emma.smarthome.model.device.ESCameraHistory;
 import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
+import io.iotera.emma.smarthome.repository.ESCameraHistoryRepo;
 import io.iotera.emma.smarthome.repository.ESHubCameraRepo;
 import io.iotera.emma.smarthome.util.PublishUtility;
 import io.iotera.emma.smarthome.youtube.YoutubeService;
@@ -18,6 +20,10 @@ import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+
 @Component
 @Scope("prototype")
 public class CameraStopTask implements Runnable, ApplicationEventPublisherAware {
@@ -28,12 +34,15 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
     @Autowired
     ESHubCameraRepo hubCameraRepo;
 
+    @Autowired
+    ESCameraHistoryRepo.ESCameraHistoryJRepo cameraHistoryJRepo;
+
     private long hubId;
     private String cameraId;
     private String broadcastId, streamID, clientId, clientSecret, accessToken, state, refreshToken;
     private boolean fromSchedule;
     private Message<String> message, message2;
-    private ObjectNode objectKey;
+    private ObjectNode objectKey,stopParam;
 
     private volatile ApplicationEventPublisher applicationEventPublisher;
 
@@ -42,12 +51,11 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
-    public void initTask(long hubId, String cameraId, String broadcastId, boolean fromSchedule, String streamID) {
+    public void initTask(long hubId, String cameraId, ObjectNode stopParam, boolean fromSchedule) {
         this.hubId = hubId;
         this.cameraId = cameraId;
-        this.broadcastId = broadcastId;
+        this.stopParam = stopParam;
         this.fromSchedule = fromSchedule;
-        this.streamID = streamID;
     }
 
     @Override
@@ -56,7 +64,7 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
         System.out.println("MASUK STOP");
         System.out.println(hubId);
         System.out.println(cameraId);
-        System.out.println(broadcastId);
+        System.out.println(stopParam);
         System.out.println(fromSchedule);
 
         if (!fromSchedule) {
@@ -78,7 +86,7 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
         refreshToken = objectKey.get("refresh_token").textValue();
 
         state = "complete";
-        Tuple.T2<Integer, ObjectNode> responseTransitionStop = youtubeService.transitionEventComplete(accessToken, broadcastId, streamID, state);
+        Tuple.T2<Integer, ObjectNode> responseTransitionStop = youtubeService.transitionEventComplete(accessToken, stopParam.get("broadcast_id").textValue(), stopParam.get("stream_id").textValue(), state);
 
         if (responseTransitionStop._1 == 401) {
             System.out.println("UNAUTHORIZED");
@@ -86,10 +94,23 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
             System.out.println("CLIENT ID STOP : " + clientId);
             accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, hubId);
             System.out.println("stop access token : " + accessToken);
-            responseTransitionStop = youtubeService.transitionEventComplete(accessToken, broadcastId, streamID, state);
+            responseTransitionStop = youtubeService.transitionEventComplete(accessToken, stopParam.get("broadcast_id").textValue(), stopParam.get("stream_id").textValue(), state);
 
         }
         System.out.println(responseTransitionStop);
+
+        //INSERT CAMERA HISTORY
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+        try {
+            ESCameraHistory cameraHistory = new ESCameraHistory(stopParam.get("title").textValue(), stopParam.get("url").textValue(), stopParam.get("broadcast_id").textValue(), stopParam.get("stream_id").textValue(),
+                    stopParam.get("ingestion").textValue() + "/" + stopParam.get("stream_key").textValue(), dateFormat.parse(stopParam.get("mqttTime").textValue()),
+                    ESCameraHistory.parent(cameraId, stopParam.get("room_id").textValue(), hubId));
+
+            cameraHistoryJRepo.saveAndFlush(cameraHistory);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
 
         //MQTT MESSAGE
         this.message = MessageBuilder
