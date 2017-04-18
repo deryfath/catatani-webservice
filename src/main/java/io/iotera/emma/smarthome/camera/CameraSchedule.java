@@ -41,11 +41,11 @@ public class CameraSchedule implements ApplicationContextAware {
         return false;
     }
 
-    boolean updateStopSchedule(String cameraId, String broadcastId, Date time, String streamId) {
+    boolean updateStopSchedule(ObjectNode stopParam, Date time) {
 
-        if (this.cameraItemSchedules.containsKey(cameraId)) {
-            CameraItemSchedule cameraItemSchedule = this.cameraItemSchedules.get(cameraId);
-            return cameraItemSchedule.updateCameraStopSchedule(broadcastId, time, streamId);
+        if (this.cameraItemSchedules.containsKey(stopParam.get("device_id").textValue())) {
+            CameraItemSchedule cameraItemSchedule = this.cameraItemSchedules.get(stopParam.get("device_id").textValue());
+            return cameraItemSchedule.updateCameraStopSchedule(stopParam, time);
         }
 
         return false;
