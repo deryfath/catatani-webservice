@@ -6,6 +6,7 @@ import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.util.Json;
 import io.iotera.web.spring.controller.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
@@ -44,6 +45,8 @@ public class ESCameraHistoryRepo extends BaseController {
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESCameraHistory.class);
+
+        System.out.println("__PARENT__: "+ESCameraHistory.parent(deviceId, "%", hubId));
         query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
 
         return query.getResultList();
@@ -146,6 +149,42 @@ public class ESCameraHistoryRepo extends BaseController {
         Query applianceQuery = entityManager.createNativeQuery(applianceBuilderString);
         applianceQuery.setParameter("dtime", deletedTimeString);
         applianceQuery.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
+
+        result += applianceQuery.executeUpdate();
+
+        return result;
+    }
+
+    @Transactional
+    public int updateAndReplaceLabel(String deviceId, long hubId, String newTitle, String oldTitle) {
+
+        int result = 0;
+
+        System.out.println("OLD TITLE : "+oldTitle);
+        System.out.println("NEW TITLE : "+newTitle);
+
+//        oldTitle = oldTitle.replaceAll("[^A-Za-z ]+", "");
+//        oldTitle = oldTitle.replaceAll("  ", "");
+//
+//        System.out.println("OLD TITLE REPLACE : "+oldTitle+"|");
+
+        // Appliance
+        // Build Query
+        StringBuilder applianceBuilder = new StringBuilder();
+        applianceBuilder.append("UPDATE ");
+        applianceBuilder.append(ESCameraHistory.NAME).append(" ");
+        applianceBuilder.append("SET ");
+        applianceBuilder.append("youtube_title = REPLACE(youtube_title, :oldtitle, :newtitle) ");
+        applianceBuilder.append("WHERE ");
+        applianceBuilder.append("__deleted_flag__ = FALSE AND ");
+        applianceBuilder.append("__parent__ LIKE :parent");
+
+        // Execute Query
+        String applianceBuilderString = applianceBuilder.toString();
+        Query applianceQuery = entityManager.createNativeQuery(applianceBuilderString);
+        applianceQuery.setParameter("newtitle", newTitle);
+        applianceQuery.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
+        applianceQuery.setParameter("oldtitle", oldTitle);
 
         result += applianceQuery.executeUpdate();
 

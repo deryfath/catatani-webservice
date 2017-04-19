@@ -397,7 +397,12 @@ public class ESDeviceController extends ESBaseController implements ApplicationE
                 if (!deviceRepo.findByLabel(label, hubId).isEmpty()) {
                     return okJsonFailed(-3, "device_label_not_available");
                 }
+
+                //UPDATE AND REPLACE CAMERA HISTORY
+                cameraHistoryRepo.updateAndReplaceLabel(device.getId(),hubId,label,device.getLabel());
+
                 device.setLabel(label);
+
                 edit = true;
             }
             response.put("label", device.getLabel());

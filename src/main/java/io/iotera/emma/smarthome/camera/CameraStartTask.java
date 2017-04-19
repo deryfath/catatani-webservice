@@ -30,6 +30,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.List;
 
 @Component
 @Scope("prototype")
@@ -148,8 +149,11 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
             objectKey = Json.parseToObjectNode((responseYoutubeKey.getBody().toString()));
             System.out.println("OBJECT KEY : " + objectKey);
 
+            //GET UPDATE TITLE DEVICE
+            ESDevice deviceArr = deviceRepository.findByDeviceId(device.getId(),hubId);
+
             mqttTime = newTimePlusFive;
-            newTitle = title + " " + mqttTime;
+            newTitle = deviceArr.getLabel() + " " + mqttTime;
 
             responseEntityStream = prologVideo.runVideoProlog(newTitle, hubId);
             objectEntityStream = Json.parseToObjectNode(responseEntityStream.getBody().toString());
