@@ -24,6 +24,8 @@ import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 
+import javax.validation.constraints.Null;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -297,13 +299,22 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
 
         //STOP PROLOG VIDEO
         System.out.println(objectEntityStream);
-        if (objectEntityStream.get("stream_status").get("data") != null) {
-            String streamStatus = objectEntityStream.get("stream_status").get("data").get("stream_status").textValue();
-            if (streamStatus.equalsIgnoreCase("live")) {
+
+        try {
+            if (objectEntityStream.get("stream_status") != null) {
+                String streamStatus = objectEntityStream.get("stream_status").get("data").get("stream_status").textValue();
+                if (streamStatus.equalsIgnoreCase("live")) {
+                    prologVideo.stopVideoProlog();
+                    deviceRepository.updateStatusInfoDevice(device.getId(), broadcastID, ingestionAddress, streamKey, streamID, youtube_url, mqttTime);
+                }
+            }else{
                 prologVideo.stopVideoProlog();
-                deviceRepository.updateStatusInfoDevice(device.getId(), broadcastID, ingestionAddress, streamKey, streamID, youtube_url, mqttTime);
             }
+        }catch (NullPointerException e){
+
+            prologVideo.stopVideoProlog();
         }
+
 
         System.out.println("broadcastID : " + broadcastID);
         System.out.println("streamID : " + streamID);

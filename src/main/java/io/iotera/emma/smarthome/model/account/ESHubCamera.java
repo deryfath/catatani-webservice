@@ -31,7 +31,7 @@ public class ESHubCamera {
     // Column //
     ////////////
 
-    @OneToOne(orphanRemoval = true)
+    @OneToOne
     @JoinColumn(name = "hub_id")
     protected ESHub hub;
 
