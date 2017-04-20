@@ -6,7 +6,6 @@ import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.util.Json;
 import io.iotera.web.spring.controller.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
@@ -53,7 +52,7 @@ public class ESCameraHistoryRepo extends BaseController {
     }
 
     @Transactional
-    public ResponseEntity countRowHistoryCamera(String deviceId,String roomId, long hubId) {
+    public ResponseEntity countRowHistoryCamera(String deviceId, long hubId) {
 
         List<ESCameraHistory> listHistoryId = null;
         ObjectNode deviceObject = Json.buildObjectNode();
@@ -73,7 +72,7 @@ public class ESCameraHistoryRepo extends BaseController {
 
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESCameraHistory.class);
-        query.setParameter("parent", ESCameraHistory.parent(deviceId, roomId, hubId));
+        query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
         listHistoryId = query.getResultList();
 
         if (listHistoryId.size() != 0) {
@@ -91,7 +90,7 @@ public class ESCameraHistoryRepo extends BaseController {
 
         queryString = queryBuilder.toString();
         query = entityManager.createNativeQuery(queryString, ESCameraHistory.class);
-        query.setParameter("parent", ESCameraHistory.parent(deviceId, roomId, hubId));
+        query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
         listCountRow = query.getResultList();
 
         if (listCountRow.size() != 0) {
@@ -104,7 +103,7 @@ public class ESCameraHistoryRepo extends BaseController {
     }
 
     @Transactional
-    public int deleteFirstRowByDeviceId(String deviceId,String roomId, long hubId) {
+    public int deleteFirstRowByDeviceId(String deviceId, long hubId) {
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
@@ -118,7 +117,7 @@ public class ESCameraHistoryRepo extends BaseController {
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString);
-        query.setParameter("parent", ESCameraHistory.parent(deviceId, roomId, hubId));
+        query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
 
         return query.executeUpdate();
     }

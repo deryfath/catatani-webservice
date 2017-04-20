@@ -85,7 +85,7 @@ public class ESHub {
     // Column //
     ////////////
 
-    @OneToOne(orphanRemoval = true)
+    @OneToOne
     @JoinColumn(name = "client_id")
     protected ESAccount client;
 

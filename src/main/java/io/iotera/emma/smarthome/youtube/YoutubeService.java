@@ -369,6 +369,119 @@ public class YoutubeService extends ESBaseController {
 
     ///////////////////////////////////////////TRANSITION EVENT///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public Tuple.T2<Integer, ObjectNode> transitionEvent(String accessToken, String broadcastingID, String streamID, String urlStatus) {
+
+        String lifeCycleStatus = "";
+        int responseCode;
+        ObjectNode responseBodyJson = Json.buildObjectNode();
+        ObjectNode responseFail = Json.buildObjectNode();
+        ObjectNode dataObject = Json.buildObjectNode();
+
+        RestTemplate restTemplate = new RestTemplate();
+        headersTransition = new HttpHeaders();
+        headersTransition.setContentType(MediaType.APPLICATION_JSON);
+        headersTransition.set("Authorization", "Bearer " + accessToken);
+
+        //CHECK STATUS STREAM
+        //GET LIST STREAM BY ID
+        Tuple.T2<Integer, String> responseStream = checkStatusStream(accessToken, streamID);
+
+        if (responseStream._1 == 200) {
+            ObjectNode responseBodyStream = Json.parseToObjectNode(responseStream._2);
+            String statusStreaming = responseBodyStream.get("items").get(0).get("status").get("streamStatus").textValue();
+            String statusHealth = responseBodyStream.get("items").get(0).get("status").get("healthStatus").get("status").textValue();
+            System.out.println(statusStreaming);
+            System.out.println(statusHealth);
+
+            if (!statusHealth.equalsIgnoreCase("noData")) {
+                System.out.println("masuk testing");
+
+                Tuple.T2<Integer, String> responseTesting = transitionChange(accessToken, urlStatus, broadcastingID);
+
+                if (responseTesting._1 == 200) {
+
+                    ObjectNode responseBodyTransitionTesting = Json.parseToObjectNode(responseTesting._2);
+
+                    lifeCycleStatus = responseBodyTransitionTesting.get("status").get("lifeCycleStatus").toString().replaceAll("[^\\w\\s]", "");
+                    System.out.println("LIFECYCLE STATUS : " + lifeCycleStatus);
+
+                    try {
+                        Thread.sleep(90000);
+                    } catch (InterruptedException ex) {
+                        System.out.println(ex.getMessage());
+                    }
+
+                    //Check stream
+                    responseStream = checkStatusBroadcast(accessToken, broadcastingID);
+
+                    if (responseStream._1 == 200) {
+                        ObjectNode responseBodyGetStatusBroadcast = Json.parseToObjectNode(responseStream._2);
+
+                        lifeCycleStatus = responseBodyGetStatusBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").textValue();
+
+                        System.out.println("LIFE CYCLE AFTER DELAY : " + lifeCycleStatus);
+
+                        while (lifeCycleStatus.equalsIgnoreCase("testStarting")) {
+                            System.out.println("masuk looping teststarting");
+                            responseStream = checkStatusBroadcast(accessToken, broadcastingID);
+                            if (responseStream._1 == 200) {
+                                responseBodyGetStatusBroadcast = Json.parseToObjectNode(responseStream._2);
+                                lifeCycleStatus = responseBodyGetStatusBroadcast.get("items").get(0).get("status").get("lifeCycleStatus").textValue();
+
+                                if (lifeCycleStatus.equalsIgnoreCase("testing")) {
+                                    System.out.println("out test starting");
+                                    break;
+                                }
+                            } else {
+                                return new Tuple.T2<Integer, ObjectNode>(responseStream._1, responseFail.put("message", responseStream._2));
+                            }
+                        }
+
+                        // your code here
+                        if (lifeCycleStatus.equalsIgnoreCase("testing")) {
+                            System.out.println("masuk live");
+                            urlStatus = "live";
+
+                            Tuple.T2<Integer, String> responseLive = transitionChange(accessToken, urlStatus, broadcastingID);
+
+                            if (responseLive._1 == 200) {
+
+                                dataObject.put("id", broadcastingID);
+                                dataObject.put("stream_status", urlStatus);
+
+                                responseBodyJson.set("data", dataObject);
+                                responseBodyJson.put("status_code", 200);
+                                responseBodyJson.put("status", "success");
+
+                            } else {
+                                return new Tuple.T2<Integer, ObjectNode>(responseLive._1, responseFail.put("message", responseLive._2));
+                            }
+
+                        } else {
+                            return new Tuple.T2<Integer, ObjectNode>(-11, responseFail.put("message", "transition still testStarting"));
+                        }
+                    } else {
+                        return new Tuple.T2<Integer, ObjectNode>(responseStream._1, responseFail.put("message", responseStream._2));
+                    }
+
+                } else {
+                    return new Tuple.T2<Integer, ObjectNode>(responseTesting._1, responseFail.put("message", "trouble when testing transition"));
+                }
+
+            } else {
+
+                responseFail.put("stream_status", statusHealth);
+                responseBodyJson.set("data", responseFail);
+                return new Tuple.T2<Integer, ObjectNode>(-10, responseBodyJson);
+            }
+
+        } else {
+            return new Tuple.T2<Integer, ObjectNode>(responseStream._1, responseFail.put("message", responseStream._2));
+        }
+        return new Tuple.T2<Integer, ObjectNode>(200, responseBodyJson);
+    }
+
+
     public Tuple.T2<Integer, ObjectNode> transitionEventStart(String accessToken, String broadcastingID, String streamID, String urlStatus) {
 
         System.out.println("MASUK TRANSITION EVENT START");
@@ -607,8 +720,7 @@ public class YoutubeService extends ESBaseController {
         }
 
         if (responseCode == 200) {
-
-            return new Tuple.T2<Integer, String>(responseCode, responseBroadcast.getBody().toString());
+            return new Tuple.T2<Integer, String>(responseCode, responseBroadcast.getBody());
         }
 
         return new Tuple.T2<Integer, String>(responseCode, responseMessage);
@@ -639,7 +751,7 @@ public class YoutubeService extends ESBaseController {
 
         if (responseCode == 200) {
 
-            return new Tuple.T2<Integer, String>(responseCode, responseBroadcast.getBody().toString());
+            return new Tuple.T2<Integer, String>(responseCode, responseBroadcast.getBody());
         }
 
         return new Tuple.T2<Integer, String>(responseCode, responseMessage);

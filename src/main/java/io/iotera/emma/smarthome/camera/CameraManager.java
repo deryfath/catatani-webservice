@@ -1,7 +1,6 @@
 package io.iotera.emma.smarthome.camera;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.iotera.emma.smarthome.model.device.ESDevice;
+import io.iotera.emma.smarthome.youtube.YoutubeItem;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -35,19 +34,26 @@ public class CameraManager implements ApplicationContextAware {
         return schedule;
     }
 
-    public boolean putSchedule(long hubId, ESDevice device, String label, ObjectNode createObject) {
+    public boolean putScheduleOnApplicationReady(long hubId, String cameraId,
+                                                 Date time1, YoutubeItem item1, Date time2, YoutubeItem item2) {
         CameraSchedule schedule = getSchedule(hubId);
-        return schedule.putSchedule(device, label, createObject);
+        return schedule.putScheduleOnApplicationReady(cameraId, time1, item1, time2, item2);
     }
 
-    public boolean updateStopSchedule(ObjectNode stopParam, Date time) {
-        CameraSchedule schedule = getSchedule(stopParam.get("hub_id").asLong());
-        return schedule.updateStopSchedule(stopParam, time);
+    public boolean putSchedule(long hubId, String cameraId, CameraStartTaskItem item) {
+        CameraSchedule schedule = getSchedule(hubId);
+        return schedule.putSchedule(cameraId, item);
     }
 
-    public boolean removeSchedule(long hubId, String cameraId) {
+    public boolean updateStopSchedule(long hubId, String cameraId, Date time, YoutubeItem item) {
         CameraSchedule schedule = getSchedule(hubId);
-        return schedule.removeSchedule(cameraId);
+        return schedule.updateStopSchedule(cameraId, time, item);
     }
+
+    public boolean removeSchedule(long hubId, String cameraId, CameraRemoveTaskItem item) {
+        CameraSchedule schedule = getSchedule(hubId);
+        return schedule.removeSchedule(cameraId, item);
+    }
+
 
 }
