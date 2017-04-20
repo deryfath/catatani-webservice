@@ -94,4 +94,16 @@ public class ESDevice extends EDevice {
         return parent.split("/")[1];
     }
 
+    @Transient
+    public long getHubId() {
+        long hubId;
+        try {
+            hubId = Long.parseLong(parent.split("/")[0]);
+        } catch (NumberFormatException e) {
+            //e.printStackTrace();
+        }
+
+        return -1;
+    }
+
 }

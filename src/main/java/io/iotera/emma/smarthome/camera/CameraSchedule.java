@@ -1,7 +1,6 @@
 package io.iotera.emma.smarthome.camera;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.iotera.emma.smarthome.model.device.ESDevice;
+import io.iotera.emma.smarthome.youtube.YoutubeItem;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -10,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 
 @Component
 @Scope("prototype")
@@ -29,38 +29,62 @@ public class CameraSchedule implements ApplicationContextAware {
         this.cameraItemSchedules = new ConcurrentHashMap<String, CameraItemSchedule>();
     }
 
-    boolean putSchedule(ESDevice device, String label, ObjectNode createObject) {
+    boolean putScheduleOnApplicationReady(String cameraId,
+                                          Date time1, YoutubeItem item1,
+                                          Date time2, YoutubeItem item2) {
 
-        if (!this.cameraItemSchedules.containsKey(device.getId())) {
-            CameraItemSchedule schedule = applicationContext.getBean(CameraItemSchedule.class);
-            schedule.initSchedule(device, hubId, label, createObject);
-            this.cameraItemSchedules.put(device.getId(), schedule);
-            return schedule.updateCameraStartSchedule();
+        CameraItemSchedule schedule;
+        if (!this.cameraItemSchedules.containsKey(cameraId)) {
+            schedule = applicationContext.getBean(CameraItemSchedule.class);
+            schedule.initSchedule(hubId, cameraId);
+            this.cameraItemSchedules.put(cameraId, schedule);
+        } else {
+            schedule = this.cameraItemSchedules.get(cameraId);
+        }
+
+        return schedule.updateCameraScheduleOnApplicationReady(time1, item1, time2, item2);
+    }
+
+    boolean putSchedule(String cameraId, CameraStartTaskItem item) {
+
+        CameraItemSchedule schedule;
+        if (!this.cameraItemSchedules.containsKey(cameraId)) {
+            schedule = applicationContext.getBean(CameraItemSchedule.class);
+            schedule.initSchedule(hubId, cameraId);
+            this.cameraItemSchedules.put(cameraId, schedule);
+        } else {
+            schedule = this.cameraItemSchedules.get(cameraId);
+        }
+
+        return schedule.updateCameraStartSchedule(item);
+    }
+
+    boolean updateStopSchedule(String cameraId, Date time, YoutubeItem item) {
+
+        if (this.cameraItemSchedules.containsKey(cameraId)) {
+            CameraItemSchedule cameraItemSchedule = this.cameraItemSchedules.get(cameraId);
+            return cameraItemSchedule.updateCameraStopSchedule(time, item);
         }
 
         return false;
     }
 
-    boolean updateStopSchedule(ObjectNode stopParam, Date time) {
-
-        if (this.cameraItemSchedules.containsKey(stopParam.get("device_id").textValue())) {
-            CameraItemSchedule cameraItemSchedule = this.cameraItemSchedules.get(stopParam.get("device_id").textValue());
-            return cameraItemSchedule.updateCameraStopSchedule(stopParam, time);
-        }
-
-        return false;
-    }
-
-    boolean removeSchedule(String cameraId) {
+    boolean removeSchedule(String cameraId, CameraRemoveTaskItem item) {
 
         if (this.cameraItemSchedules.containsKey(cameraId)) {
             CameraItemSchedule cameraItemSchedule = this.cameraItemSchedules.get(cameraId);
             cameraItemSchedule.removeCamera();
             this.cameraItemSchedules.remove(cameraId);
+
+            // Camera Remove Task
+            CameraRemoveTask removeTask = applicationContext.getBean(CameraRemoveTask.class);
+            removeTask.initTask(hubId, cameraId, item);
+            Executors.newSingleThreadExecutor().submit(removeTask);
             return true;
         }
 
         return false;
     }
+
 
 }

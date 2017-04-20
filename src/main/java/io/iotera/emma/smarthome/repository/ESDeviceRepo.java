@@ -3,6 +3,7 @@ package io.iotera.emma.smarthome.repository;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.controlstatus.ControlStatus;
 import io.iotera.emma.smarthome.model.device.ESDevice;
+import io.iotera.emma.smarthome.preference.DevicePref;
 import io.iotera.util.Json;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
@@ -352,6 +353,28 @@ public class ESDeviceRepo {
         query.setParameter("id", deviceId);
 
         return query.executeUpdate();
+    }
+
+    public List<ESDevice> listCamera() {
+
+        // Build Query
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("SELECT ");
+        queryBuilder.append("* ");
+        queryBuilder.append("FROM ");
+        queryBuilder.append(ESDevice.NAME).append(" ");
+        queryBuilder.append("WHERE ");
+        queryBuilder.append("__deleted_flag__ = FALSE ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("category = ").append(DevicePref.CAT_CAMERA).append(" ");
+        queryBuilder.append("ORDER BY ");
+        queryBuilder.append("__order__ ASC, __added__ ASC");
+
+        // Execute Query
+        String queryString = queryBuilder.toString();
+        Query query = entityManager.createNativeQuery(queryString, ESDevice.class);
+
+        return query.getResultList();
     }
 
     @Transactional

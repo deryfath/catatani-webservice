@@ -6,8 +6,6 @@ import io.iotera.emma.smarthome.model.account.ESHub;
 import io.iotera.emma.smarthome.model.account.ESHubCamera;
 import io.iotera.emma.smarthome.model.application.ESApplicationInfo;
 import io.iotera.util.Json;
-import io.iotera.util.Tuple;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.http.ResponseEntity;
@@ -25,12 +23,8 @@ public class ESHubCameraRepo extends ESBaseController {
     @PersistenceContext
     EntityManager entityManager;
 
-    @Autowired
-    ESHubCameraJRepo hubCameraJRepo;
+    public ESHubCamera findByHubId(long hubId) {
 
-    public Tuple.T2<String, String> getAccessTokenAndRefreshToken(long hubId) {
-
-        System.out.println("HUB ID : " + hubId);
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("SELECT ");
@@ -38,21 +32,14 @@ public class ESHubCameraRepo extends ESBaseController {
         queryBuilder.append("FROM ");
         queryBuilder.append(ESHubCamera.NAME).append(" ");
         queryBuilder.append("WHERE ");
-        queryBuilder.append("hub_id = :hub");
+        queryBuilder.append("hub_id = :hub_id");
 
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESHubCamera.class);
-        query.setParameter("hub", hubId);
+        query.setParameter("hub_id", hubId);
 
-        Object result = DataAccessUtils.singleResult(query.getResultList());
-        if (result == null) {
-            return null;
-        }
-
-        ESHubCamera resultObjects = (ESHubCamera) result;
-
-        return new Tuple.T2<String, String>(resultObjects.getAccessToken(), resultObjects.getRefreshToken());
+        return (ESHubCamera) DataAccessUtils.singleResult(query.getResultList());
     }
 
     public boolean isYoutubeIdAvailable(String youtubeId, long hubId) {
@@ -80,25 +67,6 @@ public class ESHubCameraRepo extends ESBaseController {
         query.setParameter("hub_id", hubId);
 
         return query.getResultList().isEmpty();
-    }
-
-    public ESHubCamera findByHubId(long hubId) {
-
-        // Build Query
-        StringBuilder queryBuilder = new StringBuilder();
-        queryBuilder.append("SELECT ");
-        queryBuilder.append("* ");
-        queryBuilder.append("FROM ");
-        queryBuilder.append(ESHubCamera.NAME).append(" ");
-        queryBuilder.append("WHERE ");
-        queryBuilder.append("hub_id = :hub_id");
-
-        // Execute Query
-        String queryString = queryBuilder.toString();
-        Query query = entityManager.createNativeQuery(queryString, ESHubCamera.class);
-        query.setParameter("hub_id", hubId);
-
-        return (ESHubCamera) DataAccessUtils.singleResult(query.getResultList());
     }
 
     @Transactional
@@ -165,6 +133,5 @@ public class ESHubCameraRepo extends ESBaseController {
     public interface ESHubCameraJRepo extends JpaRepository<ESHubCamera, Long> {
 
     }
-
 
 }

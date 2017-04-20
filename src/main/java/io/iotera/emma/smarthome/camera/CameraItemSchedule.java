@@ -1,7 +1,6 @@
 package io.iotera.emma.smarthome.camera;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.iotera.emma.smarthome.model.device.ESDevice;
+import io.iotera.emma.smarthome.youtube.YoutubeItem;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -20,10 +19,8 @@ public class CameraItemSchedule implements ApplicationContextAware {
     private final String CRON_SCHEDULE = "0 55 * * * ?";
 
     private ApplicationContext applicationContext;
-    private ESDevice device;
     private long hubId;
-    private ObjectNode createObject;
-    private String label;
+    private String cameraId;
 
     private ThreadPoolTaskScheduler taskScheduler;
     private Future cameraInit;
@@ -36,22 +33,40 @@ public class CameraItemSchedule implements ApplicationContextAware {
         this.applicationContext = applicationContext;
     }
 
-    void initSchedule(ESDevice device, long hubId, String label, ObjectNode createObject) {
-        this.device = device;
+    void initSchedule(long hubId, String cameraId) {
         this.hubId = hubId;
-        this.label = label;
-        this.createObject = createObject;
+        this.cameraId = cameraId;
         this.taskScheduler = (ThreadPoolTaskScheduler) applicationContext.getBean("cameraThreadPoolTaskScheduler");
     }
 
-    boolean updateCameraStartSchedule() {
+    boolean updateCameraScheduleOnApplicationReady(Date time1, YoutubeItem item1, Date time2, YoutubeItem item2) {
+        removeSchedule();
+
+        CameraStartTask taskSchedule = applicationContext.getBean(CameraStartTask.class);
+        taskSchedule.initTask(hubId, cameraId, null);
+
+        this.cameraStartSchedule = this.taskScheduler.schedule(taskSchedule,
+                new CronTrigger(CRON_SCHEDULE));
+
+        if (item1 != null) {
+            updateCameraStopSchedule(time1, item1);
+        }
+
+        if (item2 != null) {
+            updateCameraStopSchedule(time2, item2);
+        }
+
+        return true;
+    }
+
+    boolean updateCameraStartSchedule(CameraStartTaskItem item) {
         removeSchedule();
 
         CameraStartTask taskInit = applicationContext.getBean(CameraStartTask.class);
-        taskInit.initTask(hubId, this.device, false, label, createObject);
+        taskInit.initTask(hubId, cameraId, item);
 
         CameraStartTask taskSchedule = applicationContext.getBean(CameraStartTask.class);
-        taskSchedule.initTask(hubId, this.device, true, label, createObject);
+        taskSchedule.initTask(hubId, cameraId, null);
 
         this.cameraInit = this.taskScheduler.submit(taskInit);
         this.cameraStartSchedule = this.taskScheduler.schedule(taskSchedule,
@@ -60,19 +75,19 @@ public class CameraItemSchedule implements ApplicationContextAware {
         return true;
     }
 
-    boolean updateCameraStopSchedule(ObjectNode stopParam, Date time) {
+    boolean updateCameraStopSchedule(Date time, YoutubeItem item) {
 
         if (this.cameraStopSchedule1 == null || this.cameraStopSchedule1.isCancelled() || this.cameraStopSchedule1.isDone()) {
-            CameraStopTask taskStop = applicationContext.getBean(CameraStopTask.class);
-            taskStop.initTask(hubId, this.device.getId(), stopParam, true);
-            this.cameraStopSchedule1 = this.taskScheduler.schedule(taskStop, time);
+            CameraStopTask stopTask = applicationContext.getBean(CameraStopTask.class);
+            stopTask.initTask(hubId, cameraId, item);
+            this.cameraStopSchedule1 = this.taskScheduler.schedule(stopTask, time);
             return true;
         }
 
         if (this.cameraStopSchedule2 == null || this.cameraStopSchedule2.isCancelled() || this.cameraStopSchedule2.isDone()) {
-            CameraStopTask taskStop = applicationContext.getBean(CameraStopTask.class);
-            taskStop.initTask(hubId, this.device.getId(), stopParam, true);
-            this.cameraStopSchedule2 = this.taskScheduler.schedule(taskStop, time);
+            CameraStopTask stopTask = applicationContext.getBean(CameraStopTask.class);
+            stopTask.initTask(hubId, cameraId, item);
+            this.cameraStopSchedule2 = this.taskScheduler.schedule(stopTask, time);
             return true;
         }
 

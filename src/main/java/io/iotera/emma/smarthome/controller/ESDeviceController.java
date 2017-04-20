@@ -3,33 +3,26 @@ package io.iotera.emma.smarthome.controller;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.camera.CameraManager;
-import io.iotera.emma.smarthome.camera.CameraStartTask;
+import io.iotera.emma.smarthome.camera.CameraRemoveTaskItem;
+import io.iotera.emma.smarthome.camera.CameraStartTaskItem;
+import io.iotera.emma.smarthome.model.account.ESHubCamera;
 import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.emma.smarthome.model.device.ESRoom;
-import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
-import io.iotera.emma.smarthome.preference.CommandPref;
 import io.iotera.emma.smarthome.preference.DevicePref;
 import io.iotera.emma.smarthome.repository.*;
-import io.iotera.emma.smarthome.util.PublishUtility;
 import io.iotera.emma.smarthome.youtube.PrologVideo;
-import io.iotera.emma.smarthome.youtube.YoutubeService;
+import io.iotera.emma.smarthome.youtube.YoutubeItem;
 import io.iotera.util.Json;
 import io.iotera.util.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.http.ResponseEntity;
-import org.springframework.integration.mqtt.support.MqttHeaders;
-import org.springframework.integration.support.MessageBuilder;
-import org.springframework.messaging.Message;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-public class ESDeviceController extends ESBaseController implements ApplicationEventPublisherAware {
+public class ESDeviceController extends ESBaseController {
 
     @Autowired
     ESDeviceRepo deviceRepo;
@@ -45,30 +38,15 @@ public class ESDeviceController extends ESBaseController implements ApplicationE
 
     @Autowired
     CameraManager cameraManager;
-    @Autowired
-    ESRoomRepo roomRepo;
 
     @Autowired
-    YoutubeService youtubeService;
+    ESRoomRepo roomRepo;
 
     @Autowired
     PrologVideo prologVideo;
 
     @Autowired
-    CameraStartTask cameraStartTask;
-
-    @Autowired
     ESCameraHistoryRepo cameraHistoryRepo;
-
-    private volatile ApplicationEventPublisher applicationEventPublisher;
-
-
-    @Override
-    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-        System.out.println("MASUK APPLICATION EVENT");
-        this.applicationEventPublisher = applicationEventPublisher;
-
-    }
 
     protected ResponseEntity listAll(long hubId) {
 
@@ -234,12 +212,14 @@ public class ESDeviceController extends ESBaseController implements ApplicationE
                     return okJsonFailed(-4, "device_address_not_available");
                 }
 
-                Tuple.T2<String, String> token = hubCameraRepo.getAccessTokenAndRefreshToken(hubId);
-                if (token == null) {
-                    return okJsonFailed(-20, "youtube_api_not_available");
+                ESHubCamera hubCamera = hubCameraRepo.findByHubId(hubId);
+                if (hubCamera == null) {
+                    return okJsonFailed(-5, "youtube_api_not_available");
                 }
 
-                System.out.println("masuk client secret");
+                String accessToken = hubCamera.getAccessToken();
+                String refreshToken = hubCamera.getRefreshToken();
+                int maxQueue = hubCamera.getMaxHistory();
 
                 Tuple.T2<String, String> youtubeClientApi = applicationInfoRepo.getClientIdAndClientSecret();
                 if (youtubeClientApi == null) {
@@ -252,28 +232,26 @@ public class ESDeviceController extends ESBaseController implements ApplicationE
                 device = new ESDevice(label, category, type, uid, address, info, false, null,
                         roomId, hubId);
                 deviceJRepo.save(device);
+                String cameraId = device.getId();
 
-                DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Date date = new Date();
-                System.out.println(dateFormat.format(date).toString());
+                Calendar calendar = Calendar.getInstance();
+                calendar.add(Calendar.HOUR, 1);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                calendar.set(Calendar.MILLISECOND, 0);
+                Date time = calendar.getTime();
 
-                //round time for prolog
-                Date dateHoursRound = cameraStartTask.toNearestWholeHour(date);
-                System.out.println(dateFormat.format(dateHoursRound).toString());
-                ResponseEntity responseEntityStream = prologVideo.runVideoProlog(label + " " + dateFormat.format(dateHoursRound).toString(), hubId);
-                ObjectNode objectEntityStream = Json.parseToObjectNode(responseEntityStream.getBody().toString());
+                String title = label + " " + formatDate(time);
 
-                System.out.println(objectEntityStream);
-                if (objectEntityStream.get("status_code") != null) {
-                    if (objectEntityStream.get("status_code").asInt() != 200) {
-                        return okJsonFailed(objectEntityStream.get("status_code").asInt(), objectEntityStream.get("status_desc").textValue());
-                    }
+                Tuple.T2<Integer, YoutubeItem> prologResult = prologVideo.runVideoProlog(title, hubId);
+                if (prologResult._1 != 0) {
+                    return okJsonFailed(-6, "prolog_video_failed");
                 }
+                YoutubeItem youtubeItem = prologResult._2;
+                youtubeItem.setTime(time);
 
-                cameraManager.putSchedule(hubId, device, label, objectEntityStream);
-
-//                routineManagerYoutube.updateSchedule(device, hubId, objectKey, label);
-
+                cameraManager.putSchedule(hubId, cameraId, new CameraStartTaskItem(clientId, clientSecret, accessToken,
+                        refreshToken, maxQueue, youtubeItem));
                 deviceJRepo.flush();
 
             } else {
@@ -399,7 +377,7 @@ public class ESDeviceController extends ESBaseController implements ApplicationE
                 }
 
                 //UPDATE AND REPLACE CAMERA HISTORY
-                cameraHistoryRepo.updateAndReplaceLabel(device.getId(),hubId,label,device.getLabel());
+                cameraHistoryRepo.updateAndReplaceLabel(device.getId(), hubId, label, device.getLabel());
 
                 device.setLabel(label);
 
@@ -455,66 +433,40 @@ public class ESDeviceController extends ESBaseController implements ApplicationE
         response.put("id", device.getId());
         response.put("label", device.getLabel());
 
+        // Delete device on database
         Date now = new Date();
+        device.setDeleted(true);
+        device.setDeletedTime(now);
+        deviceJRepo.saveAndFlush(device);
+
         if (device.getCategory() == DevicePref.CAT_REMOTE) {
             deviceRepo.deleteChild(now, deviceId, hubId);
 
         } else if (device.getCategory() == DevicePref.CAT_CAMERA) {
-            // TODO Stop Camera
-            // Get old and current broadcastID and make it complete
-            ObjectNode info = Json.parseToObjectNode(device.getInfo());
+
+            // Obtain Client Id and Client secret
+            Tuple.T2<String, String> youtubeClientApi = applicationInfoRepo.getClientIdAndClientSecret();
+            if (youtubeClientApi == null) {
+                return internalServerError("");
+            }
+
+            String clientId = youtubeClientApi._1;
+            String clientSecret = youtubeClientApi._2;
+
+            // Obtain Access token and Refresh token
+            ESHubCamera hubCamera = hubCameraRepo.findByHubId(hubId);
+            if (hubCamera == null) {
+                return internalServerError("");
+            }
+
+            String accessToken = hubCamera.getAccessToken();
+            String refreshToken = hubCamera.getRefreshToken();
 
             cameraHistoryRepo.updateDeleteStatus(deviceId, hubId);
-            deviceRepo.deleteChild(now, deviceId, hubId);
-
-            cameraManager.removeSchedule(hubId, deviceId);
-
-            Message<String> message,message2;
-
-            String time = info.get("tm").textValue();
-            ObjectNode responseMqttJson = Json.buildObjectNode();
-            responseMqttJson.put("tm", time);
-
-            //MQTT MESSAGE
-            message = MessageBuilder
-                    .withPayload(responseMqttJson.toString())
-                    .setHeader(MqttHeaders.TOPIC,
-                            PublishUtility.topicHub(hubId, CommandPref.CAMERA_STOP, deviceId))
-                    .setHeader(MqttHeaders.QOS, 2)
-                    .build();
-
-            if (applicationEventPublisher != null && message != null) {
-                applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_STOP, message));
-            } else {
-                System.out.println("MQTT NULL");
-            }
-
-
-            //MQTT SEND MESSAGE NULL CAMERA START
-            message2 = MessageBuilder
-                    .withPayload("")
-                    .setHeader(MqttHeaders.TOPIC,
-                            PublishUtility.topicHub(hubId, CommandPref.CAMERA_START, deviceId))
-                    .setHeader(MqttHeaders.QOS, 2)
-                    .setHeader(MqttHeaders.RETAINED, true)
-
-                    .build();
-
-
-            if (applicationEventPublisher != null && message2 != null) {
-                System.out.println(PublishUtility.topicHub(hubId, CommandPref.CAMERA_START, deviceId));
-
-                applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_START, message2));
-            } else {
-                System.out.println("MQTT NULL");
-            }
-
+            cameraManager.removeSchedule(hubId, deviceId,
+                    new CameraRemoveTaskItem(now, clientId, clientSecret, accessToken, refreshToken));
         }
 
-        device.setDeleted(true);
-        device.setDeletedTime(now);
-
-        deviceJRepo.saveAndFlush(device);
 
         response.put("status_code", 0);
         response.put("status", "success");

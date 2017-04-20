@@ -57,7 +57,7 @@ public class ESCameraHistory {
     // Constructor //
     /////////////////
 
-    public ESCameraHistory() {
+    protected ESCameraHistory() {
     }
 
     public ESCameraHistory(String youtubeTitle, String youtubeUrl, String youtubeBroadcastId, String youtubeStreamId,
