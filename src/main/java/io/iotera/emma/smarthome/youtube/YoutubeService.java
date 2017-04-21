@@ -259,10 +259,10 @@ public class YoutubeService extends ESBaseController {
             responseCode = responseBroadcast.getStatusCode().value();
         } catch (HttpClientErrorException e) {
             responseCode = e.getStatusCode().value();
-            responseMessage = e.getMessage();
+            responseMessage = e.getResponseBodyAsString();
         } catch (HttpServerErrorException e) {
             responseCode = e.getStatusCode().value();
-            responseMessage = e.getMessage();
+            responseMessage = e.getResponseBodyAsString();
         }
 
         if (responseCode == 200) {
@@ -317,11 +317,14 @@ public class YoutubeService extends ESBaseController {
             responseCode = responseStream.getStatusCode().value();
         } catch (HttpClientErrorException e) {
             responseCode = e.getStatusCode().value();
-            responseMessage = e.getMessage();
+            responseMessage = e.getResponseBodyAsString();
         } catch (HttpServerErrorException e) {
             responseCode = e.getStatusCode().value();
-            responseMessage = e.getMessage();
+            responseMessage = e.getResponseBodyAsString();
         }
+
+        System.out.println("CODE : "+ responseCode);
+        System.out.println("RESPONSE : "+ responseMessage);
 
         if (responseCode == 200) {
 

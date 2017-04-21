@@ -242,6 +242,7 @@ public class ESRoutine {
         long hubId;
         try {
             hubId = Long.parseLong(parent.split("/")[0]);
+            return hubId;
         } catch (NumberFormatException e) {
             //e.printStackTrace();
         }

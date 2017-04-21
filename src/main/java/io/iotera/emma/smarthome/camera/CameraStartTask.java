@@ -273,6 +273,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
                 .build();
 
         if (applicationEventPublisher != null && message != null) {
+            System.out.println("MASUK MQTT START TASK");
             applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_START,
                     message));
         }

@@ -91,13 +91,21 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
         Tuple.T2<Integer, ObjectNode> response = youtubeService.transitionEventComplete(accessToken,
                 ybid, null, "complete");
         if (response._1 == 401) {
-            System.out.println("UNAUTHORIZED");
-            //get access token by Refresh token
-            System.out.println("CLIENT ID STOP : " + clientId);
-            accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, hubId);
-            System.out.println("stop access token : " + accessToken);
-            response = youtubeService.transitionEventComplete(accessToken, ybid, null, "complete");
-            System.out.println(response);
+
+            for (int i = 0; i < 5; ++i) {
+                System.out.println("UNAUTHORIZED");
+                //get access token by Refresh token
+                System.out.println("CLIENT ID STOP : " + clientId);
+                accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, hubId);
+                System.out.println("stop access token : " + accessToken);
+                response = youtubeService.transitionEventComplete(accessToken, ybid, null, "complete");
+                System.out.println(response);
+
+                if(response._1 == 200){
+                    break;
+                }
+            }
+
         }
 
         // Update status complete

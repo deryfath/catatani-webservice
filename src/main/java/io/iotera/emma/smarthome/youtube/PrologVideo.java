@@ -61,13 +61,19 @@ public class PrologVideo {
         System.out.println("RESPOSNE : "+createResponse);
 
         if (createCode == 401) {
-            System.out.println("UNAUTHORIZED");
-            //get access token by Refresh token
-            accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, hubId);
-            System.out.println("masuk CREATE");
-            createResponse = youtubeService.createEvent(accessToken, title);
+            for (int i = 0; i < 5; ++i) {
+                System.out.println("UNAUTHORIZED");
+                //get access token by Refresh token
+                accessToken = youtubeService.getAccessTokenByRefreshToken(refreshToken, clientId, clientSecret, hubId);
+                System.out.println("masuk CREATE");
+                createResponse = youtubeService.createEvent(accessToken, title);
 
-        } else if (createCode != 200) {
+                if(createResponse._1 == 200){
+                    break;
+                }
+
+            }
+        }else if (createCode != 200) {
             System.out.println("ERROR CREATE EVENT");
             return new Tuple.T2<Integer, YoutubeItem>(createCode, null);
         }

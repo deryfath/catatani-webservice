@@ -14,6 +14,7 @@ import io.iotera.emma.smarthome.routine.RoutineManager;
 import io.iotera.emma.smarthome.util.PublishUtility;
 import io.iotera.emma.smarthome.util.RoutineUtility;
 import io.iotera.emma.smarthome.youtube.YoutubeItem;
+import io.iotera.emma.smarthome.youtube.YoutubeService;
 import io.iotera.util.Json;
 import io.iotera.util.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +52,9 @@ public class ApplicationReadyListener implements ApplicationListener<Application
     @Autowired
     CameraManager cameraManager;
 
+    @Autowired
+    YoutubeService youtubeService;
+
     ApplicationEventPublisher applicationEventPublisher;
 
     @Override
@@ -60,6 +64,20 @@ public class ApplicationReadyListener implements ApplicationListener<Application
 
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
+
+//        for (int i=0; i<20; i++){
+//            String accessToken = "ya29.GlwzBB9qOA4_Ucr_Y-xTXl7feQW9bzzcNkCPa9pQAEQQc_QnfUff1ZbYGnZUj-GNthb3ILJQYaMuS-N-4vOwWJ0mEQGYMXr0wsDS54Ri8JUHmu6yjNqpeRZPI2Knaw";
+//            youtubeService.createStream(accessToken);
+//
+//            try {
+//                Thread.sleep(1000);
+//            }catch (InterruptedException e){
+//
+//            }
+//
+//            System.out.println("test");
+//        }
+
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Calendar calendar = Calendar.getInstance();
