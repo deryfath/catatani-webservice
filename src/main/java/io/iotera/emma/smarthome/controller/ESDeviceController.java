@@ -250,9 +250,13 @@ public class ESDeviceController extends ESBaseController {
                 YoutubeItem youtubeItem = prologResult._2;
                 youtubeItem.setTime(time);
 
+                String infoString = device.getInfo();
+                ObjectNode newInfo = Json.appendObjectNodeString(infoString, youtubeItem.getInfo());
+                device.setInfo(Json.toStringIgnoreNull(newInfo));
+
                 cameraManager.putSchedule(hubId, cameraId, new CameraStartTaskItem(clientId, clientSecret, accessToken,
                         refreshToken, maxQueue, youtubeItem));
-                deviceJRepo.flush();
+                deviceJRepo.saveAndFlush(device);
 
             } else {
 
