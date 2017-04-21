@@ -1,6 +1,7 @@
 package io.iotera.emma.smarthome.camera;
 
 import io.iotera.emma.smarthome.youtube.YoutubeItem;
+import io.iotera.util.Tuple;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -10,6 +11,7 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.Future;
 
 @Component
@@ -39,7 +41,7 @@ public class CameraItemSchedule implements ApplicationContextAware {
         this.taskScheduler = (ThreadPoolTaskScheduler) applicationContext.getBean("cameraThreadPoolTaskScheduler");
     }
 
-    boolean updateCameraScheduleOnApplicationReady(Date time1, YoutubeItem item1, Date time2, YoutubeItem item2) {
+    boolean updateCameraScheduleOnApplicationReady(List<Tuple.T2<Date, YoutubeItem>> stopSchedules) {
         removeSchedule();
 
         CameraStartTask taskSchedule = applicationContext.getBean(CameraStartTask.class);
@@ -48,12 +50,8 @@ public class CameraItemSchedule implements ApplicationContextAware {
         this.cameraStartSchedule = this.taskScheduler.schedule(taskSchedule,
                 new CronTrigger(CRON_SCHEDULE));
 
-        if (item1 != null) {
-            updateCameraStopSchedule(time1, item1);
-        }
-
-        if (item2 != null) {
-            updateCameraStopSchedule(time2, item2);
+        for (Tuple.T2<Date, YoutubeItem> stopSchedule : stopSchedules) {
+            updateCameraStopSchedule(stopSchedule._1, stopSchedule._2);
         }
 
         return true;

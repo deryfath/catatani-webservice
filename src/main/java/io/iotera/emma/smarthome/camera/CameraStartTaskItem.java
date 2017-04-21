@@ -4,6 +4,8 @@ import io.iotera.emma.smarthome.youtube.YoutubeItem;
 
 public class CameraStartTaskItem {
 
+    private String title;
+    private String roomId;
     private String clientId;
     private String clietSecret;
     private String accessToken;
@@ -11,14 +13,24 @@ public class CameraStartTaskItem {
     private int maxQueue;
     private YoutubeItem youtubeItem;
 
-    public CameraStartTaskItem(String clientId, String clietSecret, String accessToken, String refreshToken,
+    public CameraStartTaskItem(String title, String roomId, String clientId, String clietSecret, String accessToken, String refreshToken,
                                int maxQueue, YoutubeItem youtubeItem) {
+        this.title = title;
+        this.roomId = roomId;
         this.clientId = clientId;
         this.clietSecret = clietSecret;
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.maxQueue = maxQueue;
         this.youtubeItem = youtubeItem;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getRoomId() {
+        return roomId;
     }
 
     public String getClientId() {

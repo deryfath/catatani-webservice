@@ -1,6 +1,7 @@
 package io.iotera.emma.smarthome.camera;
 
 import io.iotera.emma.smarthome.youtube.YoutubeItem;
+import io.iotera.util.Tuple;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -8,6 +9,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
@@ -29,9 +31,7 @@ public class CameraSchedule implements ApplicationContextAware {
         this.cameraItemSchedules = new ConcurrentHashMap<String, CameraItemSchedule>();
     }
 
-    boolean putScheduleOnApplicationReady(String cameraId,
-                                          Date time1, YoutubeItem item1,
-                                          Date time2, YoutubeItem item2) {
+    boolean putScheduleOnApplicationReady(String cameraId, List<Tuple.T2<Date, YoutubeItem>> stopSchedules) {
 
         CameraItemSchedule schedule;
         if (!this.cameraItemSchedules.containsKey(cameraId)) {
@@ -42,7 +42,7 @@ public class CameraSchedule implements ApplicationContextAware {
             schedule = this.cameraItemSchedules.get(cameraId);
         }
 
-        return schedule.updateCameraScheduleOnApplicationReady(time1, item1, time2, item2);
+        return schedule.updateCameraScheduleOnApplicationReady(stopSchedules);
     }
 
     boolean putSchedule(String cameraId, CameraStartTaskItem item) {

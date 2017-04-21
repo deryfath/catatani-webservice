@@ -2,13 +2,10 @@ package io.iotera.emma.smarthome.camera;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.account.ESHubCamera;
-import io.iotera.emma.smarthome.model.device.ESCameraHistory;
-import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
 import io.iotera.emma.smarthome.repository.ESApplicationInfoRepo;
 import io.iotera.emma.smarthome.repository.ESCameraHistoryRepo;
-import io.iotera.emma.smarthome.repository.ESDeviceRepo;
 import io.iotera.emma.smarthome.repository.ESHubCameraRepo;
 import io.iotera.emma.smarthome.util.PublishUtility;
 import io.iotera.emma.smarthome.youtube.YoutubeItem;
@@ -38,13 +35,10 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
     ESHubCameraRepo hubCameraRepo;
 
     @Autowired
-    ESDeviceRepo deviceRepo;
+    ESCameraHistoryRepo cameraHistoryRepo;
 
     @Autowired
     ESApplicationInfoRepo applicationInfoRepo;
-
-    @Autowired
-    ESCameraHistoryRepo.ESCameraHistoryJRepo cameraHistoryJRepo;
 
     private long hubId;
     private String cameraId;
@@ -79,7 +73,6 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
             return;
         }
 
-
         String clientId = youtubeClientApi._1;
         String clientSecret = youtubeClientApi._2;
 
@@ -93,21 +86,7 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
         String refreshToken = hubCamera.getRefreshToken();
 
         String ybid = item.getBroadcastId();
-        String ysid = item.getStreamId();
-        String ysk = item.getStreamKey();
-        String yurl = item.getUrl();
         Date tm = item.getTime();
-
-        // Obtain Camera
-        ESDevice camera = deviceRepo.findByDeviceId(cameraId, hubId);
-        if (camera == null) {
-            return;
-        }
-        String title = camera.getLabel();
-        ESCameraHistory cameraHistory =
-                new ESCameraHistory(title+" "+sdf.format(tm), yurl, ybid, ysid, ysk, tm,
-                        ESCameraHistory.parent(cameraId, camera.getRoomId(), hubId));
-        cameraHistoryJRepo.saveAndFlush(cameraHistory);
 
         Tuple.T2<Integer, ObjectNode> response = youtubeService.transitionEventComplete(accessToken,
                 ybid, null, "complete");
@@ -120,6 +99,9 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
             response = youtubeService.transitionEventComplete(accessToken, ybid, null, "complete");
             System.out.println(response);
         }
+
+        // Update status complete
+        cameraHistoryRepo.updateStatusComplete(tm, cameraId, hubId);
 
         ObjectNode payload = Json.buildObjectNode();
         payload.put("tm", sdf.format(tm));

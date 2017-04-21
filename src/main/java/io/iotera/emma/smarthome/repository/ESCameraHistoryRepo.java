@@ -2,10 +2,9 @@ package io.iotera.emma.smarthome.repository;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.device.ESCameraHistory;
-import io.iotera.emma.smarthome.model.device.ESDevice;
+import io.iotera.emma.smarthome.preference.CameraHistoryPref;
 import io.iotera.util.Json;
 import io.iotera.web.spring.controller.BaseController;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
@@ -24,10 +23,6 @@ public class ESCameraHistoryRepo extends BaseController {
     @PersistenceContext
     EntityManager entityManager;
 
-    @Autowired
-    ESDeviceRepo deviceRepo;
-
-
     public List<ESCameraHistory> listHistoryByCameraId(String deviceId, long hubId) {
 
         // Build Query
@@ -37,6 +32,8 @@ public class ESCameraHistoryRepo extends BaseController {
         queryBuilder.append("FROM ");
         queryBuilder.append(ESCameraHistory.NAME).append(" ");
         queryBuilder.append("WHERE ");
+        queryBuilder.append("__deleted_flag__ = FALSE ");
+        queryBuilder.append("AND ");
         queryBuilder.append("__parent__ LIKE :parent ");
         queryBuilder.append("ORDER BY ");
         queryBuilder.append("history_time DESC");
@@ -44,9 +41,58 @@ public class ESCameraHistoryRepo extends BaseController {
         // Execute Query
         String queryString = queryBuilder.toString();
         Query query = entityManager.createNativeQuery(queryString, ESCameraHistory.class);
-
-        System.out.println("__PARENT__: "+ESCameraHistory.parent(deviceId, "%", hubId));
         query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
+
+        return query.getResultList();
+    }
+
+    public List<ESCameraHistory> listShownHistoryByCameraId(String deviceId, long hubId) {
+
+        // Build Query
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("SELECT ");
+        queryBuilder.append("* ");
+        queryBuilder.append("FROM ");
+        queryBuilder.append(ESCameraHistory.NAME).append(" ");
+        queryBuilder.append("WHERE ");
+        queryBuilder.append("__deleted_flag__ = FALSE ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("__parent__ LIKE :parent ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("shown = TRUE ");
+        queryBuilder.append("ORDER BY ");
+        queryBuilder.append("history_time DESC");
+
+        // Execute Query
+        String queryString = queryBuilder.toString();
+        Query query = entityManager.createNativeQuery(queryString, ESCameraHistory.class);
+        query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
+
+        return query.getResultList();
+    }
+
+    public List<ESCameraHistory> listIncompleteHistoryByCameraId(String deviceId, long hubId) {
+
+        // Build Query
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("SELECT ");
+        queryBuilder.append("* ");
+        queryBuilder.append("FROM ");
+        queryBuilder.append(ESCameraHistory.NAME).append(" ");
+        queryBuilder.append("WHERE ");
+        queryBuilder.append("__deleted_flag__ = FALSE ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("__parent__ LIKE :parent ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("status != :status ");
+        queryBuilder.append("ORDER BY ");
+        queryBuilder.append("history_time DESC");
+
+        // Execute Query
+        String queryString = queryBuilder.toString();
+        Query query = entityManager.createNativeQuery(queryString, ESCameraHistory.class);
+        query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
+        query.setParameter("status", CameraHistoryPref.COMPLETE);
 
         return query.getResultList();
     }
@@ -86,9 +132,11 @@ public class ESCameraHistoryRepo extends BaseController {
         queryBuilder.append("* ");
         queryBuilder.append("FROM ");
         queryBuilder.append(ESCameraHistory.NAME).append(" ");
-        queryBuilder.append("WHERE __parent__ LIKE :parent ");
-        queryBuilder.append("AND ");
+        queryBuilder.append("WHERE ");
         queryBuilder.append("__deleted_flag__ = FALSE ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("__parent__ LIKE :parent");
+
 
         queryString = queryBuilder.toString();
         query = entityManager.createNativeQuery(queryString, ESCameraHistory.class);
@@ -125,33 +173,92 @@ public class ESCameraHistoryRepo extends BaseController {
     }
 
     @Transactional
-    public int updateDeleteStatus(String deviceId, long hubId) {
+    public int updateShownTrue(Date time, String deviceId, long hubId) {
 
         int result = 0;
-        Date now = new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        String deletedTimeString = sdf.format(now);
+        String timeString = sdf.format(time);
 
-        ESDevice device = deviceRepo.findByDeviceId(deviceId, hubId);
-
-        // Appliance
         // Build Query
-        StringBuilder applianceBuilder = new StringBuilder();
-        applianceBuilder.append("UPDATE ");
-        applianceBuilder.append(ESCameraHistory.NAME).append(" ");
-        applianceBuilder.append("SET ");
-        applianceBuilder.append("__deleted_flag__ = TRUE, ");
-        applianceBuilder.append("__deleted_time__ = :dtime ");
-        applianceBuilder.append("WHERE ");
-        applianceBuilder.append("__parent__ LIKE :parent");
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("UPDATE ");
+        queryBuilder.append(ESCameraHistory.NAME).append(" ");
+        queryBuilder.append("SET ");
+        queryBuilder.append("shown = TRUE ");
+        queryBuilder.append("WHERE ");
+        queryBuilder.append("__deleted_flag__ = FALSE ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("__parent__ LIKE :parent ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("history_time = :time");
 
         // Execute Query
-        String applianceBuilderString = applianceBuilder.toString();
-        Query applianceQuery = entityManager.createNativeQuery(applianceBuilderString);
-        applianceQuery.setParameter("dtime", deletedTimeString);
-        applianceQuery.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
+        String queryString = queryBuilder.toString();
+        Query query = entityManager.createNativeQuery(queryString);
+        query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
+        query.setParameter("time", timeString);
 
-        result += applianceQuery.executeUpdate();
+        result += query.executeUpdate();
+
+        return result;
+    }
+
+    @Transactional
+    public int updateStatusComplete(Date time, String deviceId, long hubId) {
+
+        int result = 0;
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String timeString = sdf.format(time);
+
+        // Build Query
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("UPDATE ");
+        queryBuilder.append(ESCameraHistory.NAME).append(" ");
+        queryBuilder.append("SET ");
+        queryBuilder.append("status = :status ");
+        queryBuilder.append("WHERE ");
+        queryBuilder.append("__deleted_flag__ = FALSE ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("__parent__ LIKE :parent ");
+        queryBuilder.append("AND ");
+        queryBuilder.append("history_time = :time");
+
+        // Execute Query
+        String queryString = queryBuilder.toString();
+        Query query = entityManager.createNativeQuery(queryString);
+        query.setParameter("status", CameraHistoryPref.COMPLETE);
+        query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
+        query.setParameter("time", timeString);
+
+        result += query.executeUpdate();
+
+        return result;
+    }
+
+    @Transactional
+    public int updateDeleteStatus(Date deletedTime, String deviceId, long hubId) {
+
+        int result = 0;
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String deletedTimeString = sdf.format(deletedTime);
+
+        // Build Query
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("UPDATE ");
+        queryBuilder.append(ESCameraHistory.NAME).append(" ");
+        queryBuilder.append("SET ");
+        queryBuilder.append("__deleted_flag__ = TRUE, ");
+        queryBuilder.append("__deleted_time__ = :dtime ");
+        queryBuilder.append("WHERE ");
+        queryBuilder.append("__parent__ LIKE :parent");
+
+        // Execute Query
+        String queryString = queryBuilder.toString();
+        Query query = entityManager.createNativeQuery(queryString);
+        query.setParameter("dtime", deletedTimeString);
+        query.setParameter("parent", ESCameraHistory.parent(deviceId, "%", hubId));
+
+        result += query.executeUpdate();
 
         return result;
     }

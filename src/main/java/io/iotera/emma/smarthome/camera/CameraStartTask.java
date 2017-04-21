@@ -2,6 +2,7 @@ package io.iotera.emma.smarthome.camera;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.account.ESHubCamera;
+import io.iotera.emma.smarthome.model.device.ESCameraHistory;
 import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
@@ -51,7 +52,10 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
     PrologVideo prologVideo;
 
     @Autowired
-    ESCameraHistoryRepo historyCameraRepo;
+    ESCameraHistoryRepo cameraHistoryRepo;
+
+    @Autowired
+    ESCameraHistoryRepo.ESCameraHistoryJRepo cameraHistoryJRepo;
 
     @Autowired
     ESDeviceRepo deviceRepo;
@@ -96,6 +100,9 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Date time, stopTime;
 
+        String title;
+        String roomId;
+
         String accessToken, clientId, clientSecret, refreshToken;
         int maxQueue;
         YoutubeItem oldYoutubeItem, newYoutubeItem;
@@ -127,6 +134,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
             if (camera == null) {
                 return;
             }
+            roomId = camera.getRoomId();
             String infoString = camera.getInfo();
 
             // Obtain old info
@@ -148,6 +156,9 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
                 return;
             }
 
+            // Update camera history shown
+            cameraHistoryRepo.updateShownTrue(tm, cameraId, hubId);
+
             oldYoutubeItem = new YoutubeItem(ybid, ysid, ysk, yurl);
             oldYoutubeItem.setTime(tm);
 
@@ -162,7 +173,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
             calendar.set(Calendar.MINUTE, 5);
             stopTime = calendar.getTime();
 
-            String title = camera.getLabel() + " " + sdf.format(time);
+            title = camera.getLabel() + " " + sdf.format(time);
 
             Tuple.T2<Integer, YoutubeItem> prologResult = prologVideo.runVideoProlog(title, hubId);
             if (prologResult._1 != 0) {
@@ -198,6 +209,8 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
             calendar.set(Calendar.MINUTE, 5);
             stopTime = calendar.getTime();
 
+            title = item.getTitle();
+            roomId = item.getRoomId();
             clientId = item.getClientId();
             clientSecret = item.getClietSecret();
             accessToken = item.getAccessToken();
@@ -208,8 +221,15 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
             newYoutubeItem = item.getYoutubeItem();
         }
 
+        ESCameraHistory cameraHistory =
+                new ESCameraHistory(title, newYoutubeItem.getUrl(), newYoutubeItem.getBroadcastId(),
+                        newYoutubeItem.getStreamId(), newYoutubeItem.getStreamKey(), time,
+                        ESCameraHistory.parent(cameraId, roomId, hubId));
+
+        cameraHistoryJRepo.saveAndFlush(cameraHistory);
+
         //DELETE OLD YOUTUBE LINK
-        ResponseEntity cameraHistoryCount = historyCameraRepo.countRowHistoryCamera(cameraId, hubId);
+        ResponseEntity cameraHistoryCount = cameraHistoryRepo.countRowHistoryCamera(cameraId, hubId);
         ObjectNode responseCamera = Json.parseToObjectNode(cameraHistoryCount.getBody().toString());
         System.out.println("responseCamera : " + responseCamera);
         if (responseCamera.size() != 0) {
@@ -217,7 +237,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
             if (Integer.parseInt(responseCamera.get("count").toString()) > maxQueue) {
 
                 //DELETE FIRST ROW HISTORY CAMERA
-                historyCameraRepo.deleteFirstRowByDeviceId(cameraId, hubId);
+                cameraHistoryRepo.deleteFirstRowByDeviceId(cameraId, hubId);
 
                 //DELETE ON YOUTUBE API
                 ResponseEntity responseEntityDelete = youtubeService.deleteEventById(accessToken, responseCamera.get("youtube_id").toString());
