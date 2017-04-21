@@ -124,7 +124,13 @@ public class PrologVideo {
             }
             String streamStatus = transitionStartBody.get("data").get("stream_status").asText("");
 
-            while (streamStatus.equalsIgnoreCase("noData")) {
+
+            for (int i=0; i<120; i++){
+
+                if (!streamStatus.equalsIgnoreCase("noData")) {
+                    break;
+                }
+
                 transitionStartResponse = youtubeService.transitionEventStart(accessToken, broadcastId, streamId, state);
                 transitionStartCode = transitionStartResponse._1;
                 transitionStartBody = transitionStartResponse._2;
@@ -142,9 +148,10 @@ public class PrologVideo {
                     return new Tuple.T2<Integer, YoutubeItem>(-13, null);
                 }
 
-                if (!streamStatus.equalsIgnoreCase("noData")) {
-                    break;
-                }
+
+
+                Thread.sleep(1000);
+
             }
 
             /*

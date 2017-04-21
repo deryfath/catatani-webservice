@@ -66,6 +66,8 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
     @Override
     public void run() {
 
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
         if (item == null) {
             // Youtube item null
             return;
@@ -76,6 +78,7 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
         if (youtubeClientApi == null) {
             return;
         }
+
 
         String clientId = youtubeClientApi._1;
         String clientSecret = youtubeClientApi._2;
@@ -102,7 +105,7 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
         }
         String title = camera.getLabel();
         ESCameraHistory cameraHistory =
-                new ESCameraHistory(title, yurl, ybid, ysid, ysk, tm,
+                new ESCameraHistory(title+" "+sdf.format(tm), yurl, ybid, ysid, ysk, tm,
                         ESCameraHistory.parent(cameraId, camera.getRoomId(), hubId));
         cameraHistoryJRepo.saveAndFlush(cameraHistory);
 
@@ -118,7 +121,6 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
             System.out.println(response);
         }
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         ObjectNode payload = Json.buildObjectNode();
         payload.put("tm", sdf.format(tm));
 

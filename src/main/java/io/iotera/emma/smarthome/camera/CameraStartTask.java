@@ -185,7 +185,7 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
 
             camera.setInfo(Json.toStringIgnoreNull(newInfo));
 
-            deviceJRepo.save(camera);
+            deviceJRepo.saveAndFlush(camera);
 
         } else {
             // From Init
