@@ -58,6 +58,8 @@ public class PrologVideo {
         int createCode = createResponse._1;
         ObjectNode createBody = createResponse._2;
 
+        System.out.println("RESPOSNE : "+createResponse);
+
         if (createCode == 401) {
             System.out.println("UNAUTHORIZED");
             //get access token by Refresh token

@@ -224,19 +224,14 @@ public class ESDeviceController extends ESBaseController {
                 Tuple.T2<String, String> youtubeClientApi = applicationInfoRepo.getClientIdAndClientSecret();
                 if (youtubeClientApi == null) {
                     return internalServerError("internal_server_error");
+
+
                 }
 
                 String clientId = youtubeClientApi._1;
                 String clientSecret = youtubeClientApi._2;
 
-                device = new ESDevice(label, category, type, uid, address, info, false, null,
-                        roomId, hubId);
-                deviceJRepo.save(device);
-                String cameraId = device.getId();
-                String infoString = device.getInfo();
-
                 Calendar calendar = Calendar.getInstance();
-                calendar.add(Calendar.HOUR, 1);
                 calendar.set(Calendar.MINUTE, 0);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
@@ -248,6 +243,13 @@ public class ESDeviceController extends ESBaseController {
                 if (prologResult._1 != 0) {
                     return okJsonFailed(-6, "prolog_video_failed");
                 }
+
+                device = new ESDevice(label, category, type, uid, address, info, false, null,
+                        roomId, hubId);
+                deviceJRepo.save(device);
+                String cameraId = device.getId();
+                String infoString = device.getInfo();
+
                 YoutubeItem youtubeItem = prologResult._2;
                 youtubeItem.setTime(time);
 

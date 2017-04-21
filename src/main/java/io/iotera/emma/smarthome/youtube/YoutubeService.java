@@ -248,7 +248,7 @@ public class YoutubeService extends ESBaseController {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + accessToken);
         String urlBroadcast = "https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet,status,contentDetails";
-
+        System.out.println(urlBroadcast);
         HttpEntity<String> httpEntityBroadcast = new HttpEntity<String>(parent.toJSONString(), headers);
         System.out.println("response : " + httpEntityBroadcast);
 
