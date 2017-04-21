@@ -1,5 +1,6 @@
 package io.iotera.emma.smarthome.model.device;
 
+import io.iotera.emma.smarthome.preference.CameraHistoryPref;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
@@ -34,6 +35,12 @@ public class ESCameraHistory {
 
     @Column(name = "history_time")
     protected Date historyTime;
+
+    @Column(nullable = false)
+    protected boolean shown;
+
+    @Column(nullable = false)
+    protected int status;
 
     @Column(name = "__order__", nullable = false)
     protected long order;
@@ -73,6 +80,9 @@ public class ESCameraHistory {
         this.deleted = false;
 
         this.parent = parent;
+
+        this.shown = false;
+        this.status = CameraHistoryPref.CREATE;
     }
 
     /////////////////////

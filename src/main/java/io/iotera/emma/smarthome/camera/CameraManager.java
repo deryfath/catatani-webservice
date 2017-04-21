@@ -1,11 +1,13 @@
 package io.iotera.emma.smarthome.camera;
 
 import io.iotera.emma.smarthome.youtube.YoutubeItem;
+import io.iotera.util.Tuple;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class CameraManager implements ApplicationContextAware {
@@ -34,10 +36,9 @@ public class CameraManager implements ApplicationContextAware {
         return schedule;
     }
 
-    public boolean putScheduleOnApplicationReady(long hubId, String cameraId,
-                                                 Date time1, YoutubeItem item1, Date time2, YoutubeItem item2) {
+    public boolean putScheduleOnApplicationReady(long hubId, String cameraId, List<Tuple.T2<Date, YoutubeItem>> stopSchedules) {
         CameraSchedule schedule = getSchedule(hubId);
-        return schedule.putScheduleOnApplicationReady(cameraId, time1, item1, time2, item2);
+        return schedule.putScheduleOnApplicationReady(cameraId, stopSchedules);
     }
 
     public boolean putSchedule(long hubId, String cameraId, CameraStartTaskItem item) {

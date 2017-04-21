@@ -233,6 +233,7 @@ public class ESDeviceController extends ESBaseController {
                         roomId, hubId);
                 deviceJRepo.save(device);
                 String cameraId = device.getId();
+                String infoString = device.getInfo();
 
                 Calendar calendar = Calendar.getInstance();
                 calendar.add(Calendar.HOUR, 1);
@@ -250,9 +251,15 @@ public class ESDeviceController extends ESBaseController {
                 YoutubeItem youtubeItem = prologResult._2;
                 youtubeItem.setTime(time);
 
-                cameraManager.putSchedule(hubId, cameraId, new CameraStartTaskItem(clientId, clientSecret, accessToken,
-                        refreshToken, maxQueue, youtubeItem));
-                deviceJRepo.flush();
+                cameraManager.putSchedule(hubId, cameraId,
+                        new CameraStartTaskItem(title, roomId, clientId, clientSecret, accessToken,
+                                refreshToken, maxQueue, youtubeItem)
+                );
+
+                ObjectNode newInfo = Json.appendObjectNodeString(infoString, youtubeItem.getInfo());
+                device.setInfo(Json.toStringIgnoreNull(newInfo));
+
+                deviceJRepo.saveAndFlush(device);
 
             } else {
 
@@ -456,13 +463,13 @@ public class ESDeviceController extends ESBaseController {
             // Obtain Access token and Refresh token
             ESHubCamera hubCamera = hubCameraRepo.findByHubId(hubId);
             if (hubCamera == null) {
-                return internalServerError("");
+                return okJsonFailed(-2, "device_not_found");
             }
 
             String accessToken = hubCamera.getAccessToken();
             String refreshToken = hubCamera.getRefreshToken();
 
-            cameraHistoryRepo.updateDeleteStatus(deviceId, hubId);
+            cameraHistoryRepo.updateDeleteStatus(now, deviceId, hubId);
             cameraManager.removeSchedule(hubId, deviceId,
                     new CameraRemoveTaskItem(now, clientId, clientSecret, accessToken, refreshToken));
         }

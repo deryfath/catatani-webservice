@@ -143,7 +143,7 @@ public class ESCameraController extends ESBaseController {
 
         ArrayNode cameraArray = Json.buildArrayNode();
         List<ESCameraHistory> cameraHistories =
-                cameraHistoryRepo.listHistoryByCameraId(cameraId, hubId);
+                cameraHistoryRepo.listShownHistoryByCameraId(cameraId, hubId);
         for (ESCameraHistory cameraHistory : cameraHistories) {
             ObjectNode cameraObject = Json.buildObjectNode();
 
