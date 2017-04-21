@@ -104,8 +104,6 @@ public class ESCameraHistoryRepo extends BaseController {
         ObjectNode deviceObject = Json.buildObjectNode();
         List<ESCameraHistory> listCountRow = null;
 
-        System.out.println("PARENT "+ESCameraHistory.parent(deviceId, "%", hubId));
-
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append("SELECT ");
