@@ -240,6 +240,7 @@ public class ESDeviceController extends ESBaseController {
                 String title = label + " " + formatDate(time);
 
                 Tuple.T2<Integer, YoutubeItem> prologResult = prologVideo.runVideoProlog(title, hubId);
+                System.out.println("PROLOG RESULT : "+prologResult._1);
                 if (prologResult._1 != 0) {
                     return okJsonFailed(-6, "prolog_video_failed");
                 }

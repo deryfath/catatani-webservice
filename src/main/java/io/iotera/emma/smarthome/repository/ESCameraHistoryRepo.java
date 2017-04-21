@@ -176,6 +176,7 @@ public class ESCameraHistoryRepo extends BaseController {
         int result = 0;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String timeString = sdf.format(time);
+        System.out.println("TIME STRING : "+timeString);
 
         // Build Query
         StringBuilder queryBuilder = new StringBuilder();
