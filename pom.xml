@@ -20,6 +20,7 @@
         <org.springframework.data-version>1.9.4.RELEASE</org.springframework.data-version>
         <org.aspectj.aspectjweaver-version>1.8.9</org.aspectj.aspectjweaver-version>
         <javax.mail-version>1.4.7</javax.mail-version>
+        <log4j-version>1.2.17</log4j-version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -158,8 +159,6 @@
             <artifactId>hibernate-entitymanager</artifactId>
             <version>${org.hibernate-version}</version>
         </dependency>
-
-
 
         <dependency>
             <groupId>mysql</groupId>

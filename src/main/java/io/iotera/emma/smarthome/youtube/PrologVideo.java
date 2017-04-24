@@ -100,8 +100,8 @@ public class PrologVideo {
         Process process = null;
         try {
             process = Runtime.getRuntime().exec(
-                    env.getProperty("ffmpeg.prolog") + " -re -stream_loop -1 -i " +
-                            env.getProperty("ffmpeg.prolog.source") + " -vcodec libx264 -preset veryfast -maxrate 3000k -bufsize 6000k -pix_fmt yuv420p -g 50 -c:a aac -b:a 160k -ac 2 -ar 44100 -f flv " + streamKey);
+                    env.getProperty("ffmpeg.bin") + " -re -stream_loop -1 -i " +
+                            env.getProperty("ffmpeg.file.source") + " -vcodec libx264 -preset veryfast -maxrate 3000k -bufsize 6000k -pix_fmt yuv420p -g 50 -c:a aac -b:a 160k -ac 2 -ar 44100 -f flv " + streamKey);
 
             // any error message?
             StreamGobbler errorGobbler = new StreamGobbler(process.getErrorStream(), "ERROR");
