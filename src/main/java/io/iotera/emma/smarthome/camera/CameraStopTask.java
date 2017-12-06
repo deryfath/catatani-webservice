@@ -2,7 +2,7 @@ package io.iotera.emma.smarthome.camera;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.account.ESHubCamera;
-import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
+//import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
 import io.iotera.emma.smarthome.repository.ESApplicationInfoRepo;
 import io.iotera.emma.smarthome.repository.ESCameraHistoryRepo;
@@ -130,8 +130,8 @@ public class CameraStopTask implements Runnable, ApplicationEventPublisherAware 
                 .build();
 
         if (applicationEventPublisher != null && message != null && message2 != null) {
-            applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_STOP, message));
-            applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_START, message2));
+//            applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_STOP, message));
+//            applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_START, message2));
         }
 
     }

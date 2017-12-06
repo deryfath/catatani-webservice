@@ -5,7 +5,7 @@ import com.google.api.client.util.Base64;
 import io.iotera.emma.smarthome.model.access.ESAccess;
 import io.iotera.emma.smarthome.model.account.ESAccount;
 import io.iotera.emma.smarthome.model.account.ESHub;
-import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
+//import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
 import io.iotera.emma.smarthome.repository.ESHubRepo;
 import io.iotera.emma.smarthome.util.PublishUtility;
@@ -72,8 +72,8 @@ public class ESHubController extends ESBaseController implements ApplicationEven
                         .setHeader(MqttHeaders.RETAINED, true)
                         .build();
 
-                applicationEventPublisher.publishEvent(new MqttPublishEvent(
-                        this, CommandPref.FORCE_HOMEKICK, sendMessage));
+//                applicationEventPublisher.publishEvent(new MqttPublishEvent(
+//                        this, CommandPref.FORCE_HOMEKICK, sendMessage));
             }
 
         } else {

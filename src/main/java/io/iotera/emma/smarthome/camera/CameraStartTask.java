@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.model.account.ESHubCamera;
 import io.iotera.emma.smarthome.model.device.ESCameraHistory;
 import io.iotera.emma.smarthome.model.device.ESDevice;
-import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
+//import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
 import io.iotera.emma.smarthome.repository.ESApplicationInfoRepo;
 import io.iotera.emma.smarthome.repository.ESCameraHistoryRepo;
@@ -274,8 +274,8 @@ public class CameraStartTask implements Runnable, ApplicationEventPublisherAware
 
         if (applicationEventPublisher != null && message != null) {
             System.out.println("MASUK MQTT START TASK");
-            applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_START,
-                    message));
+//            applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_START,
+//                    message));
         }
 
         cameraManager.updateStopSchedule(hubId, cameraId, stopTime, newYoutubeItem);

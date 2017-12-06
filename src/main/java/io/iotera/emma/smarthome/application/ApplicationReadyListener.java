@@ -5,7 +5,7 @@ import io.iotera.emma.smarthome.camera.CameraManager;
 import io.iotera.emma.smarthome.model.device.ESCameraHistory;
 import io.iotera.emma.smarthome.model.device.ESDevice;
 import io.iotera.emma.smarthome.model.routine.ESRoutine;
-import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
+//import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
 import io.iotera.emma.smarthome.repository.ESCameraHistoryRepo;
 import io.iotera.emma.smarthome.repository.ESDeviceRepo;
@@ -138,8 +138,8 @@ public class ApplicationReadyListener implements ApplicationListener<Application
                     .build();
 
             if (applicationEventPublisher != null && message != null) {
-                applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_START,
-                        message));
+//                applicationEventPublisher.publishEvent(new MqttPublishEvent(this, CommandPref.CAMERA_START,
+//                        message));
             }
 
             List<ESCameraHistory> histories = cameraHistoryRepo.listIncompleteHistoryByCameraId(cameraId, hubId);

@@ -7,7 +7,7 @@ import io.iotera.emma.smarthome.model.access.ESAccess;
 import io.iotera.emma.smarthome.model.account.ESAccount;
 import io.iotera.emma.smarthome.model.account.ESHub;
 import io.iotera.emma.smarthome.model.account.ESHubCamera;
-import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
+//import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
 import io.iotera.emma.smarthome.preference.PermissionPref;
 import io.iotera.emma.smarthome.repository.ESAccessRepo;
@@ -140,8 +140,8 @@ public class ESAccessController extends ESBaseController implements ApplicationE
                     .setHeader(MqttHeaders.RETAINED, true)
                     .build();
 
-            applicationEventPublisher.publishEvent(new MqttPublishEvent(
-                    this, CommandPref.FORCE_HOMEKICK, sendMessage));
+//            applicationEventPublisher.publishEvent(new MqttPublishEvent(
+//                    this, CommandPref.FORCE_HOMEKICK, sendMessage));
         }
 
         // Result
@@ -496,8 +496,8 @@ public class ESAccessController extends ESBaseController implements ApplicationE
                                     clientId, CommandPref.FORCE_HOMEKICK, null))
                     .build();
 
-            applicationEventPublisher.publishEvent(new MqttPublishEvent(
-                    this, CommandPref.FORCE_HOMEKICK, sendMessage));
+//            applicationEventPublisher.publishEvent(new MqttPublishEvent(
+//                    this, CommandPref.FORCE_HOMEKICK, sendMessage));
         }
 
         // Result

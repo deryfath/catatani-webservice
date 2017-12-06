@@ -2,7 +2,7 @@ package io.iotera.emma.smarthome.routine;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
+//import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
 import io.iotera.emma.smarthome.repository.ESRoutineRepo;
 import io.iotera.emma.smarthome.util.PublishUtility;
@@ -70,8 +70,8 @@ public class ScheduleTask implements Runnable, ApplicationEventPublisherAware {
         while (countdown >= 0) {
 
             if (applicationEventPublisher != null && message != null) {
-                applicationEventPublisher.publishEvent(new MqttPublishEvent(this,
-                        CommandPref.SCHEDULE, this.message));
+//                applicationEventPublisher.publishEvent(new MqttPublishEvent(this,
+//                        CommandPref.SCHEDULE, this.message));
             } else {
                 break;
             }

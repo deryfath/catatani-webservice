@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.iotera.emma.smarthome.controller.ESBaseController;
 import io.iotera.emma.smarthome.model.account.ESAccount;
 import io.iotera.emma.smarthome.model.account.ESAccountParuru;
-import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
+//import io.iotera.emma.smarthome.mqtt.MqttPublishEvent;
 import io.iotera.emma.smarthome.preference.CommandPref;
 import io.iotera.emma.smarthome.repository.ESAccountRepo;
 import io.iotera.emma.smarthome.util.PasswordUtility;
@@ -201,8 +201,8 @@ public class ESClientAuthController extends ESBaseController implements Applicat
                                     account.getId(), CommandPref.FORCE_LOGOUT, null))
                     .build();
 
-            applicationEventPublisher.publishEvent(new MqttPublishEvent(
-                    this, CommandPref.FORCE_LOGOUT, sendMessage));
+//            applicationEventPublisher.publishEvent(new MqttPublishEvent(
+//                    this, CommandPref.FORCE_LOGOUT, sendMessage));
         }
 
         account.generateClientToken();
